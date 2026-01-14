@@ -83,11 +83,11 @@
         const errorMsg = document.getElementById('errorMsg');
         
         // Verificar si el par Usuario + Contraseña coincide
-        if (ADMINS[usuario] === passwordIngresada) {
+        if (ADMINS[usuario] && ADMINS[usuario] === passwordIngresada) {
             // Login exitoso
             window.location.href = "admin_dashboard.html";
         } else {
-            errorMsg.textContent = "Usuario incorrecto para esa contraseña.";
+            errorMsg.textContent = "El usuario no coincide con la contraseña ingresada.";
             errorMsg.style.display = 'block';
         }
     }
