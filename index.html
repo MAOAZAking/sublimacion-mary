@@ -24,14 +24,14 @@
     
     <!-- Paso 1: Entrada General (Teléfono o Contraseña) -->
     <div id="step1">
-        <input type="text" id="generalInput" placeholder="Ingrese su número" autocomplete="off">
+        <input type="text" id="generalInput" placeholder="Ingrese su número o usuario" autocomplete="off">
         <button onclick="verificarEntrada()">Continuar</button>
     </div>
 
-    <!-- Paso 2: Solo para Admins (Usuario) -->
+    <!-- Paso 2: Solo para Admins (Contraseña) -->
     <div id="step2" class="hidden fade-in">
-        <p style="margin-bottom: 10px; color: #666;">Verificación de Administrador</p>
-        <input type="text" id="adminUser" placeholder="Nombre de usuario" autocomplete="off">
+        <p style="margin-bottom: 10px; color: #666;">Ingrese su contraseña</p>
+        <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="off">
         <button onclick="verificarAdmin()">Acceder</button>
     </div>
 
@@ -46,7 +46,7 @@
         'juan': 'admin123'
     };
 
-    let passwordIngresada = "";
+    let usuarioIngresado = "";
 
     function verificarEntrada() {
         const input = document.getElementById('generalInput').value.trim();
@@ -55,16 +55,16 @@
 
         if (!input) return;
 
-        // 1. Verificar si es una contraseña de Admin
-        // Buscamos si el texto ingresado existe como valor en nuestro objeto ADMINS
-        const esPasswordAdmin = Object.values(ADMINS).includes(input);
+        // 1. Verificar si es un Usuario de Admin
+        // Buscamos si el texto ingresado existe como clave (key) en nuestro objeto ADMINS
+        const esUsuarioAdmin = Object.keys(ADMINS).includes(input.toLowerCase());
 
-        if (esPasswordAdmin) {
-            // Es admin, pedir usuario
-            passwordIngresada = input;
+        if (esUsuarioAdmin) {
+            // Es admin, pedir contraseña
+            usuarioIngresado = input.toLowerCase();
             document.getElementById('step1').classList.add('hidden');
             document.getElementById('step2').classList.remove('hidden');
-            document.getElementById('adminUser').focus();
+            document.getElementById('adminPass').focus();
         } else {
             // 2. Asumir que es un cliente (Número telefónico)
             // Validación simple de números
@@ -79,15 +79,15 @@
     }
 
     function verificarAdmin() {
-        const usuario = document.getElementById('adminUser').value.trim().toLowerCase();
+        const password = document.getElementById('adminPass').value.trim();
         const errorMsg = document.getElementById('errorMsg');
         
         // Verificar si el par Usuario + Contraseña coincide
-        if (ADMINS[usuario] && ADMINS[usuario] === passwordIngresada) {
+        if (ADMINS[usuarioIngresado] === password) {
             // Login exitoso
             window.location.href = "admin_dashboard.html";
         } else {
-            errorMsg.textContent = "El usuario no coincide con la contraseña ingresada.";
+            errorMsg.textContent = "Contraseña incorrecta.";
             errorMsg.style.display = 'block';
         }
     }
@@ -96,7 +96,7 @@
     document.getElementById('generalInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') verificarEntrada();
     });
-    document.getElementById('adminUser').addEventListener('keypress', function (e) {
+    document.getElementById('adminPass').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') verificarAdmin();
     });
 </script>
