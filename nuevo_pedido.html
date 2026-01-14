@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuevo Pedido - Admin</title>
+    <script>
+        // SEGURIDAD: Verificar si el usuario inició sesión
+        if (!sessionStorage.getItem('adminLogueado')) {
+            window.location.href = 'index.html';
+        }
+    </script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }

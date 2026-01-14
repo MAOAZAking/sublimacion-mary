@@ -49,25 +49,13 @@
         if (!input) return;
 
         // 1. Verificar si es un Usuario de Admin
-        // Consultamos al servidor si el usuario existe como admin
-        try {
-            const response = await fetch('/api/check-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: input })
-            });
-            const data = await response.json();
-
-            if (data.isAdmin) {
-                // Es admin, pedir contraseña
-                usuarioIngresado = input.toLowerCase();
-                document.getElementById('step1').classList.add('hidden');
-                document.getElementById('step2').classList.remove('hidden');
-                document.getElementById('adminPass').focus();
-                return;
-            }
-        } catch (error) {
-            console.error("Error verificando usuario:", error);
+        // Validación local para GitHub Pages
+        if (input.toLowerCase() === 'admin') {
+            usuarioIngresado = input.toLowerCase();
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+            document.getElementById('adminPass').focus();
+            return;
         }
 
         // Si no es admin, continuamos con la lógica de cliente
@@ -88,20 +76,13 @@
         const password = document.getElementById('adminPass').value.trim();
         const errorMsg = document.getElementById('errorMsg');
         
-        try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: usuarioIngresado, password: password })
-            });
-            const result = await response.json();
-
-            if (result.success) {
-                window.location.href = "admin_dashboard.html";
-            } else {
-                throw new Error("Login fallido");
-            }
-        } catch (e) {
+        // Validación de contraseña local
+        // CAMBIA "admin123" POR TU CONTRASEÑA DESEADA
+        if (password === "admin123") {
+            // Guardar "llave" en el navegador
+            sessionStorage.setItem('adminLogueado', 'true');
+            window.location.href = "admin_dashboard.html";
+        } else {
             errorMsg.textContent = "Contraseña incorrecta.";
             errorMsg.style.display = 'block';
         }
