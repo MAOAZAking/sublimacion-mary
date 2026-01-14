@@ -39,12 +39,15 @@
 </div>
 
 <script>
-    // CONFIGURACIÓN DE ADMINS (Usuario: Contraseña)
-    // Puedes agregar más aquí
-    const ADMINS = {
-        'mary': 'sublimacion2026',
-        'juan': 'admin123'
-    };
+    let ADMINS = {};
+
+    // Cargar credenciales desde archivo externo (usuarios.json)
+    fetch('usuarios.json')
+        .then(response => response.json())
+        .then(data => {
+            ADMINS = data;
+        })
+        .catch(error => console.error("Error cargando sistema de usuarios:", error));
 
     let usuarioIngresado = "";
 
