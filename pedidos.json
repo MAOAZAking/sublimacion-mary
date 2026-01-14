@@ -20,11 +20,18 @@
     "estado": "Listo para entregar",
     "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768416606/qrrgfej0mv0iui82qctb.jpg"
   },
-    {
+  {
     "telefono": "3002052842",
     "producto": "Camisa Estampada",
     "fecha": "14/01/2026",
     "estado": "Listo para entregar",
     "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768420878/mwd7jjcyeyvxorsteybw.png"
+  },
+  {
+    "telefono": "3167000443",
+    "producto": "Mug Personalizado",
+    "fecha": "14/01/2026",
+    "estado": "Listo para entregar",
+    "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
   }
 ]
