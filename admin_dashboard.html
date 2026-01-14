@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrador</title>
+    <script>
+        // SEGURIDAD: Verificar si el usuario inició sesión
+        if (!sessionStorage.getItem('adminLogueado')) {
+            window.location.href = 'index.html';
+        }
+    </script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
         .header { text-align: center; margin-bottom: 30px; }
@@ -31,7 +37,7 @@
 <div class="header">
     <h2>Panel de Administración</h2>
     <button class="btn-create" onclick="window.location.href='nuevo_pedido.html'">+ Crear Nuevo Pedido</button>
-    <button style="background-color: #666; color: white;" onclick="window.location.href='index.html'">Cerrar Sesión</button>
+    <button style="background-color: #666; color: white;" onclick="cerrarSesion()">Cerrar Sesión</button>
 </div>
 
 <div class="controls">
@@ -117,6 +123,11 @@
 
     function cerrarModal() {
         document.getElementById('imageModal').style.display = "none";
+    }
+
+    function cerrarSesion() {
+        sessionStorage.removeItem('adminLogueado');
+        window.location.href = 'index.html';
     }
 </script>
 
