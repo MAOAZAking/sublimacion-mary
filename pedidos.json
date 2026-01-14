@@ -1,0 +1,16 @@
+[
+  {
+    "telefono": "3001234567",
+    "producto": "Mug Personalizado",
+    "fecha": "14/01/2026",
+    "estado": "En Proceso",
+    "imagen_url": "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg"
+  },
+  {
+    "telefono": "3109876543",
+    "producto": "Camisa Estampada",
+    "fecha": "15/01/2026",
+    "estado": "Listo para entregar",
+    "imagen_url": ""
+  }
+]
