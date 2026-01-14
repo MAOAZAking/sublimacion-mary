@@ -1,0 +1,5 @@
+# Ignorar archivos de variables de entorno que contienen secretos y credenciales.
+.env
+
+# También es buena práctica ignorar las dependencias de Node.js
+/node_modules
