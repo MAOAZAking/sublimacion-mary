@@ -39,19 +39,9 @@
 </div>
 
 <script>
-    let ADMINS = {};
-
-    // Cargar credenciales desde archivo externo (usuarios.json)
-    fetch('usuarios.json')
-        .then(response => response.json())
-        .then(data => {
-            ADMINS = data;
-        })
-        .catch(error => console.error("Error cargando sistema de usuarios:", error));
-
     let usuarioIngresado = "";
 
-    function verificarEntrada() {
+    async function verificarEntrada() {
         const input = document.getElementById('generalInput').value.trim();
         const errorMsg = document.getElementById('errorMsg');
         errorMsg.style.display = 'none';
@@ -59,16 +49,29 @@
         if (!input) return;
 
         // 1. Verificar si es un Usuario de Admin
-        // Buscamos si el texto ingresado existe como clave (key) en nuestro objeto ADMINS
-        const esUsuarioAdmin = Object.keys(ADMINS).includes(input.toLowerCase());
+        // Consultamos al servidor si el usuario existe como admin
+        try {
+            const response = await fetch('/api/check-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: input })
+            });
+            const data = await response.json();
 
-        if (esUsuarioAdmin) {
-            // Es admin, pedir contraseña
-            usuarioIngresado = input.toLowerCase();
-            document.getElementById('step1').classList.add('hidden');
-            document.getElementById('step2').classList.remove('hidden');
-            document.getElementById('adminPass').focus();
-        } else {
+            if (data.isAdmin) {
+                // Es admin, pedir contraseña
+                usuarioIngresado = input.toLowerCase();
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+                document.getElementById('adminPass').focus();
+                return;
+            }
+        } catch (error) {
+            console.error("Error verificando usuario:", error);
+        }
+
+        // Si no es admin, continuamos con la lógica de cliente
+        {
             // 2. Asumir que es un cliente (Número telefónico)
             // Validación simple de números
             if (/^\d+$/.test(input) && input.length > 6) {
@@ -81,15 +84,24 @@
         }
     }
 
-    function verificarAdmin() {
+    async function verificarAdmin() {
         const password = document.getElementById('adminPass').value.trim();
         const errorMsg = document.getElementById('errorMsg');
         
-        // Verificar si el par Usuario + Contraseña coincide
-        if (ADMINS[usuarioIngresado] === password) {
-            // Login exitoso
-            window.location.href = "admin_dashboard.html";
-        } else {
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: usuarioIngresado, password: password })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                window.location.href = "admin_dashboard.html";
+            } else {
+                throw new Error("Login fallido");
+            }
+        } catch (e) {
             errorMsg.textContent = "Contraseña incorrecta.";
             errorMsg.style.display = 'block';
         }
