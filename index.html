@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Pedido</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #666; }
+        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 0.75rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        button:hover { background-color: #0056b3; }
+        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
+        .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Subir Diseño</h2>
+
+    <!-- Contenedor para mensajes de alerta (controlado por JS) -->
+    <div id="mensajeAlert" class="alert"></div>
+
+    <form id="pedidoForm" action="https://formsubmit.co/maoaza13579@gmail.com" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="producto">Tipo de Producto:</label>
+            <select name="producto" id="producto" required>
+                <option value="" disabled selected>Seleccione una opción</option>
+                <option value="mug">Mug</option>
+                <option value="camisa">Camisa</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="imagen">Subir Imagen (JPG, JPEG, PNG):</label>
+            <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
+        </div>
+
+        <div class="form-group">
+            <label for="telefono">Número Celular (Credencial):</label>
+            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+">
+        </div>
+
+        <button type="submit">Enviar</button>
+    </form>
+</div>
+
+<script>
+    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Evita que la página se recargue al enviar
+
+        // Obtener elementos del formulario
+        const producto = document.getElementById('producto').value;
+        const telefono = document.getElementById('telefono').value;
+        const imagenInput = document.getElementById('imagen');
+        const alertBox = document.getElementById('mensajeAlert');
+
+        // Validación simple (similar a la que hacía PHP)
+        if (producto && telefono && imagenInput.files.length > 0) {
+            const file = imagenInput.files[0];
+            
+            // CONFIGURACIÓN DE CLOUDINARY (¡Reemplaza esto con tus datos!)
+            const CLOUD_NAME = 'du7lmg9ff';      // Ej: 'dmxy...'
+            const UPLOAD_PRESET = 'imagenes-sublimacion-mary';
+
+            // 1. Mostrar mensaje de carga
+            alertBox.textContent = "Subiendo imagen a la nube, por favor espere...";
+            alertBox.className = 'alert';
+            alertBox.style.display = 'block';
+            alertBox.style.backgroundColor = '#fff3cd'; // Color amarillo de espera
+            alertBox.style.color = '#856404';
+            
+            // 2. Subir imagen a Cloudinary
+            const formDataCloud = new FormData();
+            formDataCloud.append('file', file);
+            formDataCloud.append('upload_preset', UPLOAD_PRESET);
+
+            fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                method: 'POST',
+                body: formDataCloud
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error.message);
+
+                const imageUrl = data.secure_url; // Obtenemos el link de la imagen
+                
+                // 3. Enviar datos + Link al correo (FormSubmit)
+                alertBox.textContent = "Imagen guardada. Enviando notificación al correo...";
+                
+                const formDataEmail = new FormData(document.getElementById('pedidoForm'));
+                formDataEmail.delete('imagen'); // Quitamos el archivo pesado
+                formDataEmail.append('imagen_url', imageUrl); // Agregamos el link
+
+                return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", {
+                method: "POST",
+                body: formDataEmail
+                });
+            }) 
+            .then(response => response.json())
+            .then(data => {
+                alertBox.textContent = `¡Pedido enviado con éxito! La imagen se guardó correctamente.`;
+                alertBox.className = 'alert success';
+                alertBox.style.display = 'block';
+                document.getElementById('pedidoForm').reset(); // Limpiar formulario
+            })
+            .catch(error => {
+                alertBox.textContent = "Error: " + error.message;
+                alertBox.className = 'alert error';
+                alertBox.style.display = 'block';
+                console.error('Error:', error);
+            });
+        } else {
+            // Simulación de error
+            alertBox.textContent = "Error: Todos los campos son obligatorios.";
+            alertBox.className = 'alert error';
+            alertBox.style.display = 'block';
+        }
+    });
+</script>
+
+</body>
+</html>

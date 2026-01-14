@@ -1,5 +1,6 @@
-# Ignorar archivos de variables de entorno que contienen secretos y credenciales.
+# Ignorar el archivo que usas como base de datos
 .env
 
-# También es buena práctica ignorar las dependencias de Node.js
-/node_modules
+# Ignorar las carpetas donde se guardan las imágenes subidas
+/mug/
+/camisa/
