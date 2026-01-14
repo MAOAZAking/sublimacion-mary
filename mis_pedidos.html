@@ -87,7 +87,12 @@
                         }
                     });
                 } else {
-                    document.getElementById('mensajeError').textContent = "No tienes pedidos registrados aún.\nPara realizar un pedido toque en el siguiente link https://wa.me/+573209287029?text=Hola,%20quiero%20un%20producto%20de%20sublimacion";
+                    document.getElementById('mensajeError').innerHTML =
+                      `No tienes pedidos registrados aún.<br>
+                      Para realizar un pedido toca en el siguiente link
+                      <a href="https://wa.me/+573209287029?text=Hola,%20quiero%20un%20producto%20de%20sublimacion" target="_blank">
+                        Realizar pedido por WhatsApp
+                      </a>`;
                 }
             })
             .catch(err => console.error(err));
