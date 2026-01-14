@@ -3,129 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario de Pedido</title>
+    <title>Bienvenido - Sublimación Mary</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { text-align: center; color: #333; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; color: #666; }
-        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 0.75rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-        button:hover { background-color: #0056b3; }
-        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
-        .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .container { background: white; padding: 2.5rem; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { color: #333; margin-bottom: 1.5rem; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box; text-align: center; }
+        button { width: 100%; padding: 12px; background-color: #6c5ce7; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; transition: background 0.3s; }
+        button:hover { background-color: #5b4bc4; }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .error-msg { color: red; font-size: 0.9rem; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Subir Diseño</h2>
+    <h2>Ingresar</h2>
+    
+    <!-- Paso 1: Entrada General (Teléfono o Contraseña) -->
+    <div id="step1">
+        <input type="text" id="generalInput" placeholder="Ingrese su número" autocomplete="off">
+        <button onclick="verificarEntrada()">Continuar</button>
+    </div>
 
-    <!-- Contenedor para mensajes de alerta (controlado por JS) -->
-    <div id="mensajeAlert" class="alert"></div>
+    <!-- Paso 2: Solo para Admins (Usuario) -->
+    <div id="step2" class="hidden fade-in">
+        <p style="margin-bottom: 10px; color: #666;">Verificación de Administrador</p>
+        <input type="text" id="adminUser" placeholder="Nombre de usuario" autocomplete="off">
+        <button onclick="verificarAdmin()">Acceder</button>
+    </div>
 
-    <form id="pedidoForm" action="https://formsubmit.co/378c29d9d55d65ab60b67264f0d7b6d8" method="POST" enctype="multipart/form-data">
-        <!-- Configuración extra para asegurar que llegue el correo -->
-        <input type="hidden" name="_subject" value="Nuevo Pedido de Sublimación">
-        <input type="hidden" name="_captcha" value="false">
-        <input type="hidden" name="_template" value="table">
-
-        <div class="form-group">
-            <label for="producto">Tipo de Producto:</label>
-            <select name="producto" id="producto" required>
-                <option value="" disabled selected>Seleccione una opción</option>
-                <option value="mug">Mug</option>
-                <option value="camisa">Camisa</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="imagen">Subir Imagen (JPG, JPEG, PNG):</label>
-            <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
-        </div>
-
-        <div class="form-group">
-            <label for="telefono">Número Celular (Credencial):</label>
-            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+">
-        </div>
-
-        <button type="submit">Enviar</button>
-    </form>
+    <div id="errorMsg" class="error-msg">Datos incorrectos</div>
 </div>
 
 <script>
-    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
-        e.preventDefault(); // Evita que la página se recargue al enviar
+    // CONFIGURACIÓN DE ADMINS (Usuario: Contraseña)
+    // Puedes agregar más aquí
+    const ADMINS = {
+        'mary': 'sublimacion2026',
+        'juan': 'admin123'
+    };
 
-        // Obtener elementos del formulario
-        const producto = document.getElementById('producto').value;
-        const telefono = document.getElementById('telefono').value;
-        const imagenInput = document.getElementById('imagen');
-        const alertBox = document.getElementById('mensajeAlert');
+    let passwordIngresada = "";
 
-        // Validación simple (similar a la que hacía PHP)
-        if (producto && telefono && imagenInput.files.length > 0) {
-            const file = imagenInput.files[0];
-            
-            // CONFIGURACIÓN DE CLOUDINARY (¡Reemplaza esto con tus datos!)
-            const CLOUD_NAME = 'du7lmg9ff';      // Ej: 'dmxy...'
-            const UPLOAD_PRESET = 'imagenes-sublimacion-mary';
+    function verificarEntrada() {
+        const input = document.getElementById('generalInput').value.trim();
+        const errorMsg = document.getElementById('errorMsg');
+        errorMsg.style.display = 'none';
 
-            // 1. Mostrar mensaje de carga
-            alertBox.textContent = "Subiendo imagen a la nube, por favor espere...";
-            alertBox.className = 'alert';
-            alertBox.style.display = 'block';
-            alertBox.style.backgroundColor = '#fff3cd'; // Color amarillo de espera
-            alertBox.style.color = '#856404';
-            
-            // 2. Subir imagen a Cloudinary
-            const formDataCloud = new FormData();
-            formDataCloud.append('file', file);
-            formDataCloud.append('upload_preset', UPLOAD_PRESET);
+        if (!input) return;
 
-            fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-                method: 'POST',
-                body: formDataCloud
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) throw new Error(data.error.message);
+        // 1. Verificar si es una contraseña de Admin
+        // Buscamos si el texto ingresado existe como valor en nuestro objeto ADMINS
+        const esPasswordAdmin = Object.values(ADMINS).includes(input);
 
-                const imageUrl = data.secure_url; // Obtenemos el link de la imagen
-                
-                // 3. Enviar datos + Link al correo (FormSubmit)
-                alertBox.textContent = "Imagen guardada. Enviando notificación al correo...";
-                
-                const formDataEmail = new FormData(document.getElementById('pedidoForm'));
-                formDataEmail.delete('imagen'); // Quitamos el archivo pesado
-                formDataEmail.append('imagen_url', imageUrl); // Agregamos el link
-
-                return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", {
-                method: "POST",
-                body: formDataEmail
-                });
-            }) 
-            .then(response => response.json())
-            .then(data => {
-                alertBox.textContent = `¡Pedido enviado con éxito! La imagen se guardó correctamente.`;
-                alertBox.className = 'alert success';
-                alertBox.style.display = 'block';
-                document.getElementById('pedidoForm').reset(); // Limpiar formulario
-            })
-            .catch(error => {
-                alertBox.textContent = "Error: " + error.message;
-                alertBox.className = 'alert error';
-                alertBox.style.display = 'block';
-                console.error('Error:', error);
-            });
+        if (esPasswordAdmin) {
+            // Es admin, pedir usuario
+            passwordIngresada = input;
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+            document.getElementById('adminUser').focus();
         } else {
-            // Simulación de error
-            alertBox.textContent = "Error: Todos los campos son obligatorios.";
-            alertBox.className = 'alert error';
-            alertBox.style.display = 'block';
+            // 2. Asumir que es un cliente (Número telefónico)
+            // Validación simple de números
+            if (/^\d+$/.test(input) && input.length > 6) {
+                // Redireccionar a la vista de cliente
+                window.location.href = `mis_pedidos.html?telefono=${input}`;
+            } else {
+                errorMsg.textContent = "Por favor ingrese un número válido.";
+                errorMsg.style.display = 'block';
+            }
         }
+    }
+
+    function verificarAdmin() {
+        const usuario = document.getElementById('adminUser').value.trim().toLowerCase();
+        const errorMsg = document.getElementById('errorMsg');
+        
+        // Verificar si el par Usuario + Contraseña coincide
+        if (ADMINS[usuario] === passwordIngresada) {
+            // Login exitoso
+            window.location.href = "admin_dashboard.html";
+        } else {
+            errorMsg.textContent = "Usuario incorrecto para esa contraseña.";
+            errorMsg.style.display = 'block';
+        }
+    }
+
+    // Permitir Enter para enviar
+    document.getElementById('generalInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') verificarEntrada();
+    });
+    document.getElementById('adminUser').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') verificarAdmin();
     });
 </script>
 
