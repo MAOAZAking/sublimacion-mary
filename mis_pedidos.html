@@ -5,104 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Pedidos - Sublimación Mary</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-        h2 { text-align: center; color: #333; margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; color: #666; }
-        input[type="tel"] { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 1.1rem; text-align: center; }
-        button { width: 100%; padding: 0.75rem; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; margin-top: 10px; }
-        button:hover { background-color: #218838; }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        h2 { color: #333; }
         
-        /* Estilos para los resultados */
-        #resultados { margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
-        .pedido-card { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 15px; margin-bottom: 15px; }
-        .pedido-header { display: flex; justify-content: space-between; font-weight: bold; color: #333; margin-bottom: 5px; }
-        .pedido-status { color: #007bff; font-size: 0.9rem; }
-        .pedido-img { width: 100%; height: auto; border-radius: 4px; margin-top: 10px; border: 1px solid #ccc; }
-        .error-msg { color: #721c24; background-color: #f8d7da; padding: 10px; border-radius: 4px; text-align: center; display: none; }
-        .back-link { display: block; text-align: center; margin-top: 15px; color: #666; text-decoration: none; font-size: 0.9rem; }
-        .back-link:hover { text-decoration: underline; }
+        /* Grid de Imágenes */
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; max-width: 800px; margin: 0 auto; }
+        .gallery-item { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s; background: white; }
+        .gallery-item:hover { transform: scale(1.03); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .gallery-img { width: 100%; height: 150px; object-fit: cover; display: block; }
+        .gallery-info { padding: 8px; text-align: center; font-size: 0.9rem; color: #555; }
+
+        /* Modal (Imagen Grande) */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+        .modal-content { max-width: 90%; max-height: 80%; border-radius: 5px; }
+        .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
+        
+        .back-btn { display: block; width: fit-content; margin: 20px auto; padding: 10px 20px; background: #666; color: white; text-decoration: none; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Rastrear mis Pedidos</h2>
+<div class="header">
+    <h2>Mis Diseños</h2>
+    <p id="infoCliente">Cargando...</p>
+</div>
 
-    <div class="form-group">
-        <label for="telefonoBusqueda">Ingresa tu número de celular:</label>
-        <input type="tel" id="telefonoBusqueda" placeholder="Ej: 3001234567" required>
-    </div>
+<div id="gallery" class="gallery"></div>
+<div id="mensajeError" style="text-align: center; color: red; margin-top: 20px;"></div>
 
-    <button onclick="buscarPedidos()">Buscar Pedidos</button>
-    
-    <div id="mensajeError" class="error-msg"></div>
-    <div id="resultados"></div>
+<a href="index.html" class="back-btn">Salir</a>
 
-    <a href="index.html" class="back-link">← Volver al formulario de pedido</a>
+<!-- Modal para ver imagen grande -->
+<div id="imageModal" class="modal" onclick="cerrarModal()">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="imgGrande">
 </div>
 
 <script>
-    function buscarPedidos() {
-        const telefonoInput = document.getElementById('telefonoBusqueda').value.trim();
-        const resultadosDiv = document.getElementById('resultados');
-        const errorDiv = document.getElementById('mensajeError');
+    // Al cargar la página
+    window.onload = function() {
+        // Obtener teléfono de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const telefono = urlParams.get('telefono');
+        const galleryDiv = document.getElementById('gallery');
 
-        // Limpiar resultados anteriores
-        resultadosDiv.innerHTML = '';
-        errorDiv.style.display = 'none';
-
-        if (!telefonoInput) {
-            mostrarError("Por favor ingresa un número de teléfono.");
+        if (!telefono) {
+            document.getElementById('mensajeError').textContent = "No se especificó un número de teléfono.";
             return;
         }
 
-        // Cargar el archivo JSON (Simulación de base de datos)
+        document.getElementById('infoCliente').textContent = `Pedidos asociados al: ${telefono}`;
+
         fetch('pedidos.json')
             .then(response => {
                 if (!response.ok) throw new Error("No se pudo cargar la base de datos de pedidos.");
                 return response.json();
             })
             .then(pedidos => {
-                // Filtrar pedidos que coincidan con el teléfono
-                const misPedidos = pedidos.filter(p => p.telefono === telefonoInput);
+                const misPedidos = pedidos.filter(p => p.telefono === telefono);
 
                 if (misPedidos.length > 0) {
                     misPedidos.forEach(pedido => {
-                        // Crear tarjeta para cada pedido
-                        const card = document.createElement('div');
-                        card.className = 'pedido-card';
-                        
-                        let imagenHTML = '';
                         if (pedido.imagen_url) {
-                            imagenHTML = `<img src="${pedido.imagen_url}" alt="Diseño" class="pedido-img">`;
+                            const item = document.createElement('div');
+                            item.className = 'gallery-item';
+                            item.onclick = () => abrirModal(pedido.imagen_url);
+                            
+                            item.innerHTML = `
+                                <img src="${pedido.imagen_url}" class="gallery-img" alt="${pedido.producto}">
+                                <div class="gallery-info">
+                                    <strong>${pedido.producto}</strong><br>
+                                    ${pedido.estado}
+                                </div>
+                            `;
+                            galleryDiv.appendChild(item);
                         }
-
-                        card.innerHTML = `
-                            <div class="pedido-header">
-                                <span>${pedido.producto}</span>
-                                <span class="pedido-status">${pedido.estado}</span>
-                            </div>
-                            <div style="font-size: 0.85rem; color: #666;">Fecha: ${pedido.fecha}</div>
-                            ${imagenHTML}
-                        `;
-                        resultadosDiv.appendChild(card);
                     });
                 } else {
-                    mostrarError("No se encontraron pedidos con este número.");
+                    document.getElementById('mensajeError').textContent = "No tienes pedidos registrados aún.";
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                mostrarError("Hubo un error al consultar los pedidos. Intenta más tarde.");
-            });
+            .catch(err => console.error(err));
+    };
+
+    function abrirModal(src) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('imgGrande');
+        modal.style.display = "flex";
+        modalImg.src = src;
     }
 
-    function mostrarError(mensaje) {
-        const errorDiv = document.getElementById('mensajeError');
-        errorDiv.textContent = mensaje;
-        errorDiv.style.display = 'block';
+    function cerrarModal() {
+        document.getElementById('imageModal').style.display = "none";
     }
 </script>
 

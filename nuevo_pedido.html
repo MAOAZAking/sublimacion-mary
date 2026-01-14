@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Pedido - Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #666; }
+        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 0.75rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        button:hover { background-color: #0056b3; }
+        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
+        .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #666; text-decoration: none; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Crear Nuevo Pedido</h2>
+
+    <div id="mensajeAlert" class="alert"></div>
+
+    <form id="pedidoForm" action="https://formsubmit.co/378c29d9d55d65ab60b67264f0d7b6d8" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="_subject" value="Nuevo Pedido de Sublimación">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_template" value="table">
+
+        <div class="form-group">
+            <label for="producto">Tipo de Producto:</label>
+            <select name="producto" id="producto" required>
+                <option value="" disabled selected>Seleccione una opción</option>
+                <option value="mug">Mug</option>
+                <option value="camisa">Camisa</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="imagen">Subir Imagen (JPG, JPEG, PNG):</label>
+            <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
+        </div>
+
+        <div class="form-group">
+            <label for="telefono">Número Celular (Cliente):</label>
+            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+">
+        </div>
+
+        <button type="submit">Guardar Pedido</button>
+    </form>
+    
+    <a href="admin_dashboard.html" class="back-link">← Volver al Panel de Admin</a>
+</div>
+
+<script>
+    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
+        e.preventDefault(); 
+
+        const producto = document.getElementById('producto').value;
+        const telefono = document.getElementById('telefono').value;
+        const imagenInput = document.getElementById('imagen');
+        const alertBox = document.getElementById('mensajeAlert');
+
+        if (producto && telefono && imagenInput.files.length > 0) {
+            const file = imagenInput.files[0];
+            
+            // CONFIGURACIÓN DE CLOUDINARY
+            const CLOUD_NAME = 'du7lmg9ff'; 
+            const UPLOAD_PRESET = 'imagenes-sublimacion-mary';
+
+            alertBox.textContent = "Subiendo imagen...";
+            alertBox.className = 'alert';
+            alertBox.style.display = 'block';
+            alertBox.style.backgroundColor = '#fff3cd';
+            alertBox.style.color = '#856404';
+            
+            const formDataCloud = new FormData();
+            formDataCloud.append('file', file);
+            formDataCloud.append('upload_preset', UPLOAD_PRESET);
+
+            fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                method: 'POST',
+                body: formDataCloud
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error.message);
+                const imageUrl = data.secure_url;
+                
+                alertBox.textContent = "Imagen guardada. Registrando pedido...";
+                
+                // Aquí podrías agregar lógica para guardar en JSON si tuvieras backend real
+                // Por ahora enviamos el correo como antes
+                const formDataEmail = new FormData(document.getElementById('pedidoForm'));
+                formDataEmail.delete('imagen');
+                formDataEmail.append('imagen_url', imageUrl);
+
+                return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formDataEmail });
+            }) 
+            .then(response => response.json())
+            .then(data => {
+                alertBox.textContent = `¡Pedido creado con éxito!`;
+                alertBox.className = 'alert success';
+                alertBox.style.display = 'block';
+                document.getElementById('pedidoForm').reset();
+            })
+            .catch(error => {
+                alertBox.textContent = "Error: " + error.message;
+                alertBox.className = 'alert error';
+                alertBox.style.display = 'block';
+            });
+        }
+    });
+</script>
+</body>
+</html>
