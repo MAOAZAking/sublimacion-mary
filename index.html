@@ -27,6 +27,11 @@
     <div id="mensajeAlert" class="alert"></div>
 
     <form id="pedidoForm" action="https://formsubmit.co/maoaza13579@gmail.com" method="POST" enctype="multipart/form-data">
+        <!-- Configuración extra para asegurar que llegue el correo -->
+        <input type="hidden" name="_subject" value="Nuevo Pedido de Sublimación">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_template" value="table">
+
         <div class="form-group">
             <label for="producto">Tipo de Producto:</label>
             <select name="producto" id="producto" required>
