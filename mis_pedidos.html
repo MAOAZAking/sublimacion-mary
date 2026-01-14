@@ -146,12 +146,42 @@
         loader.setCrossOrigin('anonymous');
         
         loader.load(imageUrl, (texture) => {
+            // Crear canvas para añadir espacio blanco (gap) alrededor de la oreja
+            const img = texture.image;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Definir porcentajes de cobertura (Ancho y Alto)
+            const widthCoverage = 0.75289575289;
+            const heightCoverage = 0.79797979798;
+
+            const canvasWidth = img.width / widthCoverage;
+            const canvasHeight = img.height / heightCoverage;
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // Fondo blanco
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // Dibujar imagen centrada
+            const offsetX = (canvasWidth - img.width) / 2;
+            const offsetY = (canvasHeight - img.height) / 2;
+            ctx.drawImage(img, offsetX, offsetY, img.width, img.height);
+
+            const newTexture = new THREE.CanvasTexture(canvas);
+
             const materials = [
-                new THREE.MeshStandardMaterial({ map: texture }), // Lado (Imagen)
+                new THREE.MeshStandardMaterial({ map: newTexture }), // Lado (Imagen)
                 new THREE.MeshStandardMaterial({ color: 0xffffff }), // Arriba
                 new THREE.MeshStandardMaterial({ color: 0xffffff })  // Abajo
             ];
             const cylinder = new THREE.Mesh(geometry, materials);
+            
+            // Rotar el cilindro -90 grados para que la costura (espacio blanco) quede en +X (donde está la oreja)
+            cylinder.rotation.y = Math.PI / 2;
+            
             scene.add(cylinder);
         });
 
