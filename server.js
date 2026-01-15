@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -36,6 +37,36 @@ app.post('/api/login', (req, res) => {
     } else {
         res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
     }
+});
+
+// Endpoint para guardar un nuevo pedido en pedidos.json
+app.post('/api/pedidos', (req, res) => {
+    const nuevoPedido = req.body;
+    const filePath = path.join(__dirname, 'pedidos.json');
+
+    // Leer el archivo actual
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        let pedidos = [];
+        if (!err && data) {
+            try {
+                pedidos = JSON.parse(data);
+            } catch (e) {
+                console.error("Error al parsear JSON existente, se creará uno nuevo.");
+            }
+        }
+        
+        // Agregar el nuevo pedido
+        pedidos.push(nuevoPedido);
+
+        // Guardar el archivo actualizado
+        fs.writeFile(filePath, JSON.stringify(pedidos, null, 4), (writeErr) => {
+            if (writeErr) {
+                console.error("Error escribiendo archivo:", writeErr);
+                return res.status(500).json({ success: false, error: 'Error al guardar en disco' });
+            }
+            res.json({ success: true });
+        });
+    });
 });
 
 app.listen(PORT, () => {

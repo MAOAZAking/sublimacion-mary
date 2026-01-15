@@ -147,6 +147,14 @@
                     "imagen_url": imageUrl
                 };
 
+                // Guardar en pedidos.json (Backend local)
+                fetch('/api/pedidos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuevoPedido)
+                })
+                .catch(err => console.warn("No se pudo guardar en pedidos.json localmente (¿Backend corriendo?):", err));
+
                 // 3. Preparar datos para FormSubmit enviando el JSON como texto
                 const formDataEmail = new FormData();
                 formDataEmail.append('_subject', 'Nuevo Pedido JSON');
