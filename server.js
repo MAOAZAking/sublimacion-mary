@@ -69,6 +69,41 @@ app.post('/api/pedidos', (req, res) => {
     });
 });
 
+// Endpoint para actualizar el estado de un pedido
+app.post('/api/update-status', (req, res) => {
+    const { imagen_url, nuevo_estado } = req.body;
+    const filePath = path.join(__dirname, 'pedidos.json');
+
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) return res.status(500).json({ success: false, error: 'Error leyendo archivo' });
+        
+        let pedidos = [];
+        try {
+            pedidos = JSON.parse(data);
+        } catch (e) {
+            return res.status(500).json({ success: false, error: 'Error parseando JSON' });
+        }
+
+        let modificado = false;
+        pedidos = pedidos.map(p => {
+            if (p.imagen_url === imagen_url) {
+                p.estado = nuevo_estado;
+                modificado = true;
+            }
+            return p;
+        });
+
+        if (modificado) {
+            fs.writeFile(filePath, JSON.stringify(pedidos, null, 4), (writeErr) => {
+                if (writeErr) return res.status(500).json({ success: false, error: 'Error escribiendo archivo' });
+                res.json({ success: true });
+            });
+        } else {
+            res.json({ success: false, message: 'Pedido no encontrado' });
+        }
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

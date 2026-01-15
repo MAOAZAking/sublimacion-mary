@@ -259,12 +259,14 @@
         document.getElementById('feedbackButtons').style.display = 'flex';
 
         // Iniciar temporizador de 5 segundos
-        if (feedbackTimer) clearTimeout(feedbackTimer);
-        feedbackTimer = setTimeout(() => {
-            if (modal.style.display !== 'none') {
-                overlay.style.display = 'flex';
-            }
-        }, 5000);
+        if (pedido.estado === "Revisión del cliente") {
+            if (feedbackTimer) clearTimeout(feedbackTimer);
+            feedbackTimer = setTimeout(() => {
+                if (modal.style.display !== 'none') {
+                    overlay.style.display = 'flex';
+                }
+            }, 5000);
+        }
     }
 
     function init3DMug(imageUrl, container) {
@@ -352,9 +354,10 @@
 
     function cerrarModal() {
         const overlay = document.getElementById('feedbackOverlay');
+        const isReview = currentPedidoData && currentPedidoData.estado === "Revisión del cliente";
         
         // Si el overlay no se ha mostrado aún, mostrarlo primero (la "X" activa el overlay)
-        if (overlay.style.display === 'none') {
+        if (isReview && overlay.style.display === 'none') {
             overlay.style.display = 'flex';
             if (feedbackTimer) clearTimeout(feedbackTimer);
             return;
@@ -386,6 +389,19 @@
         
         const telefono = currentPedidoData.telefono || currentPedidoData.teléfono;
         const imgUrl = currentPedidoData.imagen_url;
+        const producto = currentPedidoData.producto || "";
+
+        // Determinar nuevo estado
+        let nuevoEstado = "Listo para entregar";
+        if (producto.toLowerCase().includes('mug')) nuevoEstado = "Listo para sublimar";
+        if (producto.toLowerCase().includes('camisa')) nuevoEstado = "Listo para estampar";
+
+        // Actualizar estado en servidor
+        fetch('/api/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: nuevoEstado })
+        });
         
         // Enviar correo silencioso
         const formData = new FormData();
@@ -412,6 +428,13 @@
         const telefono = currentPedidoData.telefono || currentPedidoData.teléfono;
         const imgUrl = currentPedidoData.imagen_url;
         const linkPagina = window.location.href;
+
+        // Actualizar estado en servidor
+        fetch('/api/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: "Creando diseño" })
+        });
 
         // Enviar correo silencioso
         const formData = new FormData();
