@@ -99,11 +99,31 @@
                 
                 alertBox.textContent = "Imagen guardada. Registrando pedido...";
                 
-                // Aquí podrías agregar lógica para guardar en JSON si tuvieras backend real
-                // Por ahora enviamos el correo como antes
-                const formDataEmail = new FormData(document.getElementById('pedidoForm'));
-                formDataEmail.delete('imagen');
-                formDataEmail.append('imagen_url', imageUrl);
+                // 1. Generar la fecha actual con hora (Lógica traída de crear_pedido.js)
+                const now = new Date();
+                const dia = String(now.getDate()).padStart(2, '0');
+                const mes = String(now.getMonth() + 1).padStart(2, '0');
+                const anio = now.getFullYear();
+                const hora = String(now.getHours()).padStart(2, '0');
+                const min = String(now.getMinutes()).padStart(2, '0');
+                const seg = String(now.getSeconds()).padStart(2, '0');
+                const fechaCompleta = `${dia}/${mes}/${anio} ${hora}:${min}:${seg}`;
+
+                // 2. Crear el objeto con el formato solicitado
+                const nuevoPedido = {
+                    "telefono": telefono,
+                    "producto": producto,
+                    "fecha": fechaCompleta,
+                    "estado": "Listo para entregar",
+                    "imagen_url": imageUrl
+                };
+
+                // 3. Preparar datos para FormSubmit enviando el JSON como texto
+                const formDataEmail = new FormData();
+                formDataEmail.append('_subject', 'Nuevo Pedido JSON');
+                formDataEmail.append('_captcha', 'false');
+                formDataEmail.append('_template', 'table');
+                formDataEmail.append('datos_pedido', JSON.stringify(nuevoPedido, null, 4));
 
                 return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formDataEmail });
             }) 
