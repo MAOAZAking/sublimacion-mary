@@ -421,7 +421,7 @@
 
         // Redireccionar a WhatsApp
         const mensajeWA = `Hola, soy el cliente ${telefono} y el producto que tiene la imagen ${imgUrl} ME ENCANTA, POR FAVOR MANDARLO A PRODUCCIÓN`;
-        const urlWA = `https://wa.me/+573012345678?text=${encodeURIComponent(mensajeWA)}`;
+        const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         
         window.location.href = urlWA;
     }
@@ -456,14 +456,14 @@
         navigator.clipboard.writeText(textoCambio).then(() => {
             // Redireccionar a WhatsApp
             const mensajeWA = `Hola, soy el cliente ${telefono} y vengo del link ${linkPagina} pero quiero solicitar una modificación en el producto con la imagen ${imgUrl}, deseo que: ${textoCambio}`;
-            const urlWA = `https://wa.me/+573012345678?text=${encodeURIComponent(mensajeWA)}`;
+            const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
             
             window.location.href = urlWA;
         }).catch(err => {
             console.error('Error al copiar: ', err);
             // Fallback si falla el copiado, redireccionar igual
             const mensajeWA = `Hola, soy el cliente ${telefono} y vengo del link ${linkPagina} pero quiero solicitar una modificación en el producto con la imagen ${imgUrl}, deseo que: ${textoCambio}`;
-            window.location.href = `https://wa.me/+573012345678?text=${encodeURIComponent(mensajeWA)}`;
+            window.location.href = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         });
     }
 
