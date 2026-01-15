@@ -2,16 +2,21 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer'); // Necesario para subir archivos
+const sizeOf = require('image-size'); // Para validar dimensiones
 require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
 
 // Middleware para procesar JSON
-app.use(express.json());
+app.use(express.json({ limit: '50gb' }));
+app.use(express.urlencoded({ limit: '50gb', extended: true }));
 
 // Configuración de Multer para almacenamiento temporal
-const upload = multer({ dest: 'temp_uploads/' });
+const upload = multer({ 
+    dest: 'temp_uploads/',
+    limits: { fileSize: Infinity }
+});
 
 // Servir archivos estáticos (HTML, CSS, JS, Imágenes)
 app.use(express.static(path.join(__dirname, '.')));
@@ -50,6 +55,20 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
 
     if (!files || !files.imagen || !files.plantilla) {
         return res.status(400).json({ success: false, error: 'Faltan archivos' });
+    }
+
+    // Validar dimensiones exactas de la imagen (Lámina)
+    try {
+        const dimensions = sizeOf(files.imagen[0].path);
+        if (dimensions.width !== 2304 || dimensions.height !== 934) {
+            // Si no cumple, borramos los archivos temporales y devolvemos error
+            fs.unlinkSync(files.imagen[0].path);
+            fs.unlinkSync(files.plantilla[0].path);
+            return res.status(400).json({ success: false, error: `Dimensiones incorrectas. La imagen debe ser de 2304x934 px. (Recibido: ${dimensions.width}x${dimensions.height} px)` });
+        }
+    } catch (err) {
+        console.error("Error validando dimensiones:", err);
+        return res.status(400).json({ success: false, error: 'El archivo de imagen no es válido o está dañado.' });
     }
 
     // 1. Determinar tipo de producto y carpetas
@@ -167,6 +186,9 @@ app.post('/api/update-status', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+
+// Desactivar timeout para permitir subidas grandes y lentas sin que se corte la conexión
+server.timeout = 0;
