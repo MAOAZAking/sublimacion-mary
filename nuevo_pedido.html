@@ -5,21 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuevo Pedido - Admin</title>
     <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script>
         // SEGURIDAD: Verificar si el usuario inició sesión
         if (!sessionStorage.getItem('adminLogueado')) {
             window.location.href = 'index.html';
+        } else {
+            // Mostrar contenido solo si está logueado (evita parpadeo de contenido prohibido)
+            document.documentElement.style.display = 'block';
         }
     </script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { text-align: center; color: #333; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; color: #666; }
-        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 0.75rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-        button:hover { background-color: #0056b3; }
+        html { display: none; } /* Ocultar todo el sitio por defecto hasta verificar sesión */
+        body { font-family: 'Poppins', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); width: 100%; max-width: 450px; }
+        h2 { text-align: center; color: #2d3436; margin-bottom: 25px; font-weight: 600; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.8rem; color: #636e72; font-weight: 500; font-size: 0.9rem; }
+        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 12px 15px; border: 2px solid #f1f2f6; border-radius: 10px; box-sizing: border-box; background: #f9f9f9; font-family: inherit; transition: all 0.3s; }
+        input:focus, select:focus { border-color: #0984e3; background: white; outline: none; }
+        button { width: 100%; padding: 15px; background: linear-gradient(135deg, #0984e3, #74b9ff); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(9, 132, 227, 0.2); margin-top: 10px; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(9, 132, 227, 0.3); }
         .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
         .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
@@ -98,6 +104,22 @@
             loader.style.opacity = '0';
             setTimeout(() => { loader.style.display = 'none'; }, 500);
         }
+
+        // Lógica de inactividad (5 minutos)
+        let inactivityTimeout;
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimeout);
+            inactivityTimeout = setTimeout(() => {
+                sessionStorage.removeItem('adminLogueado');
+                alert("Sesión cerrada por inactividad.");
+                window.location.href = 'index.html';
+            }, 5 * 60 * 1000); // 5 minutos
+        }
+        // Eventos que reinician el temporizador
+        ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => 
+            document.addEventListener(evt, resetInactivityTimer, false)
+        );
+        resetInactivityTimer(); // Iniciar al cargar
 
         // Lógica del Logo de Fondo
         const bg = document.createElement('div');
