@@ -49,6 +49,49 @@
             background-position: center; background-repeat: no-repeat;
             opacity: 0.1;
         }
+
+        /* Feedback Overlay */
+        .feedback-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* Negro translúcido */
+            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+            pointer-events: none; /* Permite clicks al modelo 3D de fondo */
+            z-index: 1002;
+            padding: 10px 0; box-sizing: border-box;
+        }
+        .feedback-top-text {
+            margin-top: 10px; color: white; font-size: 1.2rem; text-align: center;
+            pointer-events: auto; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-weight: bold;
+        }
+        .feedback-buttons {
+            margin-bottom: 10px; display: flex; gap: 100px;
+            pointer-events: auto;
+        }
+        .feedback-btn-wrapper {
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .feedback-label {
+            color: white; margin-bottom: 5px; font-size: 0.9rem; text-shadow: 0 1px 2px black; font-weight: bold;
+        }
+        .feedback-btn {
+            width: 50px; height: 50px; border-radius: 50%; border: none; color: white; font-size: 1.5rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: transform 0.2s;
+        }
+        .feedback-btn:active { transform: scale(0.9); }
+        .btn-red { background-color: #dc3545; }
+        .btn-green { background-color: #28a745; }
+
+        .feedback-form {
+            pointer-events: auto; background: white; padding: 15px; border-radius: 8px;
+            display: flex; flex-direction: column; width: 80%; max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: absolute; top: 50%; transform: translateY(-50%); /* Centrado */
+        }
+        .feedback-form textarea {
+            width: 100%; height: 80px; margin-bottom: 10px; padding: 8px; box-sizing: border-box;
+            border: 1px solid #ddd; border-radius: 4px; resize: none; font-family: inherit;
+        }
     </style>
 </head>
 <body>
@@ -73,6 +116,29 @@
     <span class="close" onclick="cerrarModal()">&times;</span>
     <img class="modal-content" id="imgGrande">
     <div id="container3D" onclick="event.stopPropagation()"></div>
+
+    <!-- Overlay de Feedback -->
+    <div id="feedbackOverlay" class="feedback-overlay" style="display: none;">
+        <div class="feedback-top-text">¿Está bien el producto o desea solicitar un cambio?</div>
+        
+        <!-- Formulario de cambio (oculto al inicio) -->
+        <div id="feedbackForm" class="feedback-form" style="display: none;">
+            <textarea id="cambioTexto" placeholder="Describe qué te gustaría modificar..."></textarea>
+            <button onclick="enviarSolicitudCambio()" style="background: #007bff; color: white; padding: 10px; border: none; border-radius: 5px; margin-bottom: 5px; cursor: pointer;">Enviar solicitud</button>
+            <button onclick="cancelarCambio()" style="background: #666; color: white; padding: 5px; border: none; border-radius: 5px; cursor: pointer;">Cancelar</button>
+        </div>
+
+        <div id="feedbackButtons" class="feedback-buttons">
+            <div class="feedback-btn-wrapper">
+                <span class="feedback-label">Cambiar</span>
+                <button class="feedback-btn btn-red" onclick="mostrarFormularioCambio()">X</button>
+            </div>
+            <div class="feedback-btn-wrapper">
+                <span class="feedback-label">Me encanta</span>
+                <button class="feedback-btn btn-green" onclick="enviarMeEncanta()">✔</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -129,7 +195,7 @@
                 return response.json();
             })
             .then(pedidos => {
-                const misPedidos = pedidos.filter(p => p.telefono === telefono);
+                const misPedidos = pedidos.filter(p => (p.telefono || p.teléfono) === telefono);
 
                 if (misPedidos.length > 0) {
                     misPedidos.forEach(pedido => {
@@ -161,8 +227,11 @@
     };
 
     let renderer, scene, camera, controls, animationId;
+    let feedbackTimer;
+    let currentPedidoData = null;
 
     function abrirModal(pedido) {
+        currentPedidoData = pedido;
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('imgGrande');
         const container3D = document.getElementById('container3D');
@@ -182,6 +251,20 @@
             modalImg.style.display = 'block';
             modalImg.src = pedido.imagen_url;
         }
+
+        // Resetear estado del overlay
+        const overlay = document.getElementById('feedbackOverlay');
+        overlay.style.display = 'none';
+        document.getElementById('feedbackForm').style.display = 'none';
+        document.getElementById('feedbackButtons').style.display = 'flex';
+
+        // Iniciar temporizador de 5 segundos
+        if (feedbackTimer) clearTimeout(feedbackTimer);
+        feedbackTimer = setTimeout(() => {
+            if (modal.style.display !== 'none') {
+                overlay.style.display = 'flex';
+            }
+        }, 5000);
     }
 
     function init3DMug(imageUrl, container) {
@@ -268,12 +351,87 @@
     }
 
     function cerrarModal() {
+        const overlay = document.getElementById('feedbackOverlay');
+        
+        // Si el overlay no se ha mostrado aún, mostrarlo primero (la "X" activa el overlay)
+        if (overlay.style.display === 'none') {
+            overlay.style.display = 'flex';
+            if (feedbackTimer) clearTimeout(feedbackTimer);
+            return;
+        }
+
+        // Si ya se mostró, cerrar todo
         document.getElementById('imageModal').style.display = "none";
         if (animationId) cancelAnimationFrame(animationId);
         if (renderer) {
             renderer.dispose();
             renderer = null;
         }
+    }
+
+    // Funciones de Feedback
+    function mostrarFormularioCambio() {
+        document.getElementById('feedbackButtons').style.display = 'none';
+        document.getElementById('feedbackForm').style.display = 'flex';
+        document.getElementById('cambioTexto').focus();
+    }
+
+    function cancelarCambio() {
+        document.getElementById('feedbackForm').style.display = 'none';
+        document.getElementById('feedbackButtons').style.display = 'flex';
+    }
+
+    function enviarMeEncanta() {
+        if (!currentPedidoData) return;
+        
+        const telefono = currentPedidoData.telefono || currentPedidoData.teléfono;
+        const imgUrl = currentPedidoData.imagen_url;
+        
+        // Enviar correo silencioso
+        const formData = new FormData();
+        formData.append('_subject', `Cliente SATISFECHO - ${telefono}`);
+        formData.append('mensaje', `El cliente ${telefono} ha aprobado el producto: ${imgUrl}`);
+        fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formData });
+
+        // Redireccionar a WhatsApp
+        const mensajeWA = `Hola, soy el cliente ${telefono} y el producto que tiene la imagen ${imgUrl} ME ENCANTA, POR FAVOR MANDARLO A PRODUCCIÓN`;
+        const urlWA = `https://wa.me/+573012345678?text=${encodeURIComponent(mensajeWA)}`;
+        
+        window.location.href = urlWA;
+    }
+
+    function enviarSolicitudCambio() {
+        if (!currentPedidoData) return;
+
+        const textoCambio = document.getElementById('cambioTexto').value.trim();
+        if (!textoCambio) {
+            alert("Por favor describe el cambio que deseas.");
+            return;
+        }
+
+        const telefono = currentPedidoData.telefono || currentPedidoData.teléfono;
+        const imgUrl = currentPedidoData.imagen_url;
+        const linkPagina = window.location.href;
+
+        // Enviar correo silencioso
+        const formData = new FormData();
+        formData.append('_subject', `Solicitud de CAMBIO - ${telefono}`);
+        formData.append('mensaje', `El cliente ${telefono} solicita cambios en: ${imgUrl}\nSolicitud: ${textoCambio}`);
+        fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formData });
+
+        // Copiar al portapapeles
+        navigator.clipboard.writeText(textoCambio).then(() => {
+            // Redireccionar a WhatsApp
+            const mensajeWA = `Hola, soy el cliente ${telefono} y vengo del link ${linkPagina} pero quiero solicitar una modificación en el producto con la imagen ${imgUrl}, deseo que: ${textoCambio}`;
+            const urlWA = `https://wa.me/+573012345678?text=${encodeURIComponent(mensajeWA)}`;
+            
+            window.location.href = urlWA;
+        }).catch(err => {
+            console.error('Error al copiar: ', err);
+            // Fallback si falla el copiado, redireccionar igual
+            const mensajeWA = `Hola, soy el cliente ${telefono} y vengo del link ${linkPagina} pero quiero solicitar una modificación en el producto con la imagen ${imgUrl}, deseo que: ${textoCambio}`;
+            window.location.href = `https://wa.me/+573012345678?text=${encodeURIComponent(mensajeWA)}`;
+        });
     }
 </script>
 
