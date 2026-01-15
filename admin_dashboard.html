@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrador</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script>
         // SEGURIDAD: Verificar si el usuario inició sesión
         if (!sessionStorage.getItem('adminLogueado')) {
@@ -27,9 +29,10 @@
 
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center; flex-direction: column; }
-        .modal-content { max-width: 80%; max-height: 70%; border-radius: 5px; }
-        .modal-text { color: white; font-size: 1.5rem; margin-top: 15px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 5px; }
-        .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+        .modal-content { max-width: 80%; max-height: 70%; border-radius: 5px; position: relative; z-index: 2; }
+        .modal-text { color: white; font-size: 1.5rem; margin-top: 15px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 5px; position: relative; z-index: 2; pointer-events: none; }
+        .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; z-index: 1003; }
+        #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; z-index: 1; }
     </style>
 </head>
 <body>
@@ -53,11 +56,13 @@
 <div id="imageModal" class="modal" onclick="cerrarModal()">
     <span class="close">&times;</span>
     <img class="modal-content" id="imgGrande">
+    <div id="container3D" onclick="event.stopPropagation()"></div>
     <div class="modal-text" id="modalInfo"></div>
 </div>
 
 <script>
     let todosLosPedidos = [];
+    let renderer, scene, camera, controls, animationId;
 
     // Cargar pedidos al inicio
     fetch('pedidos.json')
@@ -111,9 +116,24 @@
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('imgGrande');
         const modalInfo = document.getElementById('modalInfo');
+        const container3D = document.getElementById('container3D');
 
         modal.style.display = "flex";
-        modalImg.src = pedido.imagen_url;
+        
+        // Limpiar vista anterior
+        modalImg.style.display = 'none';
+        container3D.style.display = 'none';
+        container3D.innerHTML = '';
+
+        // Verificar si es un Mug para mostrar en 3D
+        if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
+            container3D.style.display = 'block';
+            init3DMug(pedido.imagen_url, container3D);
+        } else {
+            modalImg.style.display = 'block';
+            modalImg.src = pedido.imagen_url;
+        }
+
         // Texto grande abajo
         modalInfo.innerHTML = `
             Cliente: ${pedido.telefono}<br>
@@ -121,8 +141,90 @@
         `;
     }
 
+    function init3DMug(imageUrl, container) {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x333333);
+
+        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 0, 11); // Alejar cámara para que ocupe aprox 70% del alto
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        container.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        // Crear Mug
+        const geometry = new THREE.CylinderGeometry(2.5, 2.5, 6, 64);
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+        
+        loader.load(imageUrl, (texture) => {
+            const img = texture.image;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const widthCoverage = 0.75289575289;
+            const heightCoverage = 0.79797979798;
+
+            const canvasWidth = img.width / widthCoverage;
+            const canvasHeight = img.height / heightCoverage;
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            const offsetX = (canvasWidth - img.width) / 2;
+            const offsetY = (canvasHeight - img.height) / 2;
+            ctx.drawImage(img, offsetX, offsetY, img.width, img.height);
+
+            const newTexture = new THREE.CanvasTexture(canvas);
+
+            const materials = [
+                new THREE.MeshStandardMaterial({ map: newTexture }), 
+                new THREE.MeshStandardMaterial({ color: 0xffffff }), 
+                new THREE.MeshStandardMaterial({ color: 0xffffff })  
+            ];
+            const cylinder = new THREE.Mesh(geometry, materials);
+            
+            cylinder.rotation.y = Math.PI / 2;
+            
+            scene.add(cylinder);
+        });
+
+        const handleGeom = new THREE.TorusGeometry(1.5, 0.3, 16, 100);
+        const handleMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const handle = new THREE.Mesh(handleGeom, handleMat);
+        handle.position.set(2.8, 0, 0); 
+        scene.add(handle);
+
+        const animate = function () {
+            animationId = requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        };
+        animate();
+    }
+
     function cerrarModal() {
         document.getElementById('imageModal').style.display = "none";
+        if (animationId) cancelAnimationFrame(animationId);
+        if (renderer) {
+            renderer.dispose();
+            renderer = null;
+        }
     }
 
     function cerrarSesion() {

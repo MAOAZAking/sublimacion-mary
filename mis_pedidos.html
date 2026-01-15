@@ -130,7 +130,7 @@
         scene.background = new THREE.Color(0x333333);
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-        camera.position.set(0, 0, 9.5); // Acercar cámara para que ocupe aprox 80% de alto y centrar en Y
+        camera.position.set(0, 0, 11); // Alejar cámara para que ocupe aprox 70% del alto
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
