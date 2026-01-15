@@ -70,8 +70,8 @@
             <label for="producto">Tipo de Producto:</label>
             <select name="producto" id="producto" required>
                 <option value="" disabled selected>Seleccione una opción</option>
-                <option value="mug">Mug</option>
-                <option value="camisa">Camisa</option>
+                <option value="Mug Personalizado">Mug</option>
+                <option value="Camisa Estampada">Camisa</option>
             </select>
         </div>
 
@@ -171,12 +171,17 @@
                 const seg = String(now.getSeconds()).padStart(2, '0');
                 const fechaCompleta = `${dia}/${mes}/${anio} ${hora}:${min}:${seg}`;
 
+                // Determinar estado según producto
+                let estadoInicial = "Pendiente";
+                if (producto.toLowerCase().includes('mug')) estadoInicial = "Listo para sublimar";
+                if (producto.toLowerCase().includes('camisa')) estadoInicial = "Listo para estampar";
+
                 // 2. Crear el objeto con el formato solicitado
                 const nuevoPedido = {
                     "telefono": telefono,
                     "producto": producto,
                     "fecha": fechaCompleta,
-                    "estado": "Listo para entregar",
+                    "estado": estadoInicial,
                     "imagen_url": imageUrl
                 };
 

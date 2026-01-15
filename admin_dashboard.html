@@ -151,7 +151,7 @@
                 <img src="${pedido.imagen_url}" class="gallery-img" loading="lazy">
                 <div class="gallery-info">
                     <strong>${pedido.producto}</strong><br>
-                    ${pedido.telefono}
+                    ${pedido.telefono || pedido.teléfono || 'Sin datos'}
                 </div>
             `;
             gallery.appendChild(item);
@@ -198,7 +198,7 @@
 
         // Texto grande abajo
         modalInfo.innerHTML = `
-            Cliente: ${pedido.telefono}<br>
+            Cliente: ${pedido.telefono || pedido.teléfono || 'Sin datos'}<br>
             <span style="font-size: 1rem; font-weight: normal;">${pedido.producto} - ${pedido.fecha}</span>
         `;
     }
