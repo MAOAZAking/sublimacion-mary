@@ -172,9 +172,7 @@
                 const fechaCompleta = `${dia}/${mes}/${anio} ${hora}:${min}:${seg}`;
 
                 // Determinar estado según producto
-                let estadoInicial = "Pendiente";
-                if (producto.toLowerCase().includes('mug')) estadoInicial = "Listo para sublimar";
-                if (producto.toLowerCase().includes('camisa')) estadoInicial = "Listo para estampar";
+                let estadoInicial = "Revisión del cliente";
 
                 // 2. Crear el objeto con el formato solicitado
                 const nuevoPedido = {

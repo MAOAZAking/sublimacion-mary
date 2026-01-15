@@ -19,9 +19,7 @@ const seg = String(now.getSeconds()).padStart(2, '0');
 const fechaCompleta = `${dia}/${mes}/${anio} ${hora}:${min}:${seg}`;
 
 // Determinar estado según producto
-let estado = "Pendiente";
-if (producto.toLowerCase().includes('mug')) estado = "Listo para sublimar";
-if (producto.toLowerCase().includes('camisa')) estado = "Listo para estampar";
+let estado = "Revisión del cliente";
 
 // 3. Crear el objeto pedido con el orden y campos específicos
 const nuevoPedido = {
