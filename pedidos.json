@@ -47,5 +47,12 @@
     "fecha": "14/01/2026",
     "estado": "Listo para entregar",
     "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
-  }
+  },
+  {
+    "teléfono": "3002052842",
+    "producto": "taza",
+    "fecha": "15/01/2026 08:34:16",
+    "estado": "Listo para entregar",
+    "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768484056/jgpyuhwmf2sirfp3qkxf.png "
+}
 ]
