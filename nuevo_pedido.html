@@ -82,8 +82,13 @@
         </div>
 
         <div class="form-group">
-            <label for="imagen">Subir Imagen (JPG, JPEG, PNG):</label>
+            <label for="imagen">Subir Lámina (Imagen del diseño):</label>
             <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
+        </div>
+
+        <div class="form-group">
+            <label for="plantilla">Subir Plantilla (.ai):</label>
+            <input type="file" name="plantilla" id="plantilla" accept=".ai" required>
         </div>
 
         <div class="form-group">
@@ -153,78 +158,59 @@
         const producto = document.getElementById('producto').value;
         const telefono = document.getElementById('telefono').value;
         const imagenInput = document.getElementById('imagen');
+        const plantillaInput = document.getElementById('plantilla');
         const alertBox = document.getElementById('mensajeAlert');
 
-        if (producto && telefono && imagenInput.files.length > 0) {
-            const file = imagenInput.files[0];
+        if (producto && telefono && imagenInput.files.length > 0 && plantillaInput.files.length > 0) {
             
-            // CONFIGURACIÓN DE CLOUDINARY
-            const CLOUD_NAME = 'du7lmg9ff'; 
-            const UPLOAD_PRESET = 'imagenes-sublimacion-mary';
-
-            alertBox.textContent = "Subiendo imagen...";
+            alertBox.textContent = "Procesando archivos y creando carpetas...";
             alertBox.className = 'alert';
             alertBox.style.display = 'block';
             alertBox.style.backgroundColor = '#fff3cd';
             alertBox.style.color = '#856404';
             
-            const formDataCloud = new FormData();
-            formDataCloud.append('file', file);
-            formDataCloud.append('upload_preset', UPLOAD_PRESET);
+            // 1. Generar datos básicos
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const anio = now.getFullYear();
+            const hora = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const seg = String(now.getSeconds()).padStart(2, '0');
+            const fechaCompleta = `${dia}/${mes}/${anio} ${hora}:${min}:${seg}`;
+            const estadoInicial = "Revisión del cliente";
 
-            fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+            // 2. Preparar FormData para enviar al servidor local
+            const formData = new FormData();
+            formData.append('producto', producto);
+            formData.append('telefono', telefono);
+            formData.append('fecha', fechaCompleta);
+            formData.append('estado', estadoInicial);
+            formData.append('imagen', imagenInput.files[0]);
+            formData.append('plantilla', plantillaInput.files[0]);
+
+            // 3. Enviar al Backend Local
+            fetch('/api/pedidos', {
                 method: 'POST',
-                body: formDataCloud
+                body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error("Error en el servidor al guardar archivos.");
+                return response.json();
+            })
             .then(data => {
-                if (data.error) throw new Error(data.error.message);
-                const imageUrl = data.secure_url;
-                
-                alertBox.textContent = "Imagen guardada. Registrando pedido...";
-                
-                // 1. Generar la fecha actual con hora (Lógica traída de crear_pedido.js)
-                const now = new Date();
-                const dia = String(now.getDate()).padStart(2, '0');
-                const mes = String(now.getMonth() + 1).padStart(2, '0');
-                const anio = now.getFullYear();
-                const hora = String(now.getHours()).padStart(2, '0');
-                const min = String(now.getMinutes()).padStart(2, '0');
-                const seg = String(now.getSeconds()).padStart(2, '0');
-                const fechaCompleta = `${dia}/${mes}/${anio} ${hora}:${min}:${seg}`;
+                // El backend nos devuelve el objeto del pedido creado
+                const nuevoPedido = data.pedido;
 
-                // Determinar estado según producto
-                let estadoInicial = "Revisión del cliente";
-
-                // 2. Crear el objeto con el formato solicitado
-                const nuevoPedido = {
-                    "telefono": telefono,
-                    "producto": producto,
-                    "fecha": fechaCompleta,
-                    "estado": estadoInicial,
-                    "imagen_url": imageUrl
-                };
-
-                // 1. Guardar en pedidos.json (Backend local)
-                const saveLocal = fetch('/api/pedidos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(nuevoPedido)
-                })
-                .catch(err => console.warn("No se pudo guardar en pedidos.json localmente (¿Backend corriendo?):", err));
-
-                // 2. Preparar datos para FormSubmit enviando el JSON como texto
+                // 4. Enviar correo de notificación
                 const formDataEmail = new FormData();
                 formDataEmail.append('_subject', 'Nuevo Pedido JSON');
                 formDataEmail.append('_captcha', 'false');
                 formDataEmail.append('_template', 'table');
                 formDataEmail.append('datos_pedido', JSON.stringify(nuevoPedido, null, 4));
 
-                const sendEmail = fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formDataEmail });
-
-                // Esperar a que ambos terminen antes de mostrar éxito
-                return Promise.all([saveLocal, sendEmail]);
-            }) 
+                return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formDataEmail });
+            })
             .then(() => {
                 alertBox.textContent = `¡Pedido creado con éxito!`;
                 alertBox.className = 'alert success';

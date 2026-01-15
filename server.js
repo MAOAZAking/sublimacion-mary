@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer'); // Necesario para subir archivos
 require('dotenv').config();
 
 const app = express();
@@ -8,6 +9,9 @@ const PORT = 3000;
 
 // Middleware para procesar JSON
 app.use(express.json());
+
+// Configuración de Multer para almacenamiento temporal
+const upload = multer({ dest: 'temp_uploads/' });
 
 // Servir archivos estáticos (HTML, CSS, JS, Imágenes)
 app.use(express.static(path.join(__dirname, '.')));
@@ -39,9 +43,68 @@ app.post('/api/login', (req, res) => {
     }
 });
 
-// Endpoint para guardar un nuevo pedido en pedidos.json
-app.post('/api/pedidos', (req, res) => {
-    const nuevoPedido = req.body;
+// Endpoint para guardar un nuevo pedido con archivos
+app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name: 'plantilla', maxCount: 1 }]), (req, res) => {
+    const { producto, telefono, fecha, estado } = req.body;
+    const files = req.files;
+
+    if (!files || !files.imagen || !files.plantilla) {
+        return res.status(400).json({ success: false, error: 'Faltan archivos' });
+    }
+
+    // 1. Determinar tipo de producto y carpetas
+    let tipoProducto = 'otros';
+    if (producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
+    if (producto.toLowerCase().includes('camisa')) tipoProducto = 'camisa';
+
+    const baseImgDir = path.join(__dirname, 'img');
+    const productDir = path.join(baseImgDir, tipoProducto);
+
+    // Asegurar que existan las carpetas base
+    if (!fs.existsSync(baseImgDir)) fs.mkdirSync(baseImgDir);
+    if (!fs.existsSync(productDir)) fs.mkdirSync(productDir);
+
+    // 2. Calcular el siguiente número de carpeta (mug-XX)
+    const existingDirs = fs.readdirSync(productDir).filter(file => {
+        return fs.statSync(path.join(productDir, file)).isDirectory() && file.startsWith(`${tipoProducto}-`);
+    });
+
+    let maxNum = 0;
+    existingDirs.forEach(dir => {
+        const num = parseInt(dir.split('-')[1]);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+    });
+    const nextNum = maxNum + 1;
+    const newFolderName = `${tipoProducto}-${nextNum}`;
+    const newFolderPath = path.join(productDir, newFolderName);
+
+    // 3. Crear la nueva carpeta
+    fs.mkdirSync(newFolderPath);
+
+    // 4. Mover y renombrar archivos
+    // Plantilla (.ai) -> img/mug/mug-12/plantilla-mug-12.ai
+    const plantillaExt = path.extname(files.plantilla[0].originalname);
+    const plantillaName = `plantilla-${tipoProducto}-${nextNum}${plantillaExt}`;
+    const plantillaPath = path.join(newFolderPath, plantillaName);
+    fs.renameSync(files.plantilla[0].path, plantillaPath);
+
+    // Lámina (Imagen) -> img/mug/lamina-mug-12.png (En la carpeta padre)
+    const imagenExt = path.extname(files.imagen[0].originalname);
+    const imagenName = `lamina-${tipoProducto}-${nextNum}${imagenExt}`;
+    const imagenPath = path.join(productDir, imagenName);
+    fs.renameSync(files.imagen[0].path, imagenPath);
+
+    // 5. Actualizar pedidos.json
+    const imagenUrlRelativa = `img/${tipoProducto}/${imagenName}`.replace(/\\/g, '/'); // Ruta relativa para web
+    
+    const nuevoPedido = {
+        telefono,
+        producto,
+        fecha,
+        estado,
+        imagen_url: imagenUrlRelativa
+    };
+
     const filePath = path.join(__dirname, 'pedidos.json');
 
     // Leer el archivo actual
@@ -64,7 +127,7 @@ app.post('/api/pedidos', (req, res) => {
                 console.error("Error escribiendo archivo:", writeErr);
                 return res.status(500).json({ success: false, error: 'Error al guardar en disco' });
             }
-            res.json({ success: true });
+            res.json({ success: true, pedido: nuevoPedido });
         });
     });
 });
