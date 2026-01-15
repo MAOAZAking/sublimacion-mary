@@ -32,13 +32,20 @@
     "producto": "Mug Personalizado",
     "fecha": "14/01/2026",
     "estado": "Listo para entregar",
-    "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
+    "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
   },
   {
     "telefono": "3223065487",
     "producto": "Mug Personalizado",
     "fecha": "14/01/2026",
     "estado": "Listo para entregar",
-    "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
+    "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768434621/qfls8nm931umeclvfkdo.jpg"
+  },
+  {
+    "telefono": "3223065487",
+    "producto": "Mug Personalizado",
+    "fecha": "14/01/2026",
+    "estado": "Listo para entregar",
+    "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
   }
 ]
