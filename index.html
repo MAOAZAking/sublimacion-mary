@@ -117,7 +117,11 @@
         // 1. Verificar si es un Usuario de Admin
         // Validación segura consultando al servidor
         try {
-            const response = await fetch('/api/check-user', {
+            const BACKEND_URL = window.location.hostname.includes('github.io') 
+                ? 'https://sublimacion-mary.onrender.com' 
+                : '';
+
+            const response = await fetch(`${BACKEND_URL}/api/check-user`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: input })
@@ -155,7 +159,11 @@
         const errorMsg = document.getElementById('errorMsg');
         
         try {
-            const response = await fetch('/api/login', {
+            const BACKEND_URL = window.location.hostname.includes('github.io') 
+                ? 'https://sublimacion-mary.onrender.com' 
+                : '';
+
+            const response = await fetch(`${BACKEND_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: usuarioIngresado, password: password })

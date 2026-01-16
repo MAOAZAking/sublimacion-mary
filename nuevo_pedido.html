@@ -163,7 +163,7 @@
 
         if (producto && telefono && imagenInput.files.length > 0 && plantillaInput.files.length > 0) {
             
-            alertBox.textContent = "Procesando archivos y creando carpetas...";
+            alertBox.textContent = "Subiendo archivos a GitHub y actualizando base de datos... Por favor espere.";
             alertBox.className = 'alert';
             alertBox.style.display = 'block';
             alertBox.style.backgroundColor = '#fff3cd';
@@ -193,8 +193,13 @@
             formData.append('imagen', imgFile, imgFile.name.replace(/\s+/g, '-'));
             formData.append('plantilla', plantFile, plantFile.name.replace(/\s+/g, '-'));
 
-            // 3. Enviar al Backend Local
-            fetch('/api/pedidos', {
+            // 3. Enviar al Backend (Detectar si estamos en GitHub Pages o Local/Render)
+            // Si estamos en github.io, usamos la URL de Render. Si no, usamos la ruta relativa.
+            const BACKEND_URL = window.location.hostname.includes('github.io') 
+                ? 'https://sublimacion-mary.onrender.com' 
+                : '';
+
+            fetch(`${BACKEND_URL}/api/pedidos`, {
                 method: 'POST',
                 body: formData
             })
