@@ -8,6 +8,9 @@ const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 require('dotenv').config();
 
+// Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -171,6 +174,8 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
                 content: imagenBuffer.toString('base64')
             });
 
+            await delay(2000); // Esperar 2 segundos para no saturar la validación de GitHub
+
             // D. Subir Plantilla
             await githubClient.repos.createOrUpdateFileContents({
                 owner: GITHUB_OWNER, repo: GITHUB_REPO,
@@ -178,6 +183,8 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
                 message: `Add order template ${folderName} [skip render]`,
                 content: plantillaBuffer.toString('base64')
             });
+
+            await delay(2000); // Esperar 2 segundos antes de actualizar el JSON
 
             // E. Actualizar pedidos.json (de forma robusta)
             let pedidos = [];
