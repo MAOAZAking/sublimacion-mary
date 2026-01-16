@@ -1,58 +1,65 @@
 [
-  {
-    "telefono": "3000000000",
-    "producto": "Mug Personalizado",
-    "fecha": "14/01/2026 11:34:16",
-    "estado": "Revisión del cliente",
-    "imagen_url": "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg"
-  },
-  {
-    "telefono": "3123456789",
-    "producto": "Mug Personalizado",
-    "fecha": "14/01/2026 12:34:16",
-    "estado": "Revisión del cliente",
-    "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768416606/qrrgfej0mv0iui82qctb.jpg"
-  },
-  {
-    "telefono": "3002052842",
-    "producto": "Camisa Estampada",
-    "fecha": "14/01/2026 13:34:16",
-    "estado": "Revisión del cliente",
-    "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768420878/mwd7jjcyeyvxorsteybw.png"
-  },
-  {
-    "telefono": "3167000443",
-    "producto": "Mug Personalizado",
-    "fecha": "14/01/2026 14:34:16",
-    "estado": "Revisión del cliente",
-    "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
-  },
-  {
-    "telefono": "3223065487",
-    "producto": "Mug Personalizado",
-    "fecha": "14/01/2026 15:34:16",
-    "estado": "Revisión del cliente",
-    "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768434621/qfls8nm931umeclvfkdo.jpg"
-  },
-  {
-    "telefono": "3223065487",
-    "producto": "Mug Personalizado",
-    "fecha": "14/01/2026 16:34:16",
-    "estado": "Revisión del cliente",
-    "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
-  },
-  {
-    "telefono": "3002052842",
-    "producto": "Mug Personalizado",
-    "fecha": "15/01/2026 08:34:16",
-    "estado": "Revisión del cliente",
-    "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768484056/jgpyuhwmf2sirfp3qkxf.png "
-  },
-  {
-    "telefono": "3152214070",
-    "producto": "Mug Personalizado",
-    "fecha": "15/01/2026 13:21:51",
-    "estado": "Revisión del cliente",
-    "imagen_url": "/img/mug/lamina-mug-1.png"
-  }
+    {
+        "telefono": "3000000000",
+        "producto": "Mug Personalizado",
+        "fecha": "14/01/2026 11:34:16",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg"
+    },
+    {
+        "telefono": "3123456789",
+        "producto": "Mug Personalizado",
+        "fecha": "14/01/2026 12:34:16",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768416606/qrrgfej0mv0iui82qctb.jpg"
+    },
+    {
+        "telefono": "3002052842",
+        "producto": "Camisa Estampada",
+        "fecha": "14/01/2026 13:34:16",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768420878/mwd7jjcyeyvxorsteybw.png"
+    },
+    {
+        "telefono": "3167000443",
+        "producto": "Mug Personalizado",
+        "fecha": "14/01/2026 14:34:16",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
+    },
+    {
+        "telefono": "3223065487",
+        "producto": "Mug Personalizado",
+        "fecha": "14/01/2026 15:34:16",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768434621/qfls8nm931umeclvfkdo.jpg"
+    },
+    {
+        "telefono": "3223065487",
+        "producto": "Mug Personalizado",
+        "fecha": "14/01/2026 16:34:16",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg"
+    },
+    {
+        "telefono": "3002052842",
+        "producto": "Mug Personalizado",
+        "fecha": "15/01/2026 08:34:16",
+        "estado": "Revisión del cliente",
+        "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768484056/jgpyuhwmf2sirfp3qkxf.png "
+    },
+    {
+        "telefono": "3152214070",
+        "producto": "Mug Personalizado",
+        "fecha": "15/01/2026 13:21:51",
+        "estado": "Revisión del cliente",
+        "imagen_url": "/img/mug/lamina-mug-1.png"
+    },
+    {
+        "telefono": "3152214070",
+        "producto": "Mug Personalizado",
+        "fecha": "16/01/2026 10:38:40",
+        "estado": "Revisión del cliente",
+        "imagen_url": "img/mug/mug-3/lamina-mug-3.png"
+    }
 ]
