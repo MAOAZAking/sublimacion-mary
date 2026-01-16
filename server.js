@@ -105,8 +105,14 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
     if (producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
     if (producto.toLowerCase().includes('camisa')) tipoProducto = 'camisa';
 
-    // --- MODO GITHUB (Para Producción en Render) ---
-    if (githubClient) {
+    // --- MODO GITHUB ESTRICTO ---
+    // Validar que existan todas las credenciales necesarias
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
+        console.error("Error: Faltan credenciales de GitHub (TOKEN, OWNER o REPO).");
+        return res.status(500).json({ success: false, error: 'El servidor no tiene configuradas las credenciales de GitHub. No se puede guardar el pedido en la nube.' });
+    }
+
+    // Si hay credenciales, procedemos a guardar DIRECTAMENTE en GitHub
         try {
             console.log("Procesando pedido vía GitHub API...");
             
@@ -205,82 +211,6 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
             console.error("Error GitHub API:", error);
             return res.status(500).json({ success: false, error: 'Error guardando en repositorio remoto: ' + error.message });
         }
-    }
-
-    // --- MODO LOCAL (Fallback si no hay token configurado) ---
-    const baseImgDir = path.join(__dirname, 'img');
-    const productDir = path.join(baseImgDir, tipoProducto);
-
-    // Asegurar que existan las carpetas base
-    if (!fs.existsSync(baseImgDir)) fs.mkdirSync(baseImgDir);
-    if (!fs.existsSync(productDir)) fs.mkdirSync(productDir);
-
-    // 2. Calcular el siguiente número de carpeta (mug-XX)
-    const existingDirs = fs.readdirSync(productDir).filter(file => {
-        return fs.statSync(path.join(productDir, file)).isDirectory() && file.startsWith(`${tipoProducto}-`);
-    });
-
-    let maxNum = 0;
-    existingDirs.forEach(dir => {
-        const num = parseInt(dir.split('-')[1]);
-        if (!isNaN(num) && num > maxNum) maxNum = num;
-    });
-    const nextNum = maxNum + 1;
-    const newFolderName = `${tipoProducto}-${nextNum}`;
-    const newFolderPath = path.join(productDir, newFolderName);
-
-    // 3. Crear la nueva carpeta
-    fs.mkdirSync(newFolderPath);
-
-    // 4. Mover y renombrar archivos
-    // Plantilla (.ai) -> img/mug/mug-12/plantilla-mug-12.ai
-    const plantillaExt = path.extname(files.plantilla[0].originalname);
-    const plantillaName = `plantilla-${tipoProducto}-${nextNum}${plantillaExt}`;
-    const plantillaPath = path.join(newFolderPath, plantillaName);
-    fs.renameSync(files.plantilla[0].path, plantillaPath);
-
-    // Lámina (Imagen) -> img/mug/lamina-mug-12.png (En la carpeta padre)
-    const imagenExt = path.extname(files.imagen[0].originalname);
-    const imagenName = `lamina-${tipoProducto}-${nextNum}${imagenExt}`;
-    const imagenPath = path.join(productDir, imagenName);
-    fs.renameSync(files.imagen[0].path, imagenPath);
-
-    // 5. Actualizar pedidos.json
-    const imagenUrlRelativa = `img/${tipoProducto}/${imagenName}`.replace(/\\/g, '/'); // Ruta relativa para web
-    
-    const nuevoPedido = {
-        telefono,
-        producto,
-        fecha,
-        estado,
-        imagen_url: imagenUrlRelativa
-    };
-
-    const filePath = path.join(__dirname, 'pedidos.json');
-
-    // Leer el archivo actual
-    fs.readFile(filePath, 'utf8', (err, data) => {
-        let pedidos = [];
-        if (!err && data) {
-            try {
-                pedidos = JSON.parse(data);
-            } catch (e) {
-                console.error("Error al parsear JSON existente, se creará uno nuevo.");
-            }
-        }
-        
-        // Agregar el nuevo pedido
-        pedidos.push(nuevoPedido);
-
-        // Guardar el archivo actualizado
-        fs.writeFile(filePath, JSON.stringify(pedidos, null, 4), (writeErr) => {
-            if (writeErr) {
-                console.error("Error escribiendo archivo:", writeErr);
-                return res.status(500).json({ success: false, error: 'Error al guardar en disco' });
-            }
-            res.json({ success: true, pedido: nuevoPedido });
-        });
-    });
 });
 
 // Endpoint para actualizar el estado de un pedido
