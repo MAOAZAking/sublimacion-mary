@@ -139,24 +139,38 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
                 content: plantillaBuffer.toString('base64')
             });
 
-            // E. Actualizar pedidos.json
-            // 1. Obtener archivo actual (necesitamos el SHA para actualizar)
-            const { data: jsonFile } = await githubClient.repos.getContent({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json'
-            });
-            const currentContent = Buffer.from(jsonFile.content, 'base64').toString('utf-8');
-            const pedidos = JSON.parse(currentContent);
+            // E. Actualizar pedidos.json (de forma robusta)
+            let pedidos = [];
+            let jsonFileSha = undefined;
+
+            try {
+                // 1. Intentar obtener el archivo actual (necesitamos el SHA para actualizar)
+                const { data: jsonFile } = await githubClient.repos.getContent({
+                    owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json'
+                });
+                const currentContent = Buffer.from(jsonFile.content, 'base64').toString('utf-8');
+                pedidos = JSON.parse(currentContent);
+                jsonFileSha = jsonFile.sha; // Guardar el SHA para la actualización
+            } catch (error) {
+                if (error.status === 404) {
+                    console.log('pedidos.json no encontrado, se creará uno nuevo.');
+                    // El archivo no existe, 'pedidos' ya es un array vacío y 'jsonFileSha' es undefined.
+                } else {
+                    // Si es otro error (ej. de autenticación), lo lanzamos para que lo capture el catch principal.
+                    throw error;
+                }
+            }
 
             // 2. Agregar nuevo pedido
             const nuevoPedido = { telefono, producto, fecha, estado, imagen_url: `img/${tipoProducto}/${folderName}/${imagenName}` };
             pedidos.push(nuevoPedido);
 
-            // 3. Guardar cambios
+            // 3. Guardar cambios (crear o actualizar)
             await githubClient.repos.createOrUpdateFileContents({
                 owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json',
                 message: `Update pedidos.json for ${folderName} [skip ci]`,
                 content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'),
-                sha: jsonFile.sha
+                sha: jsonFileSha // Si es undefined, crea el archivo. Si tiene valor, lo actualiza.
             });
 
             // Limpiar temporales
