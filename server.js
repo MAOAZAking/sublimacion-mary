@@ -209,7 +209,7 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
             }
 
             // 2. Agregar nuevo pedido
-            const nuevoPedido = { telefono, producto, fecha, estado, imagen_url: `img/${tipoProducto}/${folderName}/${imagenName}` };
+            const nuevoPedido = { telefono, producto, fecha, estado, imagen_url: `/img/${tipoProducto}/${folderName}/${imagenName}` };
             pedidos.push(nuevoPedido);
 
             // 3. Guardar cambios (crear o actualizar)
