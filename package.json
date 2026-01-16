@@ -20,10 +20,10 @@
   },
   "homepage": "https://github.com/MAOAZAking/sublimacion-mary#readme",
   "dependencies": {
-    "@octokit/rest": "^22.0.1",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "image-size": "^2.0.2",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "image-size": "^1.1.1",
+    "@octokit/rest": "^20.0.2"
   }
 }
