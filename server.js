@@ -84,7 +84,7 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
         // Limpiar archivos en caso de error de lectura para no dejar basura
         try { fs.unlinkSync(files.imagen[0].path); } catch(e){}
         try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
-        return res.status(400).json({ success: false, error: 'El archivo de imagen no es válido o está dañado.' });
+        return res.status(400).json({ success: false, error: 'El archivo de imagen no es válido o está dañado: ' + err.message });
     }
 
     // 1. Determinar tipo de producto y carpetas
