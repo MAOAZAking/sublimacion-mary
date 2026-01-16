@@ -186,8 +186,12 @@
             formData.append('telefono', telefono);
             formData.append('fecha', fechaCompleta);
             formData.append('estado', estadoInicial);
-            formData.append('imagen', imagenInput.files[0]);
-            formData.append('plantilla', plantillaInput.files[0]);
+            
+            // Sanitizar nombres de archivo (reemplazar espacios por guiones) antes de enviar
+            const imgFile = imagenInput.files[0];
+            const plantFile = plantillaInput.files[0];
+            formData.append('imagen', imgFile, imgFile.name.replace(/\s+/g, '-'));
+            formData.append('plantilla', plantFile, plantFile.name.replace(/\s+/g, '-'));
 
             // 3. Enviar al Backend Local
             fetch('/api/pedidos', {
