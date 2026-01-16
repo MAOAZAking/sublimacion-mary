@@ -1,6 +1,4 @@
-# Ignorar el archivo que usas como base de datos
+node_modules/
 .env
-
-# Ignorar las carpetas donde se guardan las imágenes subidas
-/mug/
-/camisa/
+temp_uploads/
+img/
