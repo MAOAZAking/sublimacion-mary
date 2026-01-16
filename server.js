@@ -9,7 +9,7 @@ const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware para procesar JSON
 app.use(express.json({ limit: '50gb' }));
@@ -46,6 +46,13 @@ const githubClient = process.env.GITHUB_TOKEN ? new Octokit({ auth: process.env.
 const GITHUB_OWNER = process.env.GITHUB_OWNER;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 
+// Verificación de variables de entorno al inicio para facilitar depuración en Render
+if (!process.env.GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
+    console.warn("⚠️ ADVERTENCIA: Faltan variables de entorno de GitHub. La subida de pedidos fallará.");
+    if (!process.env.GITHUB_TOKEN) console.warn(" - Falta: GITHUB_TOKEN");
+    if (!GITHUB_OWNER) console.warn(" - Falta: GITHUB_OWNER");
+    if (!GITHUB_REPO) console.warn(" - Falta: GITHUB_REPO");
+}
 
 // Endpoint para verificar si el usuario es administrador
 app.post('/api/check-user', (req, res) => {
@@ -108,8 +115,13 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
     // --- MODO GITHUB ESTRICTO ---
     // Validar que existan todas las credenciales necesarias
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
-        console.error("Error: Faltan credenciales de GitHub (TOKEN, OWNER o REPO).");
-        return res.status(500).json({ success: false, error: 'El servidor no tiene configuradas las credenciales de GitHub. No se puede guardar el pedido en la nube.' });
+        const missing = [];
+        if (!githubClient) missing.push('GITHUB_TOKEN');
+        if (!GITHUB_OWNER) missing.push('GITHUB_OWNER');
+        if (!GITHUB_REPO) missing.push('GITHUB_REPO');
+
+        console.error(`Error: Faltan credenciales de GitHub (${missing.join(', ')}).`);
+        return res.status(500).json({ success: false, error: `El servidor no tiene configuradas las credenciales de GitHub: ${missing.join(', ')}. No se puede guardar el pedido en la nube.` });
     }
 
     // Si hay credenciales, procedemos a guardar DIRECTAMENTE en GitHub

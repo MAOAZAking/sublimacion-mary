@@ -47,5 +47,12 @@
     "fecha": "15/01/2026 08:34:16",
     "estado": "Revisión del cliente",
     "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768484056/jgpyuhwmf2sirfp3qkxf.png "
-}
+  },
+  {
+    "telefono": "3152214070",
+    "producto": "Mug Personalizado",
+    "fecha": "15/01/2026 13:21:51",
+    "estado": "Revisión del cliente",
+    "imagen_url": "https://maoazaking.github.io/img/mug/lamina-mug-1.png "
+  }
 ]
