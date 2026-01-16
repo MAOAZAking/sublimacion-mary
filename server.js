@@ -6,6 +6,7 @@ const imageSizeLib = require('image-size'); // Para validar dimensiones
 // Fix: Asegurar que sizeOf sea una función (compatibilidad con diferentes versiones de la librería)
 const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.imageSize;
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
+const archiver = require('archiver'); // Para crear archivos ZIP
 require('dotenv').config();
 
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
@@ -265,6 +266,56 @@ app.post('/api/update-status', (req, res) => {
             res.json({ success: false, message: 'Pedido no encontrado' });
         }
     });
+});
+
+// Endpoint para descargar la carpeta del producto como ZIP
+app.get('/api/download-folder/:type/:folder', async (req, res) => {
+    const { type, folder } = req.params;
+
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
+        return res.status(500).send('Credenciales de GitHub no configuradas en el servidor.');
+    }
+
+    try {
+        const folderPath = `img/${type}/${folder}`;
+        
+        // 1. Obtener lista de archivos en la carpeta de GitHub
+        const { data: dirContent } = await githubClient.repos.getContent({
+            owner: GITHUB_OWNER,
+            repo: GITHUB_REPO,
+            path: folderPath
+        });
+
+        if (!Array.isArray(dirContent)) {
+            return res.status(404).send('Carpeta no encontrada.');
+        }
+
+        // 2. Configurar respuesta como archivo ZIP
+        res.attachment(`${folder}.zip`);
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        archive.on('error', (err) => res.status(500).send({ error: err.message }));
+        archive.pipe(res);
+
+        // 3. Descargar cada archivo y agregarlo al ZIP
+        for (const item of dirContent) {
+            if (item.type === 'file') {
+                // Usamos getBlob para obtener el contenido completo
+                const { data: blob } = await githubClient.git.getBlob({
+                    owner: GITHUB_OWNER,
+                    repo: GITHUB_REPO,
+                    file_sha: item.sha
+                });
+                const buffer = Buffer.from(blob.content, 'base64');
+                archive.append(buffer, { name: item.name });
+            }
+        }
+
+        await archive.finalize();
+    } catch (error) {
+        console.error("Error descargando ZIP:", error);
+        if (!res.headersSent) res.status(500).send('Error generando ZIP: ' + error.message);
+    }
 });
 
 const server = app.listen(PORT, () => {
