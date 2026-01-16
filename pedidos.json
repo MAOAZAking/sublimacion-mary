@@ -54,6 +54,12 @@
         "fecha": "16/01/2026 10:38:40",
         "estado": "Revisión del cliente",
         "imagen_url": "/img/mug/mug-1/lamina-mug-1.png"
+    },
+    {
+        "telefono": "3167000443",
+        "producto": "Mug Personalizado",
+        "fecha": "16/01/2026 15:08:11",
+        "estado": "Revisión del cliente",
+        "imagen_url": "/img/mug/mug-2/lamina-mug-2.png"
     }
-    
 ]
