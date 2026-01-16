@@ -234,7 +234,8 @@
         // Texto grande abajo
         modalInfo.innerHTML = `
             Cliente: ${pedido.telefono || pedido.teléfono || 'Sin datos'}<br>
-            <span style="font-size: 1rem; font-weight: normal;">${pedido.producto} - ${pedido.fecha}</span>
+            <span style="font-size: 1rem; font-weight: normal;">${pedido.producto} - ${pedido.fecha}</span><br>
+            <span style="font-size: 1rem; font-weight: normal; color: #ffd700;">Estado: ${pedido.estado || 'Desconocido'}</span>
         `;
     }
 
