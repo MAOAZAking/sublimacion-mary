@@ -2,7 +2,9 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer'); // Necesario para subir archivos
-const sizeOf = require('image-size'); // Para validar dimensiones
+const imageSizeLib = require('image-size'); // Para validar dimensiones
+// Fix: Asegurar que sizeOf sea una función (compatibilidad con diferentes versiones de la librería)
+const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.imageSize;
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 require('dotenv').config();
 
