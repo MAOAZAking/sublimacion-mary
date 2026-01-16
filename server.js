@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer'); // Necesario para subir archivos
 const sizeOf = require('image-size'); // Para validar dimensiones
+const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 require('dotenv').config();
 
 const app = express();
@@ -27,6 +28,12 @@ const admins = {
     'maoazaking': process.env.ADMIN_PASS_MAOAZAKING
 };
 
+// Configuración de GitHub (Si existen las variables)
+const githubClient = process.env.GITHUB_TOKEN ? new Octokit({ auth: process.env.GITHUB_TOKEN }) : null;
+const GITHUB_OWNER = process.env.GITHUB_OWNER;
+const GITHUB_REPO = process.env.GITHUB_REPO;
+
+
 // Endpoint para verificar si el usuario es administrador
 app.post('/api/check-user', (req, res) => {
     const { username } = req.body;
@@ -49,7 +56,7 @@ app.post('/api/login', (req, res) => {
 });
 
 // Endpoint para guardar un nuevo pedido con archivos
-app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name: 'plantilla', maxCount: 1 }]), (req, res) => {
+app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name: 'plantilla', maxCount: 1 }]), async (req, res) => {
     const { producto, telefono, fecha, estado } = req.body;
     const files = req.files;
 
@@ -76,6 +83,95 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
     if (producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
     if (producto.toLowerCase().includes('camisa')) tipoProducto = 'camisa';
 
+    // --- MODO GITHUB (Para Producción en Render) ---
+    if (githubClient) {
+        try {
+            console.log("Procesando pedido vía GitHub API...");
+            
+            // A. Leer archivos del disco temporal a memoria
+            const imagenBuffer = fs.readFileSync(files.imagen[0].path);
+            const plantillaBuffer = fs.readFileSync(files.plantilla[0].path);
+            const imagenExt = path.extname(files.imagen[0].originalname);
+            const plantillaExt = path.extname(files.plantilla[0].originalname);
+
+            // B. Calcular siguiente ID mirando la carpeta en GitHub
+            let nextNum = 1;
+            try {
+                const { data: folderContent } = await githubClient.repos.getContent({
+                    owner: GITHUB_OWNER,
+                    repo: GITHUB_REPO,
+                    path: `img/${tipoProducto}`
+                });
+                
+                // Filtrar carpetas que sigan el patrón "producto-XX"
+                let maxNum = 0;
+                if (Array.isArray(folderContent)) {
+                    folderContent.forEach(item => {
+                        if (item.type === 'dir' && item.name.startsWith(`${tipoProducto}-`)) {
+                            const num = parseInt(item.name.split('-')[1]);
+                            if (!isNaN(num) && num > maxNum) maxNum = num;
+                        }
+                    });
+                }
+                nextNum = maxNum + 1;
+            } catch (err) {
+                // Si la carpeta no existe (404), empezamos en 1
+                console.log("Carpeta no existe o error leyendo, iniciando en 1");
+            }
+
+            const folderName = `${tipoProducto}-${nextNum}`;
+            const imagenName = `lamina-${tipoProducto}-${nextNum}${imagenExt}`;
+            const plantillaName = `plantilla-${tipoProducto}-${nextNum}${plantillaExt}`;
+
+            // C. Subir Imagen (Lámina)
+            await githubClient.repos.createOrUpdateFileContents({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO,
+                path: `img/${tipoProducto}/${folderName}/${imagenName}`,
+                message: `Add order image ${folderName} [skip ci]`, // [skip ci] evita redeploy infinito
+                content: imagenBuffer.toString('base64')
+            });
+
+            // D. Subir Plantilla
+            await githubClient.repos.createOrUpdateFileContents({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO,
+                path: `img/${tipoProducto}/${folderName}/${plantillaName}`,
+                message: `Add order template ${folderName} [skip ci]`,
+                content: plantillaBuffer.toString('base64')
+            });
+
+            // E. Actualizar pedidos.json
+            // 1. Obtener archivo actual (necesitamos el SHA para actualizar)
+            const { data: jsonFile } = await githubClient.repos.getContent({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json'
+            });
+            const currentContent = Buffer.from(jsonFile.content, 'base64').toString('utf-8');
+            const pedidos = JSON.parse(currentContent);
+
+            // 2. Agregar nuevo pedido
+            const nuevoPedido = { telefono, producto, fecha, estado, imagen_url: `img/${tipoProducto}/${folderName}/${imagenName}` };
+            pedidos.push(nuevoPedido);
+
+            // 3. Guardar cambios
+            await githubClient.repos.createOrUpdateFileContents({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json',
+                message: `Update pedidos.json for ${folderName} [skip ci]`,
+                content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'),
+                sha: jsonFile.sha
+            });
+
+            // Limpiar temporales
+            fs.unlinkSync(files.imagen[0].path);
+            fs.unlinkSync(files.plantilla[0].path);
+
+            return res.json({ success: true, pedido: nuevoPedido });
+
+        } catch (error) {
+            console.error("Error GitHub API:", error);
+            return res.status(500).json({ success: false, error: 'Error guardando en repositorio remoto: ' + error.message });
+        }
+    }
+
+    // --- MODO LOCAL (Fallback si no hay token configurado) ---
     const baseImgDir = path.join(__dirname, 'img');
     const productDir = path.join(baseImgDir, tipoProducto);
 
