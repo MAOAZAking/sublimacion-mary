@@ -67,14 +67,23 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
     // Validar dimensiones exactas de la imagen (Lámina)
     try {
         const dimensions = sizeOf(files.imagen[0].path);
-        if (dimensions.width !== 2304 || dimensions.height !== 934) {
+        
+        // Flexibilidad: Permitir un margen de error (ej. +/- 50 pixeles)
+        const targetW = 2304;
+        const targetH = 934;
+        const tolerance = 50;
+
+        if (Math.abs(dimensions.width - targetW) > tolerance || Math.abs(dimensions.height - targetH) > tolerance) {
             // Si no cumple, borramos los archivos temporales y devolvemos error
             fs.unlinkSync(files.imagen[0].path);
             fs.unlinkSync(files.plantilla[0].path);
-            return res.status(400).json({ success: false, error: `Dimensiones incorrectas. La imagen debe ser de 2304x934 px. (Recibido: ${dimensions.width}x${dimensions.height} px)` });
+            return res.status(400).json({ success: false, error: `Dimensiones incorrectas. Se espera aprox ${targetW}x${targetH} px (±${tolerance}px). Recibido: ${dimensions.width}x${dimensions.height} px` });
         }
     } catch (err) {
         console.error("Error validando dimensiones:", err);
+        // Limpiar archivos en caso de error de lectura para no dejar basura
+        try { fs.unlinkSync(files.imagen[0].path); } catch(e){}
+        try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
         return res.status(400).json({ success: false, error: 'El archivo de imagen no es válido o está dañado.' });
     }
 
