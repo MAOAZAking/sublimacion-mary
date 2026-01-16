@@ -138,7 +138,7 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
             await githubClient.repos.createOrUpdateFileContents({
                 owner: GITHUB_OWNER, repo: GITHUB_REPO,
                 path: `img/${tipoProducto}/${folderName}/${imagenName}`,
-                message: `Add order image ${folderName} [skip ci]`, // [skip ci] evita redeploy infinito
+                message: `Add order image ${folderName} [skip render]`, // [skip render] evita reinicio del server pero actualiza la web
                 content: imagenBuffer.toString('base64')
             });
 
@@ -146,7 +146,7 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
             await githubClient.repos.createOrUpdateFileContents({
                 owner: GITHUB_OWNER, repo: GITHUB_REPO,
                 path: `img/${tipoProducto}/${folderName}/${plantillaName}`,
-                message: `Add order template ${folderName} [skip ci]`,
+                message: `Add order template ${folderName} [skip render]`,
                 content: plantillaBuffer.toString('base64')
             });
 
@@ -179,7 +179,7 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
             // 3. Guardar cambios (crear o actualizar)
             await githubClient.repos.createOrUpdateFileContents({
                 owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json',
-                message: `Update pedidos.json for ${folderName} [skip ci]`,
+                message: `Update pedidos.json for ${folderName} [skip render]`,
                 content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'),
                 sha: jsonFileSha // Si es undefined, crea el archivo. Si tiene valor, lo actualiza.
             });
