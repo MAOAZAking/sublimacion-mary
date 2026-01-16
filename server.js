@@ -15,6 +15,17 @@ const PORT = 3000;
 app.use(express.json({ limit: '50gb' }));
 app.use(express.urlencoded({ limit: '50gb', extended: true }));
 
+// Middleware para CORS (Permitir conexiones desde GitHub Pages u otros dominios)
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*'); // En producción, idealmente pon aquí tu dominio de GitHub Pages
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
 // Configuración de Multer para almacenamiento temporal
 const upload = multer({ 
     dest: 'temp_uploads/',
