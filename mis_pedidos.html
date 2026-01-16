@@ -241,6 +241,9 @@
     let currentPedidoData = null;
 
     function abrirModal(pedido) {
+        // Limpiar timer previo incondicionalmente para evitar que salte en pedidos ya aceptados
+        if (feedbackTimer) clearTimeout(feedbackTimer);
+
         currentPedidoData = pedido;
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('imgGrande');
@@ -270,7 +273,6 @@
 
         // Iniciar temporizador de 5 segundos
         if (pedido.estado === "Revisión del cliente") {
-            if (feedbackTimer) clearTimeout(feedbackTimer);
             feedbackTimer = setTimeout(() => {
                 if (modal.style.display !== 'none') {
                     overlay.style.display = 'flex';
@@ -374,6 +376,7 @@
         }
 
         // Si ya se mostró, cerrar todo
+        if (feedbackTimer) clearTimeout(feedbackTimer);
         document.getElementById('imageModal').style.display = "none";
         if (animationId) cancelAnimationFrame(animationId);
         if (renderer) {
