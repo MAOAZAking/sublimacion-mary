@@ -233,6 +233,9 @@
         if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
             container3D.style.display = 'block';
             init3DMug(pedido.imagen_url, container3D);
+        } else if (pedido.producto && pedido.producto.toLowerCase().includes('camisa')) {
+            container3D.style.display = 'block';
+            init3DShirt(pedido.imagen_url, container3D);
         } else {
             modalImg.style.display = 'block';
             modalImg.src = pedido.imagen_url;
@@ -363,6 +366,159 @@
         const handle = new THREE.Mesh(handleGeom, handleMat);
         handle.position.set(2.8, 0, 0); 
         scene.add(handle);
+
+        const animate = function () {
+            animationId = requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        };
+        animate();
+    }
+
+    function init3DShirt(imageUrl, container) {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x333333);
+
+        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 0, 18); // Alejar cámara para acomodar el ancho de la camisa
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        container.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+        const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        backLight.position.set(-5, 5, -10);
+        scene.add(backLight);
+
+        // --- SHAPE DEFINITION (Con Mangas Claras) ---
+        const shirtShape = new THREE.Shape();
+        const sW = 2.1; // Ancho cintura
+        const sH = 1.5; // Altura axila
+        const bY = -3.5; // Base
+        
+        // Trazado lado derecho
+        shirtShape.moveTo(0, bY);
+        shirtShape.lineTo(sW, bY); // Base derecha
+        shirtShape.lineTo(sW, sH); // Axila derecha
+        shirtShape.lineTo(4.2, 1.0); // Manga abajo
+        shirtShape.lineTo(4.5, 2.2); // Manga borde
+        shirtShape.lineTo(sW, 3.0); // Hombro
+        
+        // Cuello
+        shirtShape.lineTo(1.2, 3.0); 
+        shirtShape.quadraticCurveTo(0, 2.2, -1.2, 3.0);
+        
+        // Trazado lado izquierdo (Espejo)
+        shirtShape.lineTo(-sW, 3.0);
+        shirtShape.lineTo(-4.5, 2.2);
+        shirtShape.lineTo(-4.2, 1.0);
+        shirtShape.lineTo(-sW, sH);
+        shirtShape.lineTo(-sW, bY);
+        shirtShape.lineTo(0, bY);
+
+        // Extrusión base (delgada, el volumen lo damos por código)
+        const extrudeSettings = { depth: 0.1, bevelEnabled: true, bevelSegments: 2, steps: 4, bevelSize: 0.1, bevelThickness: 0.1 };
+        const geometry = new THREE.ExtrudeGeometry(shirtShape, extrudeSettings);
+        geometry.center();
+
+        // --- INFLADO (VOLUMEN PARABÓLICO) ---
+        const pos = geometry.attributes.position;
+        const vertex = new THREE.Vector3();
+        
+        for (let i = 0; i < pos.count; i++) {
+            vertex.fromBufferAttribute(pos, i);
+            
+            // Solo inflamos la cara frontal (z > 0)
+            if (vertex.z > 0) {
+                // 1. Perfil Horizontal (Parábola)
+                // "mitad de la profundidad un punto maximo y de ahi hacia los lados caida"
+                // Calculamos el ancho aproximado en este punto Y para normalizar X
+                let currentWidth = (vertex.y > sH) ? 4.5 : sW; 
+                // Interpolación suave del ancho en la axila
+                if (vertex.y > sH && vertex.y < 3.0) currentWidth = sW + (4.5 - sW) * ((vertex.y - sH)/1.5);
+                
+                const xNorm = Math.min(1.0, Math.abs(vertex.x) / currentWidth);
+                const ellipse = Math.sqrt(1.0 - (xNorm * xNorm)); // Elipse: Puntas más salidas en los lados
+                
+                // 2. Perfil Vertical (Gravedad/Pecho)
+                // Pecho sale, abdomen cae recto o suave
+                let verticalProfile = 1.0;
+                if (vertex.y < 0.5) {
+                    // Abajo del pecho: Caída suave hacia la cintura
+                    const t = (vertex.y + 3.5) / 4.0; // Normalizado entre base (-3.5) y pecho (0.5)
+                    verticalProfile = 0.8 + 0.2 * t;
+                } else {
+                    // Pecho/Hombros/Cuello (Todo igual de salido)
+                    verticalProfile = 1.0;
+                }
+
+                // Aplicar volumen
+                // Base 1.5 de profundidad máxima
+                vertex.z += 1.5 * ellipse * verticalProfile;
+            }
+            
+            pos.setXYZ(i, vertex.x, vertex.y, vertex.z);
+        }
+        geometry.computeVertexNormals();
+
+        // UV Mapping Planar
+        const uvAttribute = geometry.attributes.uv;
+        geometry.computeBoundingBox();
+        const min = geometry.boundingBox.min;
+        const max = geometry.boundingBox.max;
+        const rangeX = max.x - min.x;
+        const rangeY = max.y - min.y;
+
+        for ( let i = 0; i < pos.count; i ++ ) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            const u = (x - min.x) / rangeX;
+            const v = (y - min.y) / rangeY;
+            uvAttribute.setXY(i, u, v);
+        }
+        uvAttribute.needsUpdate = true;
+
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+        loader.load(imageUrl, (texture) => {
+            const img = texture.image;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            
+            // Fondo Blanco Camisa
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fillRect(0, 0, 1024, 1024);
+            
+            // Estampado centrado en el pecho
+            const imgAspect = img.width / img.height;
+            const printWidth = 400; 
+            const printHeight = printWidth / imgAspect;
+            
+            // Dibujar imagen (512 es centro X, 250 es altura pecho aprox)
+            ctx.drawImage(img, 512 - printWidth/2, 250, printWidth, printHeight);
+            
+            const shirtTexture = new THREE.CanvasTexture(canvas);
+            
+            const matPrint = new THREE.MeshStandardMaterial({ map: shirtTexture, roughness: 0.6 });
+            const matWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
+            
+            // ExtrudeGeometry usa 2 materiales: [0] tapas (front/back), [1] lados (bevel)
+            const mesh = new THREE.Mesh(geometry, [matPrint, matWhite]);
+            scene.add(mesh);
+        });
 
         const animate = function () {
             animationId = requestAnimationFrame(animate);
