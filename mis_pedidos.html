@@ -414,11 +414,13 @@
             // 1. Cuerpo (Torso Humanoide)
             const bodyGeo = new THREE.CylinderGeometry(2.3, 2.3, 7.2, 64, 16);
             
-            const pos = bodyGeo.attributes.position;
-            const v = new THREE.Vector3();
-            
-            for (let i = 0; i < pos.count; i++) {
-                v.fromBufferAttribute(pos, i);
+            // Función de deformación compartida
+            function applyDeformation(geometry) {
+                const pos = geometry.attributes.position;
+                const v = new THREE.Vector3();
+                
+                for (let i = 0; i < pos.count; i++) {
+                    v.fromBufferAttribute(pos, i);
                 const y = v.y; // -3.25 a +3.25
 
                 // Simular elevación de perfil (montaña vista de lado)
@@ -455,7 +457,11 @@
                         // Cierre suave sin forzar puntos de referencia
                         widthFactor = baseW * (1.0 - t * 0.45);
                     }
-                } else if (y < 0.5 && y > -2.5) {
+                } else if (y > 0.5) {
+                    // Suavizar transición de pecho (1.0) a cintura (0.95) para evitar corte en la imagen
+                    const t = (1.0 - y) / 0.5;
+                    widthFactor = 1.0 - (t * 0.05);
+                } else if (y > -2.5) {
                     widthFactor = 0.95;
                 }
 
@@ -490,27 +496,33 @@
                 v.x *= widthFactor;
                 v.z += zOffset;
                 
-                pos.setXYZ(i, v.x, v.y, v.z);
+                    pos.setXYZ(i, v.x, v.y, v.z);
+                }
+                geometry.computeVertexNormals();
             }
-            bodyGeo.computeVertexNormals();
 
-            // --- CREAR RECUBRIMIENTOS (Capas para la imagen) ---
+            // Aplicar deformación al cuerpo base
+            applyDeformation(bodyGeo);
+
+            // --- CREAR RECUBRIMIENTOS (Clone & Filter) ---
+            // Clonamos el cuerpo YA deformado para asegurar coincidencia perfecta de forma y normales
             const frontGeo = bodyGeo.clone();
             const backGeo = bodyGeo.clone();
 
-            function processOverlay(geo, isFront) {
+            function prepareOverlay(geo, isFront) {
                 const pos = geo.attributes.position;
                 const norm = geo.attributes.normal;
                 const uvs = geo.attributes.uv;
                 const indices = geo.index.array;
                 const newIndices = [];
 
-                // Definir zona de estampado (70% ancho, centrado verticalmente)
-                const zLimit = 1.65; 
-                const yTop = 2.1; // Ajustado para altura 7.2
+                // Límites del estampado (Más estrecho para evitar lados)
+                const yTop = 2.2;
                 const yBottom = -1.5;
+                const xLimit = 1.25; // Reducido para que no llegue a los lados
+                const zLimit = 0.5;
 
-                // 1. Filtrar caras (Solo mantener las del área de estampado)
+                // 1. Filtrar caras y calcular Bounding Box
                 let minX = Infinity, maxX = -Infinity;
                 let minY = Infinity, maxY = -Infinity;
 
@@ -519,52 +531,55 @@
                     const b = indices[i+1];
                     const c = indices[i+2];
                     
-                    const zAvg = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
+                    const xAvg = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3;
                     const yAvg = (pos.getY(a) + pos.getY(b) + pos.getY(c)) / 3;
+                    const zAvg = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
 
                     let keep = false;
                     if (isFront) {
-                        if (zAvg > zLimit && yAvg > yBottom && yAvg < yTop) keep = true;
+                        if (zAvg > zLimit && yAvg > yBottom && yAvg < yTop && Math.abs(xAvg) < xLimit) keep = true;
                     } else {
-                        if (zAvg < -zLimit && yAvg > yBottom && yAvg < yTop) keep = true;
+                        if (zAvg < -zLimit && yAvg > yBottom && yAvg < yTop && Math.abs(xAvg) < xLimit) keep = true;
                     }
 
                     if (keep) {
                         newIndices.push(a, b, c);
-                        // Calcular bounding box real de la zona seleccionada para UVs
+                        // Expandir Bounding Box
                         [a, b, c].forEach(idx => {
-                            const x = pos.getX(idx);
-                            const y = pos.getY(idx);
-                            if (x < minX) minX = x;
-                            if (x > maxX) maxX = x;
-                            if (y < minY) minY = y;
-                            if (y > maxY) maxY = y;
+                            const vx = pos.getX(idx);
+                            const vy = pos.getY(idx);
+                            if (vx < minX) minX = vx;
+                            if (vx > maxX) maxX = vx;
+                            if (vy < minY) minY = vy;
+                            if (vy > maxY) maxY = vy;
                         });
                     }
                 }
                 geo.setIndex(newIndices);
 
                 // 2. Inflar y Remapear UVs
-                const offset = 0.04; // Separación del cuerpo (4cm)
+                const offset = 0.05; // 5mm de relieve
                 for (let i = 0; i < pos.count; i++) {
-                    // Desplazar vértice hacia afuera (Overlay)
+                    // Inflar usando la normal ORIGINAL (suavidad perfecta)
                     pos.setX(i, pos.getX(i) + norm.getX(i) * offset);
                     pos.setY(i, pos.getY(i) + norm.getY(i) * offset);
                     pos.setZ(i, pos.getZ(i) + norm.getZ(i) * offset);
 
-                    // Remapear UV (0..1 en el área seleccionada)
+                    // UVs Planas basadas en el Bounding Box
                     let u = (pos.getX(i) - minX) / (maxX - minX);
                     let v = (pos.getY(i) - minY) / (maxY - minY);
-                    if (!isFront) u = 1.0 - u; // Espejo para espalda
+                    
+                    u = Math.max(0, Math.min(1, u));
+                    v = Math.max(0, Math.min(1, v));
+
+                    if (!isFront) u = 1.0 - u;
                     uvs.setXY(i, u, v);
                 }
             }
 
-            processOverlay(frontGeo, true);
-            processOverlay(backGeo, false);
-
-            bodyGeo.clearGroups();
-
+            prepareOverlay(frontGeo, true);
+            prepareOverlay(backGeo, false);
+            
             bodyGeo.translate(0, -0.5, 0);
             frontGeo.translate(0, -0.5, 0);
             backGeo.translate(0, -0.5, 0);
