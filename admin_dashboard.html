@@ -510,81 +510,40 @@
             // Aplicar deformación al cuerpo base
             applyDeformation(bodyGeo);
 
-            // --- CREAR RECUBRIMIENTOS (Clone & Filter) ---
-            // Clonamos el cuerpo YA deformado para asegurar coincidencia perfecta de forma y normales
-            const frontGeo = bodyGeo.clone();
-            const backGeo = bodyGeo.clone();
+            // --- CREAR RECUBRIMIENTOS (Parches limpios) ---
+            // Creamos geometrías nuevas específicas para el área de impresión (sin filtrar caras)
+            // Esto garantiza una malla continua y UVs perfectas.
+            
+            // Parámetros del parche: Radio 2.3, Altura 4.6 (60% aprox), Segmento de cilindro (70% ancho)
+            const patchHeight = 4.6;
+            const patchArc = 1.8; // Radianes (aprox 100 grados) para cubrir el frente
+            
+            // Frente: Centrado en +Z (Angulo PI/2 en Three.js standard cylinder start)
+            // ThetaStart = PI/2 - arc/2
+            const frontGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 32, 16, true, Math.PI/2 - patchArc/2, patchArc);
+            frontGeo.translate(0, 0.5, 0); // Centrar verticalmente en el pecho (y=0.5)
+            applyDeformation(frontGeo); // Deformar igual que el cuerpo
 
-            function prepareOverlay(geo, isFront) {
+            // Espalda: Centrado en -Z (Angulo 3*PI/2)
+            const backGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 32, 16, true, 3*Math.PI/2 - patchArc/2, patchArc);
+            backGeo.translate(0, 0.5, 0);
+            applyDeformation(backGeo);
+
+            // Inflar los recubrimientos para que no se oculten (Offset)
+            function inflateGeometry(geo, offset) {
                 const pos = geo.attributes.position;
                 const norm = geo.attributes.normal;
-                const uvs = geo.attributes.uv;
-                const indices = geo.index.array;
-                const newIndices = [];
-
-                // Límites del estampado (Más estrecho para evitar lados)
-                const yTop = 2.2;
-                const yBottom = -1.5;
-                const xLimit = 1.25; // Reducido para que no llegue a los lados
-                const zLimit = 0.5;
-
-                // 1. Filtrar caras y calcular Bounding Box
-                let minX = Infinity, maxX = -Infinity;
-                let minY = Infinity, maxY = -Infinity;
-
-                for (let i = 0; i < indices.length; i += 3) {
-                    const a = indices[i];
-                    const b = indices[i+1];
-                    const c = indices[i+2];
-                    
-                    const xAvg = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3;
-                    const yAvg = (pos.getY(a) + pos.getY(b) + pos.getY(c)) / 3;
-                    const zAvg = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
-
-                    let keep = false;
-                    if (isFront) {
-                        if (zAvg > zLimit && yAvg > yBottom && yAvg < yTop && Math.abs(xAvg) < xLimit) keep = true;
-                    } else {
-                        if (zAvg < -zLimit && yAvg > yBottom && yAvg < yTop && Math.abs(xAvg) < xLimit) keep = true;
-                    }
-
-                    if (keep) {
-                        newIndices.push(a, b, c);
-                        // Expandir Bounding Box
-                        [a, b, c].forEach(idx => {
-                            const vx = pos.getX(idx);
-                            const vy = pos.getY(idx);
-                            if (vx < minX) minX = vx;
-                            if (vx > maxX) maxX = vx;
-                            if (vy < minY) minY = vy;
-                            if (vy > maxY) maxY = vy;
-                        });
-                    }
-                }
-                geo.setIndex(newIndices);
-
-                // 2. Inflar y Remapear UVs
-                const offset = 0.05; // 5mm de relieve
+                const v = new THREE.Vector3();
+                const n = new THREE.Vector3();
                 for (let i = 0; i < pos.count; i++) {
-                    // Inflar usando la normal ORIGINAL (suavidad perfecta)
-                    pos.setX(i, pos.getX(i) + norm.getX(i) * offset);
-                    pos.setY(i, pos.getY(i) + norm.getY(i) * offset);
-                    pos.setZ(i, pos.getZ(i) + norm.getZ(i) * offset);
-
-                    // UVs Planas basadas en el Bounding Box
-                    let u = (pos.getX(i) - minX) / (maxX - minX);
-                    let v = (pos.getY(i) - minY) / (maxY - minY);
-                    
-                    u = Math.max(0, Math.min(1, u));
-                    v = Math.max(0, Math.min(1, v));
-
-                    if (!isFront) u = 1.0 - u;
-                    uvs.setXY(i, u, v);
+                    v.fromBufferAttribute(pos, i);
+                    n.fromBufferAttribute(norm, i);
+                    v.addScaledVector(n, offset);
+                    pos.setXYZ(i, v.x, v.y, v.z);
                 }
             }
-
-            prepareOverlay(frontGeo, true);
-            prepareOverlay(backGeo, false);
+            inflateGeometry(frontGeo, 0.06); // 6cm de separación para evitar z-fighting
+            inflateGeometry(backGeo, 0.06);
             
             bodyGeo.translate(0, -0.5, 0);
             frontGeo.translate(0, -0.5, 0);
