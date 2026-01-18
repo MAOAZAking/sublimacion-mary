@@ -461,14 +461,16 @@
                 let widthFactor = 1.0;
                 if (y > 1.0) {
                     // Forma de hombros redondeada (sin punta)
-                    if (y < 3.0) {
-                        widthFactor = 1.0 + ((y - 1.0) / 2.0) * 0.25;
+                    if (y < 3.15) {
+                        // Curva suave (parábola) en lugar de línea recta
+                        const t = (y - 1.0) / 2.15;
+                        widthFactor = 1.0 + (t * (2 - t)) * 0.10;
                     } else {
                         // Reducir ancho para unirse a la dona (cuello)
-                        const baseW = 1.0 + ((3.0 - 1.0) / 2.0) * 0.25;
-                        const t = (y - 3.0) / 0.8; 
+                        const baseW = 1.0 + 0.10;
+                        const t = (y - 3.15) / 0.6; 
                         // Cierre suave sin forzar puntos de referencia
-                        widthFactor = baseW * (1.0 - t * 0.45);
+                        widthFactor = baseW * (1.0 - t * t * 0.5);
                     }
                 } else if (y > 0.5) {
                     // Suavizar transición de pecho (1.0) a cintura (0.95) para evitar corte en la imagen
@@ -486,12 +488,18 @@
                     v.z *= zScale;
 
                     if (y > 0.0 && y < 3.0) {
-                        // Dos puntos de salida para extender la altura del pecho
-                        const t1 = (y - 1.2);
-                        const b1 = 0.3 * Math.exp(-(t1*t1)*1.5);
-                        const t2 = (y - 1.9); // Segundo punto más arriba
-                        const b2 = 0.25 * Math.exp(-(t2*t2)*1.5);
-                        zOffset += (b1 + b2); // Sumar suavemente en lugar de usar Max (evita cortes)
+                        // Curva única suave centrada en el pecho alto (y=2.0)
+                        // Cae gradualmente hasta el abdomen (y=0) sin bultos intermedios
+                        const peakY = 2.0;
+                        const dist = Math.abs(y - peakY);
+                        const range = (y < peakY) ? 2.0 : 1.0; // Caída larga y suave hacia abajo
+                        
+                        if (dist < range) {
+                            const t = dist / range;
+                            // Curva coseno suave: 1 en el pico, 0 en los extremos (liso)
+                            const shape = (1 + Math.cos(t * Math.PI)) * 0.5;
+                            zOffset += 0.35 * shape;
+                        }
                     }
                 } else {
                     v.z *= 0.5;
@@ -547,8 +555,8 @@
                     pos.setXYZ(i, v.x, v.y, v.z);
                 }
             }
-            inflateGeometry(frontGeo, 0.15); // Aumentar separación para evitar z-fighting
-            inflateGeometry(backGeo, 0.15);
+            inflateGeometry(frontGeo, 0.01); // Pegado al cuerpo (mínima separación)
+            inflateGeometry(backGeo, 0.01);
             
             bodyGeo.translate(0, -0.5, 0);
             frontGeo.translate(0, -0.5, 0);
@@ -572,7 +580,7 @@
             sleeveGeoL.scale(1, 1, 0.7);
             sleeveGeoL.translate(0, -1.35, 0); // Pivote arriba
             sleeveGeoL.rotateZ(Math.PI / 4.5);
-            sleeveGeoL.translate(2.3, 3.1, 0); // Posición alta en el hombro
+            sleeveGeoL.translate(2.3, 3.25, 0); // Posición alta en el hombro
 
             const sleeveGeoR = new THREE.CylinderGeometry(0.6, 1.15, 2.7, 32, 10);
             const posR = sleeveGeoR.attributes.position;
@@ -590,7 +598,7 @@
             sleeveGeoR.scale(1, 1, 0.7);
             sleeveGeoR.translate(0, -1.35, 0);
             sleeveGeoR.rotateZ(-Math.PI / 4.5);
-            sleeveGeoR.translate(-2.3, 3.1, 0);
+            sleeveGeoR.translate(-2.3, 3.25, 0);
 
             // 4. Cuello (Dona)
             const neckGeo = new THREE.TorusGeometry(1.6, 0.12, 12, 48);
