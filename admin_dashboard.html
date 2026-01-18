@@ -412,7 +412,10 @@
                 map: texture, 
                 side: THREE.FrontSide,
                 roughness: 0.5,
-                transparent: true
+                transparent: true,
+                polygonOffset: true,
+                polygonOffsetFactor: -4,
+                polygonOffsetUnits: -4
             });
             const whiteMat = new THREE.MeshStandardMaterial({ 
                 color: 0xffffff, 
@@ -420,7 +423,8 @@
             });
 
             // 1. Cuerpo (Torso Humanoide)
-            const bodyGeo = new THREE.CylinderGeometry(2.3, 2.3, 7.6, 64, 16);
+            // Rotamos la costura hacia atrás (3*PI/2) para que el centro de la textura (U=0.5) quede al FRENTE (+Z)
+            const bodyGeo = new THREE.CylinderGeometry(2.3, 2.3, 7.6, 64, 64, false, 3 * Math.PI / 2, 2 * Math.PI);
             
             // Función de deformación compartida para asegurar que el recubrimiento coincida con el cuerpo
             function applyDeformation(geometry) {
@@ -446,7 +450,8 @@
                     
                     // Curva que va desde 0 en el borde hasta 1 en el cuello
                     const t = Math.max(0, (edgeX - xAbs) / (edgeX - peakX));
-                    const factor = (xAbs > peakX) ? (0.85 + 0.15 * t * t) : 1.0; // Subir más el borde (lados)
+                    const smoothT = 1 - Math.pow(1 - t, 2); // Suavizar la transición para evitar puntas
+                    const factor = (xAbs > peakX) ? (0.85 + 0.15 * smoothT) : 1.0;
                     
                     const riseX = factor * (y - 1.5) * 0.25;
                     v.y += riseX;
@@ -469,7 +474,7 @@
                     // Suavizar transición de pecho (1.0) a cintura (0.95) para evitar corte en la imagen
                     const t = (1.0 - y) / 0.5;
                     widthFactor = 1.0 - (t * 0.05);
-                } else if (y > -2.5) {
+                } else {
                     widthFactor = 0.95; 
                 }
 
@@ -486,7 +491,7 @@
                         const b1 = 0.3 * Math.exp(-(t1*t1)*1.5);
                         const t2 = (y - 1.9); // Segundo punto más arriba
                         const b2 = 0.25 * Math.exp(-(t2*t2)*1.5);
-                        zOffset += Math.max(b1, b2);
+                        zOffset += (b1 + b2); // Sumar suavemente en lugar de usar Max (evita cortes)
                     }
                 } else {
                     v.z *= 0.5;
@@ -518,14 +523,14 @@
             const patchHeight = 4.6;
             const patchArc = 1.8; // Radianes (aprox 100 grados) para cubrir el frente
             
-            // Frente: Centrado en +Z (Angulo PI/2 en Three.js standard cylinder start)
-            // ThetaStart = PI/2 - arc/2
-            const frontGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 32, 16, true, Math.PI/2 - patchArc/2, patchArc);
+            // Frente: Centrado en +Z (Angulo 0)
+            // ThetaStart = -arc/2
+            const frontGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, -patchArc/2, patchArc);
             frontGeo.translate(0, 0.5, 0); // Centrar verticalmente en el pecho (y=0.5)
             applyDeformation(frontGeo); // Deformar igual que el cuerpo
 
-            // Espalda: Centrado en -Z (Angulo 3*PI/2)
-            const backGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 32, 16, true, 3*Math.PI/2 - patchArc/2, patchArc);
+            // Espalda: Centrado en -Z (Angulo PI)
+            const backGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, Math.PI - patchArc/2, patchArc);
             backGeo.translate(0, 0.5, 0);
             applyDeformation(backGeo);
 
@@ -542,8 +547,8 @@
                     pos.setXYZ(i, v.x, v.y, v.z);
                 }
             }
-            inflateGeometry(frontGeo, 0.06); // 6cm de separación para evitar z-fighting
-            inflateGeometry(backGeo, 0.06);
+            inflateGeometry(frontGeo, 0.15); // Aumentar separación para evitar z-fighting
+            inflateGeometry(backGeo, 0.15);
             
             bodyGeo.translate(0, -0.5, 0);
             frontGeo.translate(0, -0.5, 0);
