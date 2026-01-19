@@ -127,6 +127,7 @@
 <div id="imageModal" class="modal">
     <span class="close" onclick="cerrarModal()">&times;</span>
     <img class="modal-content" id="imgGrande">
+    <div id="rotationMsg" style="display:none; position:absolute; top:15%; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camisa, porque tu pedido tiene el estampado en la parte trasera</div>
     <div id="container3D" onclick="event.stopPropagation()"></div>
 
     <!-- Overlay de Feedback -->
@@ -249,6 +250,7 @@
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('imgGrande');
         const container3D = document.getElementById('container3D');
+        const rotationMsg = document.getElementById('rotationMsg');
 
         modal.style.display = "flex";
         
@@ -256,6 +258,7 @@
         modalImg.style.display = 'none';
         container3D.style.display = 'none';
         container3D.innerHTML = '';
+        rotationMsg.style.display = 'none';
 
         // Verificar si es un Mug para mostrar en 3D
         if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
@@ -263,7 +266,17 @@
             init3DMug(pedido.imagen_url, container3D);
         } else if (pedido.producto && pedido.producto.toLowerCase().includes('camisa')) {
             container3D.style.display = 'block';
-            init3DCamisa(pedido.imagen_url, container3D);
+            
+            // Determinar URLs
+            let urls = { frontal: null, trasera: null };
+            if (pedido.imagenes) {
+                urls = pedido.imagenes;
+            } else {
+                if (pedido.imagen_url.includes('frontal')) urls.frontal = pedido.imagen_url;
+                else if (pedido.imagen_url.includes('trasera')) urls.trasera = pedido.imagen_url;
+                else urls.frontal = pedido.imagen_url;
+            }
+            init3DCamisa(urls, container3D);
         } else {
             modalImg.style.display = 'block';
             modalImg.src = pedido.imagen_url;
@@ -281,7 +294,7 @@
                 if (modal.style.display !== 'none') {
                     overlay.style.display = 'flex';
                 }
-            }, 5000);
+            }, 15000);
         }
     }
 
@@ -368,7 +381,7 @@
         animate();
     }
 
-    function init3DCamisa(imageUrl, container) {
+    function init3DCamisa(urls, container) {
         const width = window.innerWidth;
         const height = window.innerHeight;
 
@@ -391,24 +404,41 @@
         dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
 
+        // Mostrar mensaje si solo hay trasera
+        if (!urls.frontal && urls.trasera) {
+            document.getElementById('rotationMsg').style.display = 'block';
+        }
+
         const loader = new THREE.TextureLoader();
         loader.setCrossOrigin('anonymous');
 
-        loader.load(imageUrl, (texture) => {
-            // Ajustar textura para que quede al frente (rotar 180 grados en U)
-            texture.wrapS = THREE.ClampToEdgeWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-            
-            // Materiales: 0 = Cuerpo (con diseño), 1 = Mangas/Cuello (blanco)
-            const textureMat = new THREE.MeshStandardMaterial({ 
-                map: texture, 
-                side: THREE.FrontSide,
-                roughness: 0.5,
-                transparent: true,
-                polygonOffset: true,
-                polygonOffsetFactor: -4,
-                polygonOffsetUnits: -4
+        const loadTexture = (url) => {
+            return new Promise((resolve) => {
+                if (!url) resolve(null);
+                else loader.load(url, resolve, undefined, () => resolve(null));
             });
+        };
+
+        Promise.all([
+            loadTexture(urls.frontal),
+            loadTexture(urls.trasera)
+        ]).then(([texFront, texBack]) => {
+
+            const createMat = (tex) => {
+                if (!tex) return null;
+                tex.wrapS = THREE.ClampToEdgeWrapping;
+                tex.wrapT = THREE.ClampToEdgeWrapping;
+                return new THREE.MeshStandardMaterial({ 
+                    map: tex, 
+                    side: THREE.FrontSide,
+                    roughness: 0.5,
+                    transparent: true,
+                    polygonOffset: true,
+                    polygonOffsetFactor: -4,
+                    polygonOffsetUnits: -4
+                });
+            };
+
             const whiteMat = new THREE.MeshStandardMaterial({ 
                 color: 0xffffff, 
                 roughness: 0.5 
@@ -526,11 +556,27 @@
             const frontGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, -patchArc/2, patchArc);
             frontGeo.translate(0, 0.5, 0); // Centrar verticalmente en el pecho (y=0.5)
             applyDeformation(frontGeo); // Deformar igual que el cuerpo
+            remapUVs(frontGeo);
 
             // Espalda: Centrado en -Z (Angulo PI)
             const backGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, Math.PI - patchArc/2, patchArc);
             backGeo.translate(0, 0.5, 0);
             applyDeformation(backGeo);
+            remapUVs(backGeo);
+
+            // Función para remapear UVs
+            function remapUVs(geometry) {
+                const uv = geometry.attributes.uv;
+                let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+                for (let i = 0; i < uv.count; i++) {
+                    minU = Math.min(minU, uv.getX(i)); maxU = Math.max(maxU, uv.getX(i));
+                    minV = Math.min(minV, uv.getY(i)); maxV = Math.max(maxV, uv.getY(i));
+                }
+                for (let i = 0; i < uv.count; i++) {
+                    uv.setXY(i, (uv.getX(i) - minU) / (maxU - minU), (uv.getY(i) - minV) / (maxV - minV));
+                }
+                uv.needsUpdate = true;
+            }
 
             // Inflar los recubrimientos para que no se oculten (Offset)
             function inflateGeometry(geo, offset) {
@@ -570,7 +616,7 @@
             sleeveGeoL.scale(1, 1, 0.7);
             sleeveGeoL.translate(0, -1.35, 0); // Pivote arriba
             sleeveGeoL.rotateZ(Math.PI / 4.5);
-            sleeveGeoL.translate(2.3, 3.25, 0); // Posición alta en el hombro
+            sleeveGeoL.translate(2.2, 3.25, 0); // Posición alta en el hombro
 
             const sleeveGeoR = new THREE.CylinderGeometry(0.6, 1.15, 2.7, 32, 10);
             const posR = sleeveGeoR.attributes.position;
@@ -588,7 +634,7 @@
             sleeveGeoR.scale(1, 1, 0.7);
             sleeveGeoR.translate(0, -1.35, 0);
             sleeveGeoR.rotateZ(-Math.PI / 4.5);
-            sleeveGeoR.translate(-2.3, 3.25, 0);
+            sleeveGeoR.translate(-2.2, 3.25, 0);
 
             // 4. Cuello (Dona)
             const neckGeo = new THREE.TorusGeometry(1.6, 0.12, 12, 48);
@@ -611,13 +657,13 @@
                 const shirtBase = new THREE.Mesh(finalGeo, whiteMat);
                 scene.add(shirtBase);
 
-                // 2. Recubrimiento Frontal (Imagen)
-                const frontMesh = new THREE.Mesh(frontGeo, textureMat);
-                scene.add(frontMesh);
+                // 2. Recubrimiento Frontal
+                const matFront = createMat(texFront) || whiteMat;
+                if (texFront) scene.add(new THREE.Mesh(frontGeo, matFront));
 
-                // 3. Recubrimiento Trasero (Espacio reservado - Blanco por ahora)
-                const backMesh = new THREE.Mesh(backGeo, whiteMat);
-                scene.add(backMesh);
+                // 3. Recubrimiento Trasero
+                const matBack = createMat(texBack) || whiteMat;
+                if (texBack) scene.add(new THREE.Mesh(backGeo, matBack));
             }
         });
 
@@ -674,6 +720,10 @@
         if (producto.toLowerCase().includes('mug')) nuevoEstado = "Listo para sublimar";
         if (producto.toLowerCase().includes('camisa')) nuevoEstado = "Listo para estampar";
 
+        // Actualizar estado localmente y ocultar overlay inmediatamente
+        currentPedidoData.estado = nuevoEstado;
+        document.getElementById('feedbackOverlay').style.display = 'none';
+
         // Actualizar estado en servidor
         const BACKEND_URL = window.location.hostname.includes('github.io') 
             ? 'https://sublimacion-mary.onrender.com' 
@@ -710,6 +760,10 @@
         const telefono = currentPedidoData.telefono || currentPedidoData.teléfono;
         const imgUrl = currentPedidoData.imagen_url;
         const linkPagina = window.location.href;
+
+        // Actualizar estado localmente y ocultar overlay inmediatamente
+        currentPedidoData.estado = "Creando diseño";
+        document.getElementById('feedbackOverlay').style.display = 'none';
 
         // Actualizar estado en servidor
         const BACKEND_URL = window.location.hostname.includes('github.io') 
