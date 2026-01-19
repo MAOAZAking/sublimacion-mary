@@ -61,5 +61,16 @@
         "fecha": "16/01/2026 15:08:11",
         "estado": "Revisión del cliente",
         "imagen_url": "/img/mug/mug-2/lamina-mug-2.png"
+    },
+    {
+        "telefono": "3169445092",
+        "producto": "Camisa Estampada",
+        "fecha": "19/01/2026 16:52:18",
+        "estado": "Revisión del cliente",
+        "imagen_url": "/img/camisa/camisa-2/lamina-trasera-camisa-2.png",
+        "imagenes": {
+            "frontal": null,
+            "trasera": "/img/camisa/camisa-2/lamina-trasera-camisa-2.png"
+        }
     }
 ]
