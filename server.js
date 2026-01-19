@@ -80,41 +80,71 @@ app.post('/api/login', (req, res) => {
 });
 
 // Endpoint para guardar un nuevo pedido con archivos
-app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name: 'plantilla', maxCount: 1 }]), async (req, res) => {
+app.post('/api/pedidos', upload.fields([
+    { name: 'imagen', maxCount: 1 }, 
+    { name: 'plantilla', maxCount: 1 },
+    { name: 'lamina_frontal', maxCount: 1 },
+    { name: 'lamina_trasera', maxCount: 1 }
+]), async (req, res) => {
     const { producto, telefono, fecha, estado } = req.body;
-    const files = req.files;
+    const files = req.files || {};
 
-    if (!files || !files.imagen || !files.plantilla) {
-        return res.status(400).json({ success: false, error: 'Faltan archivos' });
-    }
-
-    // Validar dimensiones exactas de la imagen (Lámina)
-    try {
-        const dimensions = sizeOf(files.imagen[0].path);
-        
-        // Flexibilidad: Permitir un margen de error (ej. +/- 50 pixeles)
-        const targetW = 2304;
-        const targetH = 934;
-        const tolerance = 50;
-
-        if (Math.abs(dimensions.width - targetW) > tolerance || Math.abs(dimensions.height - targetH) > tolerance) {
-            // Si no cumple, borramos los archivos temporales y devolvemos error
-            fs.unlinkSync(files.imagen[0].path);
-            fs.unlinkSync(files.plantilla[0].path);
-            return res.status(400).json({ success: false, error: `Dimensiones incorrectas. Se espera aprox ${targetW}x${targetH} px (±${tolerance}px). Recibido: ${dimensions.width}x${dimensions.height} px` });
-        }
-    } catch (err) {
-        console.error("Error validando dimensiones:", err);
-        // Limpiar archivos en caso de error de lectura para no dejar basura
-        try { fs.unlinkSync(files.imagen[0].path); } catch(e){}
-        try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
-        return res.status(400).json({ success: false, error: 'El archivo de imagen no es válido o está dañado: ' + err.message });
-    }
-
-    // 1. Determinar tipo de producto y carpetas
+    // 1. Determinar tipo de producto
     let tipoProducto = 'otros';
-    if (producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
-    if (producto.toLowerCase().includes('camisa')) tipoProducto = 'camisa';
+    if (producto && producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
+    if (producto && producto.toLowerCase().includes('camisa')) tipoProducto = 'camisa';
+
+    // 2. Validaciones por tipo de producto
+    if (tipoProducto === 'camisa') {
+        // Validación para Camisas
+        if (!files.lamina_frontal && !files.lamina_trasera) {
+            return res.status(400).json({ success: false, error: 'Para camisas, es obligatorio subir al menos una lámina (frontal o trasera).' });
+        }
+
+        const validateCamisa = (file) => {
+            const dim = sizeOf(file.path);
+            // Dimensiones máximas (Aprox A4 300dpi)
+            const maxW = 2482; 
+            const maxH = 3510;
+            const tolerance = 20; // Pequeña tolerancia
+
+            if (dim.width > (maxW + tolerance) || dim.height > (maxH + tolerance)) {
+                throw new Error(`Dimensiones excedidas. Máximo permitido aprox: ${maxW}x${maxH} px. Recibido: ${dim.width}x${dim.height} px`);
+            }
+        };
+
+        try {
+            if (files.lamina_frontal) validateCamisa(files.lamina_frontal[0]);
+            if (files.lamina_trasera) validateCamisa(files.lamina_trasera[0]);
+        } catch (err) {
+            if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
+            if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
+            return res.status(400).json({ success: false, error: err.message });
+        }
+
+    } else {
+        // Validación para Mugs (o por defecto)
+        if (!files.imagen || !files.plantilla) {
+            return res.status(400).json({ success: false, error: 'Faltan archivos (Imagen y Plantilla).' });
+        }
+
+        try {
+            const dimensions = sizeOf(files.imagen[0].path);
+            const targetW = 2304;
+            const targetH = 934;
+            const tolerance = 50;
+
+            if (Math.abs(dimensions.width - targetW) > tolerance || Math.abs(dimensions.height - targetH) > tolerance) {
+                fs.unlinkSync(files.imagen[0].path);
+                fs.unlinkSync(files.plantilla[0].path);
+                return res.status(400).json({ success: false, error: `Dimensiones incorrectas. Se espera aprox ${targetW}x${targetH} px (±${tolerance}px). Recibido: ${dimensions.width}x${dimensions.height} px` });
+            }
+        } catch (err) {
+            try { fs.unlinkSync(files.imagen[0].path); } catch(e){}
+            try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
+            return res.status(400).json({ success: false, error: 'El archivo de imagen no es válido: ' + err.message });
+        }
+    }
 
     // --- MODO GITHUB ESTRICTO ---
     // Validar que existan todas las credenciales necesarias
@@ -132,13 +162,7 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
         try {
             console.log("Procesando pedido vía GitHub API...");
             
-            // A. Leer archivos del disco temporal a memoria
-            const imagenBuffer = fs.readFileSync(files.imagen[0].path);
-            const plantillaBuffer = fs.readFileSync(files.plantilla[0].path);
-            const imagenExt = path.extname(files.imagen[0].originalname);
-            const plantillaExt = path.extname(files.plantilla[0].originalname);
-
-            // B. Calcular siguiente ID mirando la carpeta en GitHub
+            // A. Calcular siguiente ID mirando la carpeta en GitHub
             let nextNum = 1;
             try {
                 const { data: folderContent } = await githubClient.repos.getContent({
@@ -159,40 +183,74 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
                 }
                 nextNum = maxNum + 1;
             } catch (err) {
-                // Si la carpeta no existe (404), empezamos en 1
                 console.log("Carpeta no existe o error leyendo, iniciando en 1");
             }
 
             const folderName = `${tipoProducto}-${nextNum}`;
-            const imagenName = `lamina-${tipoProducto}-${nextNum}${imagenExt}`;
-            const plantillaName = `plantilla-${tipoProducto}-${nextNum}${plantillaExt}`;
+            
+            // B. Preparar subidas según tipo de producto
+            const uploads = [];
+            let mainImageUrl = '';
 
-            // C. Subir Imagen (Lámina)
-            await githubClient.repos.createOrUpdateFileContents({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO,
-                path: `img/${tipoProducto}/${folderName}/${imagenName}`,
-                message: `Add order image ${folderName} [skip render]`, // [skip render] evita reinicio del server pero actualiza la web
-                content: imagenBuffer.toString('base64')
-            });
+            if (tipoProducto === 'camisa') {
+                // Subir Lámina Frontal
+                if (files.lamina_frontal) {
+                    const ext = path.extname(files.lamina_frontal[0].originalname);
+                    const name = `lamina-frontal-${tipoProducto}-${nextNum}${ext}`;
+                    uploads.push({
+                        path: `img/${tipoProducto}/${folderName}/${name}`,
+                        content: fs.readFileSync(files.lamina_frontal[0].path),
+                        msg: `Add frontal image ${folderName}`
+                    });
+                    mainImageUrl = `/img/${tipoProducto}/${folderName}/${name}`;
+                }
+                // Subir Lámina Trasera
+                if (files.lamina_trasera) {
+                    const ext = path.extname(files.lamina_trasera[0].originalname);
+                    const name = `lamina-trasera-${tipoProducto}-${nextNum}${ext}`;
+                    uploads.push({
+                        path: `img/${tipoProducto}/${folderName}/${name}`,
+                        content: fs.readFileSync(files.lamina_trasera[0].path),
+                        msg: `Add trasera image ${folderName}`
+                    });
+                    if (!mainImageUrl) mainImageUrl = `/img/${tipoProducto}/${folderName}/${name}`;
+                }
+            } else {
+                // Mugs (Comportamiento original)
+                const imagenExt = path.extname(files.imagen[0].originalname);
+                const plantillaExt = path.extname(files.plantilla[0].originalname);
+                const imagenName = `lamina-${tipoProducto}-${nextNum}${imagenExt}`;
+                const plantillaName = `plantilla-${tipoProducto}-${nextNum}${plantillaExt}`;
 
-            await delay(2000); // Esperar 2 segundos para no saturar la validación de GitHub
+                uploads.push({
+                    path: `img/${tipoProducto}/${folderName}/${imagenName}`,
+                    content: fs.readFileSync(files.imagen[0].path),
+                    msg: `Add order image ${folderName}`
+                });
+                uploads.push({
+                    path: `img/${tipoProducto}/${folderName}/${plantillaName}`,
+                    content: fs.readFileSync(files.plantilla[0].path),
+                    msg: `Add order template ${folderName}`
+                });
+                mainImageUrl = `/img/${tipoProducto}/${folderName}/${imagenName}`;
+            }
 
-            // D. Subir Plantilla
-            await githubClient.repos.createOrUpdateFileContents({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO,
-                path: `img/${tipoProducto}/${folderName}/${plantillaName}`,
-                message: `Add order template ${folderName} [skip render]`,
-                content: plantillaBuffer.toString('base64')
-            });
+            // C. Ejecutar subidas
+            for (const up of uploads) {
+                await githubClient.repos.createOrUpdateFileContents({
+                    owner: GITHUB_OWNER, repo: GITHUB_REPO,
+                    path: up.path,
+                    message: up.msg + ' [skip render]',
+                    content: up.content.toString('base64')
+                });
+                await delay(2000); // Esperar entre subidas
+            }
 
-            await delay(2000); // Esperar 2 segundos antes de actualizar el JSON
-
-            // E. Actualizar pedidos.json (de forma robusta)
+            // D. Actualizar pedidos.json
             let pedidos = [];
             let jsonFileSha = undefined;
 
             try {
-                // 1. Intentar obtener el archivo actual (necesitamos el SHA para actualizar)
                 const { data: jsonFile } = await githubClient.repos.getContent({
                     owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json'
                 });
@@ -200,20 +258,12 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
                 pedidos = JSON.parse(currentContent);
                 jsonFileSha = jsonFile.sha; // Guardar el SHA para la actualización
             } catch (error) {
-                if (error.status === 404) {
-                    console.log('pedidos.json no encontrado, se creará uno nuevo.');
-                    // El archivo no existe, 'pedidos' ya es un array vacío y 'jsonFileSha' es undefined.
-                } else {
-                    // Si es otro error (ej. de autenticación), lo lanzamos para que lo capture el catch principal.
-                    throw error;
-                }
+                if (error.status !== 404) throw error;
             }
 
-            // 2. Agregar nuevo pedido
-            const nuevoPedido = { telefono, producto, fecha, estado, imagen_url: `/img/${tipoProducto}/${folderName}/${imagenName}` };
+            const nuevoPedido = { telefono, producto, fecha, estado, imagen_url: mainImageUrl };
             pedidos.push(nuevoPedido);
 
-            // 3. Guardar cambios (crear o actualizar)
             await githubClient.repos.createOrUpdateFileContents({
                 owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json',
                 message: `Update pedidos.json for ${folderName} [skip render]`,
@@ -222,8 +272,10 @@ app.post('/api/pedidos', upload.fields([{ name: 'imagen', maxCount: 1 }, { name:
             });
 
             // Limpiar temporales
-            fs.unlinkSync(files.imagen[0].path);
-            fs.unlinkSync(files.plantilla[0].path);
+            if (files.imagen) try { fs.unlinkSync(files.imagen[0].path); } catch(e){}
+            if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
+            if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
+            if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
 
             return res.json({ success: true, pedido: nuevoPedido });
 
