@@ -98,7 +98,15 @@ app.post('/api/pedidos', upload.fields([
     if (tipoProducto === 'camisa') {
         // Validación para Camisas
         if (!files.lamina_frontal && !files.lamina_trasera) {
+            // Limpiar plantilla si existe pero faltan láminas
+            if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
             return res.status(400).json({ success: false, error: 'Para camisas, es obligatorio subir al menos una lámina (frontal o trasera).' });
+        }
+        if (!files.plantilla) {
+            // Limpiar láminas si existen pero falta plantilla
+            if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
+            if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
+            return res.status(400).json({ success: false, error: 'Para camisas, es obligatorio subir la plantilla (.ai).' });
         }
 
         const validateCamisa = (file) => {
@@ -119,6 +127,7 @@ app.post('/api/pedidos', upload.fields([
         } catch (err) {
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
             if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
+            if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
             return res.status(400).json({ success: false, error: err.message });
         }
 
@@ -218,6 +227,16 @@ app.post('/api/pedidos', upload.fields([
                     });
                     urlTrasera = `/img/${tipoProducto}/${folderName}/${name}`;
                     if (!mainImageUrl) mainImageUrl = urlTrasera;
+                }
+                // Subir Plantilla Camisa
+                if (files.plantilla) {
+                    const ext = path.extname(files.plantilla[0].originalname);
+                    const name = `plantilla-${tipoProducto}-${nextNum}${ext}`;
+                    uploads.push({
+                        path: `img/${tipoProducto}/${folderName}/${name}`,
+                        content: fs.readFileSync(files.plantilla[0].path),
+                        msg: `Add template ${folderName}`
+                    });
                 }
             } else {
                 // Mugs (Comportamiento original)

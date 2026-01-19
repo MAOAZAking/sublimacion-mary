@@ -179,7 +179,11 @@
                         <label for="lamina_trasera">Subir Lámina Trasera (Imagen del diseño):</label>
                         <input type="file" name="lamina_trasera" id="lamina_trasera" accept=".jpg, .jpeg, .png">
                     </div>
-                    <p style="font-size: 0.85rem; color: #666; margin-top: -10px; margin-bottom: 20px;">* Es obligatorio subir al menos una de las dos láminas.</p>
+                    <div class="form-group">
+                        <label for="plantilla">Subir Plantilla (.ai):</label>
+                        <input type="file" name="plantilla" id="plantilla" accept=".ai" required>
+                    </div>
+                    <p style="font-size: 0.85rem; color: #666; margin-top: -10px; margin-bottom: 20px;">* Es obligatorio subir al menos una de las dos láminas y la plantilla.</p>
                 `;
             }
         } else {
@@ -204,9 +208,11 @@
         } else if (producto === 'Camisa Estampada') {
             const frontal = document.getElementById('lamina_frontal');
             const trasera = document.getElementById('lamina_trasera');
-            if ((frontal && frontal.files.length > 0) || (trasera && trasera.files.length > 0)) valid = true;
+            const plantilla = document.getElementById('plantilla');
+            
+            if (((frontal && frontal.files.length > 0) || (trasera && trasera.files.length > 0)) && (plantilla && plantilla.files.length > 0)) valid = true;
             else {
-                alert("Debe subir al menos una lámina (Frontal o Trasera).");
+                alert("Debe subir al menos una lámina (Frontal o Trasera) y la plantilla (.ai).");
                 return;
             }
         }
@@ -246,8 +252,10 @@
             } else if (producto === 'Camisa Estampada') {
                 const frontalInput = document.getElementById('lamina_frontal');
                 const traseraInput = document.getElementById('lamina_trasera');
+                const plantillaInput = document.getElementById('plantilla');
                 if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
                 if (traseraInput.files.length > 0) formData.append('lamina_trasera', traseraInput.files[0], traseraInput.files[0].name.replace(/\s+/g, '-'));
+                if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
             }
 
             // 3. Enviar al Backend (Detectar si estamos en GitHub Pages o Local/Render)
