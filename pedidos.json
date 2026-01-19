@@ -72,5 +72,16 @@
             "frontal": null,
             "trasera": "/img/camisa/camisa-2/lamina-trasera-camisa-2.png"
         }
+    },
+    {
+        "telefono": "3169445092",
+        "producto": "Camisa Estampada",
+        "fecha": "19/01/2026 18:04:36",
+        "estado": "Revisión del cliente",
+        "imagen_url": "/img/camisa/camisa-3/lamina-frontal-camisa-3.png",
+        "imagenes": {
+            "frontal": "/img/camisa/camisa-3/lamina-frontal-camisa-3.png",
+            "trasera": "/img/camisa/camisa-3/lamina-trasera-camisa-3.png"
+        }
     }
 ]
