@@ -191,6 +191,8 @@ app.post('/api/pedidos', upload.fields([
             // B. Preparar subidas según tipo de producto
             const uploads = [];
             let mainImageUrl = '';
+            let urlFrontal = null;
+            let urlTrasera = null;
 
             if (tipoProducto === 'camisa') {
                 // Subir Lámina Frontal
@@ -202,7 +204,8 @@ app.post('/api/pedidos', upload.fields([
                         content: fs.readFileSync(files.lamina_frontal[0].path),
                         msg: `Add frontal image ${folderName}`
                     });
-                    mainImageUrl = `/img/${tipoProducto}/${folderName}/${name}`;
+                    urlFrontal = `/img/${tipoProducto}/${folderName}/${name}`;
+                    mainImageUrl = urlFrontal;
                 }
                 // Subir Lámina Trasera
                 if (files.lamina_trasera) {
@@ -213,7 +216,8 @@ app.post('/api/pedidos', upload.fields([
                         content: fs.readFileSync(files.lamina_trasera[0].path),
                         msg: `Add trasera image ${folderName}`
                     });
-                    if (!mainImageUrl) mainImageUrl = `/img/${tipoProducto}/${folderName}/${name}`;
+                    urlTrasera = `/img/${tipoProducto}/${folderName}/${name}`;
+                    if (!mainImageUrl) mainImageUrl = urlTrasera;
                 }
             } else {
                 // Mugs (Comportamiento original)
@@ -261,7 +265,11 @@ app.post('/api/pedidos', upload.fields([
                 if (error.status !== 404) throw error;
             }
 
-            const nuevoPedido = { telefono, producto, fecha, estado, imagen_url: mainImageUrl };
+            const nuevoPedido = { 
+                telefono, producto, fecha, estado, 
+                imagen_url: mainImageUrl,
+                imagenes: { frontal: urlFrontal, trasera: urlTrasera }
+            };
             pedidos.push(nuevoPedido);
 
             await githubClient.repos.createOrUpdateFileContents({
@@ -286,20 +294,22 @@ app.post('/api/pedidos', upload.fields([
 });
 
 // Endpoint para actualizar el estado de un pedido
-app.post('/api/update-status', (req, res) => {
+app.post('/api/update-status', async (req, res) => {
     const { imagen_url, nuevo_estado } = req.body;
-    const filePath = path.join(__dirname, 'pedidos.json');
+    
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
+        return res.status(500).json({ success: false, error: 'Credenciales de GitHub no configuradas.' });
+    }
 
-    fs.readFile(filePath, 'utf8', (err, data) => {
-        if (err) return res.status(500).json({ success: false, error: 'Error leyendo archivo' });
-        
-        let pedidos = [];
-        try {
-            pedidos = JSON.parse(data);
-        } catch (e) {
-            return res.status(500).json({ success: false, error: 'Error parseando JSON' });
-        }
+    try {
+        // 1. Obtener archivo actual de GitHub
+        const { data: jsonFile } = await githubClient.repos.getContent({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json'
+        });
+        const currentContent = Buffer.from(jsonFile.content, 'base64').toString('utf-8');
+        let pedidos = JSON.parse(currentContent);
 
+        // 2. Actualizar estado
         let modificado = false;
         pedidos = pedidos.map(p => {
             if (p.imagen_url === imagen_url) {
@@ -309,15 +319,21 @@ app.post('/api/update-status', (req, res) => {
             return p;
         });
 
-        if (modificado) {
-            fs.writeFile(filePath, JSON.stringify(pedidos, null, 4), (writeErr) => {
-                if (writeErr) return res.status(500).json({ success: false, error: 'Error escribiendo archivo' });
-                res.json({ success: true });
-            });
-        } else {
-            res.json({ success: false, message: 'Pedido no encontrado' });
-        }
-    });
+        if (!modificado) return res.json({ success: false, message: 'Pedido no encontrado' });
+
+        // 3. Guardar cambios en GitHub
+        await githubClient.repos.createOrUpdateFileContents({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json',
+            message: `Update status to ${nuevo_estado} [skip render]`,
+            content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'),
+            sha: jsonFile.sha
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error actualizando estado:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 // Endpoint para descargar la carpeta del producto como ZIP
