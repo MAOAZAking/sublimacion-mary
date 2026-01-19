@@ -258,30 +258,58 @@ app.post('/api/pedidos', upload.fields([
                 mainImageUrl = `/img/${tipoProducto}/${folderName}/${imagenName}`;
             }
 
-            // C. Ejecutar subidas
+            // C. SUBIDA ROBUSTA (Git Data API)
+            // Usamos la API de bajo nivel (Blobs/Trees) para soportar archivos grandes y evitar timeouts.
+            
+            // 1. Subir archivos (Imágenes/Plantillas) como Blobs
+            const treeItems = [];
+            console.log("Iniciando subida de archivos (Blobs)...");
+
             for (const up of uploads) {
-                await githubClient.repos.createOrUpdateFileContents({
-                    owner: GITHUB_OWNER, repo: GITHUB_REPO,
-                    path: up.path,
-                    message: up.msg + ' [skip render]',
-                    content: up.content.toString('base64')
+                console.log(`Subiendo blob: ${up.path}`);
+                const { data: blobData } = await githubClient.git.createBlob({
+                    owner: GITHUB_OWNER,
+                    repo: GITHUB_REPO,
+                    content: up.content.toString('base64'),
+                    encoding: 'base64'
                 });
-                await delay(2000); // Esperar entre subidas
+                treeItems.push({
+                    path: up.path,
+                    mode: '100644',
+                    type: 'blob',
+                    sha: blobData.sha
+                });
+                await delay(500); // Pequeña pausa para estabilidad
             }
 
-            // D. Actualizar pedidos.json
-            let pedidos = [];
-            let jsonFileSha = undefined;
+            // 2. Obtener estado actual del repositorio
+            const { data: repoData } = await githubClient.repos.get({ owner: GITHUB_OWNER, repo: GITHUB_REPO });
+            const branch = repoData.default_branch;
 
+            const { data: refData } = await githubClient.git.getRef({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
+                ref: `heads/${branch}`
+            });
+            const latestCommitSha = refData.object.sha;
+            
+            const { data: commitData } = await githubClient.git.getCommit({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
+                commit_sha: latestCommitSha
+            });
+            const baseTreeSha = commitData.tree.sha;
+
+            // 3. Actualizar pedidos.json
+            let pedidos = [];
             try {
                 const { data: jsonFile } = await githubClient.repos.getContent({
-                    owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json'
+                    owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json', ref: branch
                 });
                 const currentContent = Buffer.from(jsonFile.content, 'base64').toString('utf-8');
                 pedidos = JSON.parse(currentContent);
-                jsonFileSha = jsonFile.sha; // Guardar el SHA para la actualización
             } catch (error) {
-                if (error.status !== 404) throw error;
+                if (error.status !== 404) console.warn("pedidos.json no encontrado, creando nuevo.");
             }
 
             const nuevoPedido = { 
@@ -291,11 +319,43 @@ app.post('/api/pedidos', upload.fields([
             };
             pedidos.push(nuevoPedido);
 
-            await githubClient.repos.createOrUpdateFileContents({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json',
-                message: `Update pedidos.json for ${folderName} [skip render]`,
+            // Crear blob para pedidos.json
+            const { data: jsonBlob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
                 content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'),
-                sha: jsonFileSha // Si es undefined, crea el archivo. Si tiene valor, lo actualiza.
+                encoding: 'base64'
+            });
+            treeItems.push({
+                path: 'pedidos.json',
+                mode: '100644',
+                type: 'blob',
+                sha: jsonBlob.sha
+            });
+
+            // 4. Crear Árbol y Commit
+            console.log("Creando árbol y commit...");
+            const { data: newTree } = await githubClient.git.createTree({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
+                base_tree: baseTreeSha,
+                tree: treeItems
+            });
+
+            const { data: newCommit } = await githubClient.git.createCommit({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
+                message: `Nuevo pedido: ${producto} - ${folderName} [skip render]`,
+                tree: newTree.sha,
+                parents: [latestCommitSha]
+            });
+
+            // 5. Actualizar Referencia
+            await githubClient.git.updateRef({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
+                ref: `heads/${branch}`,
+                sha: newCommit.sha
             });
 
             // Limpiar temporales
