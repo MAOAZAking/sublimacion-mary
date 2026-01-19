@@ -81,22 +81,14 @@
             </select>
         </div>
 
-        <div class="form-group">
-            <label for="imagen">Subir Lámina (Imagen del diseño):</label>
-            <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
-        </div>
-
-        <div class="form-group">
-            <label for="plantilla">Subir Plantilla (.ai):</label>
-            <input type="file" name="plantilla" id="plantilla" accept=".ai" required>
-        </div>
+        <div id="dynamic-files"></div>
 
         <div class="form-group">
             <label for="telefono">Número Celular (Cliente):</label>
-            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+">
+            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+" disabled>
         </div>
 
-        <button type="submit">Guardar Pedido</button>
+        <button type="submit" id="btnSubmit" disabled>Guardar Pedido</button>
     </form>
     
     <a href="admin_dashboard.html" class="back-link">← Volver al Panel de Admin</a>
@@ -152,16 +144,74 @@
         }
     });
 
+    // Lógica dinámica del formulario
+    const productoSelect = document.getElementById('producto');
+    const dynamicFiles = document.getElementById('dynamic-files');
+    const telefonoInput = document.getElementById('telefono');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    productoSelect.addEventListener('change', function() {
+        const tipo = this.value;
+        dynamicFiles.innerHTML = '';
+        
+        if (tipo) {
+            telefonoInput.disabled = false;
+            btnSubmit.disabled = false;
+
+            if (tipo === 'Mug Personalizado') {
+                dynamicFiles.innerHTML = `
+                    <div class="form-group">
+                        <label for="imagen">Subir Lámina (Imagen del diseño):</label>
+                        <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="plantilla">Subir Plantilla (.ai):</label>
+                        <input type="file" name="plantilla" id="plantilla" accept=".ai" required>
+                    </div>
+                `;
+            } else if (tipo === 'Camisa Estampada') {
+                dynamicFiles.innerHTML = `
+                    <div class="form-group">
+                        <label for="lamina_frontal">Subir Lámina Frontal (Imagen del diseño):</label>
+                        <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png">
+                    </div>
+                    <div class="form-group">
+                        <label for="lamina_trasera">Subir Lámina Trasera (Imagen del diseño):</label>
+                        <input type="file" name="lamina_trasera" id="lamina_trasera" accept=".jpg, .jpeg, .png">
+                    </div>
+                    <p style="font-size: 0.85rem; color: #666; margin-top: -10px; margin-bottom: 20px;">* Es obligatorio subir al menos una de las dos láminas.</p>
+                `;
+            }
+        } else {
+            telefonoInput.disabled = true;
+            btnSubmit.disabled = true;
+        }
+    });
+
     document.getElementById('pedidoForm').addEventListener('submit', function(e) {
         e.preventDefault(); 
 
         const producto = document.getElementById('producto').value;
         const telefono = document.getElementById('telefono').value;
-        const imagenInput = document.getElementById('imagen');
-        const plantillaInput = document.getElementById('plantilla');
         const alertBox = document.getElementById('mensajeAlert');
 
-        if (producto && telefono && imagenInput.files.length > 0 && plantillaInput.files.length > 0) {
+        // Validaciones específicas
+        let valid = false;
+        if (producto === 'Mug Personalizado') {
+            const img = document.getElementById('imagen');
+            const plant = document.getElementById('plantilla');
+            if (img && img.files.length > 0 && plant && plant.files.length > 0) valid = true;
+        } else if (producto === 'Camisa Estampada') {
+            const frontal = document.getElementById('lamina_frontal');
+            const trasera = document.getElementById('lamina_trasera');
+            if ((frontal && frontal.files.length > 0) || (trasera && trasera.files.length > 0)) valid = true;
+            else {
+                alert("Debe subir al menos una lámina (Frontal o Trasera).");
+                return;
+            }
+        }
+
+        if (producto && telefono && valid) {
             
             alertBox.textContent = "Subiendo archivos a GitHub y actualizando base de datos... Por favor espere.";
             alertBox.className = 'alert';
@@ -188,10 +238,17 @@
             formData.append('estado', estadoInicial);
             
             // Sanitizar nombres de archivo (reemplazar espacios por guiones) antes de enviar
-            const imgFile = imagenInput.files[0];
-            const plantFile = plantillaInput.files[0];
-            formData.append('imagen', imgFile, imgFile.name.replace(/\s+/g, '-'));
-            formData.append('plantilla', plantFile, plantFile.name.replace(/\s+/g, '-'));
+            if (producto === 'Mug Personalizado') {
+                const imgFile = document.getElementById('imagen').files[0];
+                const plantFile = document.getElementById('plantilla').files[0];
+                formData.append('imagen', imgFile, imgFile.name.replace(/\s+/g, '-'));
+                formData.append('plantilla', plantFile, plantFile.name.replace(/\s+/g, '-'));
+            } else if (producto === 'Camisa Estampada') {
+                const frontalInput = document.getElementById('lamina_frontal');
+                const traseraInput = document.getElementById('lamina_trasera');
+                if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
+                if (traseraInput.files.length > 0) formData.append('lamina_trasera', traseraInput.files[0], traseraInput.files[0].name.replace(/\s+/g, '-'));
+            }
 
             // 3. Enviar al Backend (Detectar si estamos en GitHub Pages o Local/Render)
             // Si estamos en github.io, usamos la URL de Render. Si no, usamos la ruta relativa.
