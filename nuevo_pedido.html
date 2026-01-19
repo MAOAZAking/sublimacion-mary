@@ -127,12 +127,12 @@
             const isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
             if (isMobile) {
                 if (window.innerHeight > window.innerWidth) {
-                    bg.style.backgroundSize = "80vw auto"; // Vertical: 80% del ancho
+                    bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
                 } else {
-                    bg.style.backgroundSize = "auto 80vh"; // Horizontal: 80% del alto
+                    bg.style.backgroundSize = "auto 60vh"; // Horizontal: 60% del alto
                 }
             } else {
-                bg.style.backgroundSize = "auto 60vh"; // Escritorio: 60% del alto
+                bg.style.backgroundSize = "auto 85vh"; // Escritorio: 85% del alto
             }
         }
         updateBg();
