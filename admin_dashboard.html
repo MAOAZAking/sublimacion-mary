@@ -196,7 +196,7 @@
     <h3>Ver Pedidos</h3>
     <button class="btn-filter active" onclick="filtrar('todos', this)">Todos</button>
     <button class="btn-filter" onclick="filtrar('mug', this)">Mugs</button>
-    <button class="btn-filter" onclick="filtrar('camisa', this)">Camisas</button>
+    <button class="btn-filter" onclick="filtrar('Camiseta', this)">Camisetas</button>
 </div>
 
 <div id="gallery" class="gallery"></div>
@@ -205,7 +205,7 @@
 <div id="imageModal" class="modal" onclick="cerrarModal()">
     <span class="close">&times;</span>
     <img class="modal-content" id="imgGrande">
-    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camisa, porque tu pedido tiene el estampado en la parte trasera</div>
+    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la Camiseta, porque tu pedido tiene el estampado en la parte trasera</div>
     <div id="container3D" onclick="event.stopPropagation()"></div>
     <div class="modal-text" id="modalInfo"></div>
     <button id="toggleInfoBtn" class="toggle-info-btn" onclick="event.stopPropagation(); toggleInfo()"></button>
@@ -492,7 +492,7 @@
     function filtrarBusqueda() {
         const query = document.getElementById('searchInput').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
-        // Usamos la lista filtrada por categoría (Mug/Camisa) como base, o todos si no hay filtro
+        // Usamos la lista filtrada por categoría (Mug/Camiseta) como base, o todos si no hay filtro
         // Pero para que la búsqueda sea global sobre la categoría seleccionada, mejor filtramos sobre 'pedidosFiltrados' que ya tiene la categoría.
         // Sin embargo, si el usuario borra la búsqueda, debemos restaurar la categoría.
         // Estrategia: Filtrar siempre desde 'todosLosPedidos' aplicando Categoría + Búsqueda.
@@ -502,7 +502,7 @@
         
         let baseList = todosLosPedidos;
         if (categoria !== 'todos') {
-            baseList = todosLosPedidos.filter(p => p.producto.toLowerCase().includes(categoria.includes('mug') ? 'mug' : 'camisa'));
+            baseList = todosLosPedidos.filter(p => p.producto.toLowerCase().includes(categoria.includes('mug') ? 'mug' : 'Camiseta'));
         }
 
         const resultados = baseList.filter(p => {
@@ -552,7 +552,7 @@
         if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
             container3D.style.display = 'block';
             init3DMug(pedido.imagen_url, container3D);
-        } else if (pedido.producto && pedido.producto.toLowerCase().includes('camisa')) {
+        } else if (pedido.producto && pedido.producto.toLowerCase().includes('Camiseta')) {
             container3D.style.display = 'block';
             
             // Determinar URLs de frontal y trasera
@@ -566,7 +566,7 @@
                 else urls.frontal = pedido.imagen_url; // Asumir frontal por defecto
             }
 
-            init3DCamisa(urls, container3D);
+            init3DCamiseta(urls, container3D);
         } else {
             modalImg.style.display = 'block';
             modalImg.src = pedido.imagen_url;
@@ -707,7 +707,7 @@
         animate();
     }
 
-    function init3DCamisa(urls, container) {
+    function init3DCamiseta(urls, container) {
         const width = window.innerWidth;
         const height = window.innerHeight;
 
@@ -979,7 +979,7 @@
             if (THREE.BufferGeometryUtils) {
                 const finalGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([bodyGeo, extrasGeo], true);
                 
-                // 1. Camisa Base (Blanca completa)
+                // 1. Camiseta Base (Blanca completa)
                 const shirtBase = new THREE.Mesh(finalGeo, whiteMat);
                 scene.add(shirtBase);
 
