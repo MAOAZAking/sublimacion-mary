@@ -114,6 +114,17 @@
         .gallery-img { width: 100%; height: 200px; object-fit: cover; display: block; }
         .gallery-info { padding: 15px; text-align: center; font-size: 0.9rem; color: #2d3436; background: white; border-top: 1px solid #f1f2f6; }
 
+        /* Status Colors */
+        .status-red-border { border: 2px solid #d63031; }
+        .status-orange-border { border: 2px solid #fdcb6e; }
+        .status-green-border { border: 2px solid #00b894; }
+
+        /* Using !important to ensure these override existing styles */
+        .status-red-text { color: #d63031 !important; }
+        .status-orange-text { color: #fdcb6e !important; }
+        .status-green-text { color: #00b894 !important; }
+
+
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center; flex-direction: column; }
         .modal-content { max-width: 80%; max-height: 70%; border-radius: 5px; position: relative; z-index: 2; }
@@ -295,17 +306,32 @@
         pedidos.forEach(pedido => {
             if (!pedido.imagen_url) return;
 
+            let statusBorderClass = '';
+            let statusTextColorClass = '';
+            const estadoLowerCase = (pedido.estado || '').toLowerCase();
+
+            if (estadoLowerCase === "creando diseño") {
+                statusBorderClass = 'status-red-border';
+                statusTextColorClass = 'status-red-text';
+            } else if (estadoLowerCase === "revisión del cliente") {
+                statusBorderClass = 'status-orange-border';
+                statusTextColorClass = 'status-orange-text';
+            } else if (estadoLowerCase.includes("listo para")) {
+                statusBorderClass = 'status-green-border';
+                statusTextColorClass = 'status-green-text';
+            }
+
             const item = document.createElement('div');
-            item.className = 'gallery-item';
+            item.className = `gallery-item ${statusBorderClass}`; // Apply border class to item
             
             const contentHTML = `
                 <img src="${pedido.imagen_url}" class="gallery-img" loading="lazy">
-                <div class="gallery-info">
+                <div class="gallery-info ${statusTextColorClass}"> <!-- Apply text color class to info div -->
                     <strong>${pedido.producto}</strong><br>
-                    ${pedido.telefono || pedido.teléfono || 'Sin datos'}
+                    ${pedido.telefono || pedido.teléfono || 'Sin datos'}<br>
+                    <span style="font-weight: 600;">Estado: ${pedido.estado || 'Desconocido'}</span>
                 </div>
             `;
-
             if (isEditMode) {
                 // Estructura para Modo Edición (Overlay dividido)
                 item.innerHTML = contentHTML + `
