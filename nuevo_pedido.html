@@ -2,10 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Nuevo Pedido - Admin</title>
     <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#f0f2f5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script>
         // SEGURIDAD: Verificar si el usuario inició sesión
         if (!sessionStorage.getItem('adminLogueado')) {
@@ -17,14 +21,18 @@
     </script>
     <style>
         html { display: none; } /* Ocultar todo el sitio por defecto hasta verificar sesión */
-        body { font-family: 'Poppins', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        body { 
+            font-family: 'Poppins', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; min-height: 100dvh; margin: 0; 
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        }
         .container { background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); width: 100%; max-width: 450px; }
         h2 { text-align: center; color: #2d3436; margin-bottom: 25px; font-weight: 600; }
         .form-group { margin-bottom: 1.5rem; }
         label { display: block; margin-bottom: 0.8rem; color: #636e72; font-weight: 500; font-size: 0.9rem; }
-        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 12px 15px; border: 2px solid #f1f2f6; border-radius: 10px; box-sizing: border-box; background: #f9f9f9; font-family: inherit; transition: all 0.3s; }
+        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 12px 15px; border: 2px solid #f1f2f6; border-radius: 10px; box-sizing: border-box; background: #f9f9f9; font-family: inherit; transition: all 0.3s; -webkit-appearance: none; }
         input:focus, select:focus { border-color: #0984e3; background: white; outline: none; }
-        button { width: 100%; padding: 15px; background: linear-gradient(135deg, #0984e3, #74b9ff); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(9, 132, 227, 0.2); margin-top: 10px; }
+        button { width: 100%; padding: 15px; background: linear-gradient(135deg, #0984e3, #74b9ff); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(9, 132, 227, 0.2); margin-top: 10px; -webkit-appearance: none; }
         button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(9, 132, 227, 0.3); }
         .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
         .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -124,7 +132,7 @@
         document.body.prepend(bg);
 
         function updateBg() {
-            const isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
             if (isMobile) {
                 if (window.innerHeight > window.innerWidth) {
                     bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
@@ -137,7 +145,7 @@
         }
         updateBg();
 
-        if (/Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768) {
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
             setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
         } else {
             window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
