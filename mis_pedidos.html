@@ -2,10 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mis Pedidos - Sublimación Mary</title>
     <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#f8f9fa">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
@@ -16,7 +20,11 @@
         }
     </script>
     <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; color: #333; }
+        body { 
+            font-family: 'Poppins', sans-serif; background-color: #f8f9fa; margin: 0; color: #333;
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        }
         .header { text-align: center; margin-bottom: 40px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
         h2 { color: #2d3436; margin: 0 0 10px 0; }
         #infoCliente { color: #636e72; font-size: 0.9rem; }
@@ -33,7 +41,7 @@
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { max-width: 90%; max-height: 80%; border-radius: 5px; }
         .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1001; }
-        #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; }
+        #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; touch-action: none; }
         
         .back-btn { display: block; width: fit-content; margin: 30px auto; padding: 10px 25px; background: #636e72; color: white; text-decoration: none; border-radius: 50px; position: relative; z-index: 1; font-weight: 500; transition: 0.3s; }
         .back-btn:hover { background: #2d3436; transform: translateY(-2px); }
@@ -72,20 +80,20 @@
         }
         .feedback-top-text {
             margin-top: 0px; color: white; font-size: 1.3rem; text-align: center;
-            pointer-events: auto; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-weight: bold;
+            pointer-events: auto; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); font-weight: bold;
         }
         .feedback-buttons {
-            margin-bottom: 30px; display: flex; gap: 80px;
+            margin-bottom: 30px; display: flex; gap: 40px;
             pointer-events: auto;
         }
         .feedback-btn-wrapper {
             display: flex; flex-direction: column; align-items: center;
         }
         .feedback-label {
-            color: white; margin-bottom: 10px; font-size: 1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-weight: 600; letter-spacing: 0.5px;
+            color: white; margin-bottom: 10px; font-size: 1rem; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); font-weight: 600; letter-spacing: 0.5px;
         }
         .feedback-btn {
-            width: 70px; height: 70px; border-radius: 50%; border: none; color: white; font-size: 2rem; cursor: pointer;
+            width: 120px; height: 70px; border-radius: 50px; border: none; color: white; font-size: 2.5rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center; font-weight: bold;
             box-shadow: 0 10px 25px rgba(0,0,0,0.4); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -127,7 +135,7 @@
 <div id="imageModal" class="modal">
     <span class="close" onclick="cerrarModal()">&times;</span>
     <img class="modal-content" id="imgGrande">
-    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camisa, porque tu pedido tiene el estampado en la parte trasera</div>
+    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camisa, porque tu pedido tiene el estampado en la parte trasera</div>
     <div id="container3D" onclick="event.stopPropagation()"></div>
 
     <!-- Overlay de Feedback -->
@@ -168,7 +176,7 @@
         document.body.prepend(bg);
 
         function updateBg() {
-            const isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
             if (isMobile) {
                 if (window.innerHeight > window.innerWidth) {
                     bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
@@ -181,7 +189,7 @@
         }
         updateBg();
 
-        if (/Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768) {
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
             setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
         } else {
             window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
@@ -310,6 +318,7 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
         container.appendChild(renderer.domElement);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -393,6 +402,7 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
         container.appendChild(renderer.domElement);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);

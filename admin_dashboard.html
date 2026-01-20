@@ -2,10 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Panel Administrador</title>
     <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#f8f9fa">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
@@ -20,12 +24,16 @@
     </script>
     <style>
         html { display: none; } /* Ocultar todo el sitio por defecto hasta verificar sesión */
-        body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; color: #333; }
+        body { 
+            font-family: 'Poppins', sans-serif; background-color: #f8f9fa; margin: 0; color: #333;
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        }
         .header { text-align: center; margin-bottom: 40px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
         .header h2 { margin-top: 0; color: #2d3436; }
         .controls { text-align: center; margin-bottom: 30px; }
         
-        button { padding: 10px 25px; margin: 5px; cursor: pointer; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: 500; transition: all 0.3s; font-family: 'Poppins', sans-serif; }
+        button { padding: 10px 25px; margin: 5px; cursor: pointer; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: 500; transition: all 0.3s; font-family: 'Poppins', sans-serif; -webkit-appearance: none; }
         .btn-create { background: linear-gradient(135deg, #00b894, #00cec9); color: white; box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3); }
         .btn-create:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4); }
         .btn-filter { background-color: #dfe6e9; color: #636e72; }
@@ -43,7 +51,7 @@
         .modal-content { max-width: 80%; max-height: 70%; border-radius: 5px; position: relative; z-index: 2; }
         .modal-text { color: white; font-size: 1.3rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 5px; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 2; pointer-events: none; text-align: center; }
         .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; z-index: 1003; }
-        #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; z-index: 1; }
+        #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; z-index: 1; touch-action: none; }
         
         /* Botón para ocultar/mostrar info */
         .toggle-info-btn { position: absolute; bottom: 30px; right: 30px; background: rgba(255, 255, 255, 0.2); border: 2px solid white; color: white; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; z-index: 1005; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; padding: 0; }
@@ -51,7 +59,7 @@
         .toggle-info-btn svg { width: 24px; height: 24px; }
 
         /* Botón Descargar ZIP */
-        .btn-download { position: absolute; bottom: 30px; left: 30px; z-index: 1005; background: linear-gradient(135deg, #fdcb6e, #e17055); color: white; padding: 12px 25px; border: none; border-radius: 50px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(225, 112, 85, 0.4); transition: transform 0.2s; display: none; font-family: 'Poppins', sans-serif; }
+        .btn-download { position: absolute; bottom: 30px; left: 30px; z-index: 1005; background: linear-gradient(135deg, #fdcb6e, #e17055); color: white; padding: 12px 25px; border: none; border-radius: 50px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(225, 112, 85, 0.4); transition: transform 0.2s; display: none; font-family: 'Poppins', sans-serif; align-items: center; gap: 8px; }
         .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(225, 112, 85, 0.6); }
 
         /* Loader Styles */
@@ -104,11 +112,18 @@
 <div id="imageModal" class="modal" onclick="cerrarModal()">
     <span class="close">&times;</span>
     <img class="modal-content" id="imgGrande">
-    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camisa, porque tu pedido tiene el estampado en la parte trasera</div>
+    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camisa, porque tu pedido tiene el estampado en la parte trasera</div>
     <div id="container3D" onclick="event.stopPropagation()"></div>
     <div class="modal-text" id="modalInfo"></div>
     <button id="toggleInfoBtn" class="toggle-info-btn" onclick="event.stopPropagation(); toggleInfo()"></button>
-    <button id="btnDescargar" class="btn-download" onclick="event.stopPropagation(); descargarCarpeta()">⬇ Descargar Pack</button>
+    <button id="btnDescargar" class="btn-download" onclick="event.stopPropagation(); descargarCarpeta()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Descargar Pack
+    </button>
 </div>
 
 <script>
@@ -145,7 +160,7 @@
         document.body.prepend(bg);
 
         function updateBg() {
-            const isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
             if (isMobile) {
                 if (window.innerHeight > window.innerWidth) {
                     bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
@@ -158,7 +173,7 @@
         }
         updateBg();
 
-        if (/Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768) {
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
             setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
         } else {
             window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
@@ -275,7 +290,7 @@
                     ? 'https://sublimacion-mary.onrender.com' 
                     : '';
                 currentDownloadUrl = `${BACKEND_URL}/api/download-folder/${type}/${folder}`;
-                btnDescargar.style.display = 'block';
+                btnDescargar.style.display = 'flex';
             } else {
                 btnDescargar.style.display = 'none';
             }
@@ -326,6 +341,7 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
         container.appendChild(renderer.domElement);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -403,6 +419,7 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
         container.appendChild(renderer.domElement);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);

@@ -2,18 +2,22 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Bienvenido - Sublimación Mary</title>
     <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#f0f2f5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: 'Poppins', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; margin: 0; }
         .container { background: white; padding: 3rem 2rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); width: 100%; max-width: 380px; text-align: center; transition: transform 0.3s; }
         .container:hover { transform: translateY(-5px); }
         h2 { color: #2d3436; margin-bottom: 2rem; font-weight: 600; letter-spacing: -0.5px; }
-        input { width: 100%; padding: 15px; margin-bottom: 20px; border: 2px solid #f1f2f6; background: #f9f9f9; border-radius: 12px; font-size: 1rem; box-sizing: border-box; text-align: center; transition: all 0.3s; font-family: inherit; }
+        input { width: 100%; padding: 15px; margin-bottom: 20px; border: 2px solid #f1f2f6; background: #f9f9f9; border-radius: 12px; font-size: 1rem; box-sizing: border-box; text-align: center; transition: all 0.3s; font-family: inherit; -webkit-appearance: none; }
         input:focus { border-color: #6c5ce7; background: white; outline: none; box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1); }
-        button { width: 100%; padding: 15px; background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2); }
+        button { width: 100%; padding: 15px; background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2); -webkit-appearance: none; }
         button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(108, 92, 231, 0.3); }
         button:active { transform: translateY(0); }
         .hidden { display: none; }
@@ -97,7 +101,7 @@
         document.body.prepend(bg);
 
         function updateBg() {
-            const isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
             if (isMobile) {
                 if (window.innerHeight > window.innerWidth) {
                     bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
@@ -110,7 +114,7 @@
         }
         updateBg();
 
-        if (/Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768) {
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
             setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
         } else {
             window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
