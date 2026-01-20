@@ -15,7 +15,7 @@
     },
     {
         "telefono": "3002052842",
-        "producto": "Camiseta Estampada",
+        "producto": "camiseta Estampada",
         "fecha": "14/01/2026 13:34:16",
         "estado": "Revisión del cliente",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768420878/mwd7jjcyeyvxorsteybw.png"
@@ -64,24 +64,24 @@
     },
     {
         "telefono": "3169445092",
-        "producto": "Camiseta Estampada",
+        "producto": "camiseta Estampada",
         "fecha": "19/01/2026 16:52:18",
         "estado": "Revisión del cliente",
-        "imagen_url": "/img/Camiseta/Camiseta-2/lamina-trasera-Camiseta-2.png",
+        "imagen_url": "/img/camiseta/camiseta-2/lamina-trasera-camiseta-2.png",
         "imagenes": {
             "frontal": null,
-            "trasera": "/img/Camiseta/Camiseta-2/lamina-trasera-Camiseta-2.png"
+            "trasera": "/img/camiseta/camiseta-2/lamina-trasera-camiseta-2.png"
         }
     },
     {
         "telefono": "3169445092",
-        "producto": "Camiseta Estampada",
+        "producto": "camiseta Estampada",
         "fecha": "19/01/2026 18:04:36",
         "estado": "Revisión del cliente",
-        "imagen_url": "/img/Camiseta/Camiseta-3/lamina-frontal-Camiseta-3.png",
+        "imagen_url": "/img/camiseta/camiseta-3/lamina-frontal-camiseta-3.png",
         "imagenes": {
-            "frontal": "/img/Camiseta/Camiseta-3/lamina-frontal-Camiseta-3.png",
-            "trasera": "/img/Camiseta/Camiseta-3/lamina-trasera-Camiseta-3.png"
+            "frontal": "/img/camiseta/camiseta-3/lamina-frontal-camiseta-3.png",
+            "trasera": "/img/camiseta/camiseta-3/lamina-trasera-camiseta-3.png"
         }
     }
 ]
