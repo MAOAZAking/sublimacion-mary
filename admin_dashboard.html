@@ -40,6 +40,74 @@
         .btn-filter:hover { background-color: #b2bec3; }
         .btn-filter.active { background: linear-gradient(135deg, #0984e3, #74b9ff); color: white; box-shadow: 0 4px 15px rgba(9, 132, 227, 0.3); }
         
+        /* Botón Modo Edición */
+        .btn-edit-mode { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3); }
+        .btn-edit-mode:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(108, 92, 231, 0.4); }
+        .btn-edit-mode.active { background: #2d3436; box-shadow: inset 0 3px 5px rgba(0,0,0,0.2); transform: none; }
+
+        /* Barra de Búsqueda */
+        .search-container { text-align: center; margin-bottom: 25px; }
+        .search-input { 
+            padding: 12px 25px; width: 100%; max-width: 500px; 
+            border: 2px solid #dfe6e9; border-radius: 50px; 
+            font-size: 1rem; outline: none; transition: all 0.3s;
+            font-family: 'Poppins', sans-serif; background: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+        .search-input:focus { border-color: #0984e3; box-shadow: 0 4px 15px rgba(9, 132, 227, 0.15); }
+
+        /* Controles de Ordenamiento */
+        .sort-controls {
+            display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 25px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .sort-btn {
+            background: white; border: 1px solid #dfe6e9; border-radius: 50%; width: 40px; height: 40px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            color: #636e72; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .sort-btn:hover { background-color: #f1f2f6; color: #2d3436; transform: scale(1.05); }
+        
+        .sort-dropdown-container { position: relative; display: inline-block; }
+        .sort-label {
+            font-weight: 600; color: #2d3436; cursor: pointer; padding: 8px 15px;
+            border-radius: 20px; background: white; border: 1px solid #dfe6e9;
+            transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .sort-label:hover { background-color: #f8f9fa; border-color: #b2bec3; }
+        .sort-dropdown {
+            display: none; position: absolute; top: 110%; left: 50%; transform: translateX(-50%);
+            background: white; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-radius: 12px; padding: 8px 0; z-index: 100; overflow: hidden; border: 1px solid #f1f2f6;
+        }
+        .sort-dropdown.show { display: block; animation: fadeIn 0.2s; }
+        .sort-option {
+            padding: 10px 20px; cursor: pointer; color: #636e72; font-size: 0.95rem; text-align: left;
+            transition: background 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .sort-option:hover { background-color: #f0f2f5; color: #0984e3; }
+
+        /* Overlay de Edición */
+        .edit-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            opacity: 0; transition: opacity 0.3s;
+            background: rgba(255, 255, 255, 0.25); /* Filtro transparentoso */
+            backdrop-filter: blur(3px); z-index: 10;
+        }
+        .gallery-item:hover .edit-overlay { opacity: 1; }
+        
+        .edit-half {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.2s;
+            color: white; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 5px rgba(0,0,0,0.5);
+            font-weight: 600; font-size: 1.2rem; letter-spacing: 0.5px;
+        }
+        .edit-half:hover { background: rgba(0, 0, 0, 0.4); }
+        .edit-half-top { border-bottom: 1px solid rgba(255,255,255,0.4); }
+        .edit-icon { width: 32px; height: 32px; margin-bottom: 5px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+        
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; max-width: 1100px; margin: 0 auto; }
         .gallery-item { border: none; border-radius: 16px; overflow: hidden; cursor: pointer; background: white; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.3s, box-shadow 0.3s; }
         .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
@@ -96,7 +164,27 @@
 <div class="header">
     <h2>Panel de Administración</h2>
     <button class="btn-create" onclick="window.location.href='nuevo_pedido.html'">+ Crear Nuevo Pedido</button>
+    <button id="btnEditMode" class="btn-edit-mode" onclick="toggleEditMode()">✎ Editar Pedido</button>
     <button style="background-color: #666; color: white;" onclick="cerrarSesion()">Cerrar Sesión</button>
+</div>
+
+<div class="search-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="Buscar por teléfono, fecha (ej: 20/01 o enero) o estado..." oninput="filtrarBusqueda()">
+</div>
+
+<div class="sort-controls">
+    <button class="sort-btn" id="sortDirectionBtn" onclick="toggleSortDirection()" title="Invertir orden">
+        <!-- Icono por defecto (Descendente) -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+    </button>
+    
+    <div class="sort-dropdown-container">
+        <div class="sort-label" onclick="toggleSortDropdown()">
+            <span id="currentSortText">Recientes</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div id="sortDropdown" class="sort-dropdown"></div>
+    </div>
 </div>
 
 <div class="controls">
@@ -128,6 +216,10 @@
 
 <script>
     let todosLosPedidos = [];
+    let pedidosFiltrados = []; // Para mantener el estado actual de la vista
+    let isEditMode = false;
+    let currentSortField = 'fecha'; // 'fecha', 'estado', 'telefono'
+    let isSortAscending = false; // false = Descendente (Más reciente primero), true = Ascendente
     let currentDownloadUrl = '';
     let renderer, scene, camera, controls, animationId;
 
@@ -185,7 +277,9 @@
         .then(res => res.json())
         .then(data => {
             todosLosPedidos = data;
-            renderGallery(data);
+            pedidosFiltrados = data;
+            aplicarOrdenamiento(); // Ordenar inicialmente
+            renderGallery(pedidosFiltrados);
         })
         .catch(err => console.error("Error cargando pedidos:", err));
 
@@ -198,17 +292,150 @@
 
             const item = document.createElement('div');
             item.className = 'gallery-item';
-            // Pasamos el objeto pedido completo al click
-            item.onclick = () => abrirModal(pedido);
-
-            item.innerHTML = `
+            
+            const contentHTML = `
                 <img src="${pedido.imagen_url}" class="gallery-img" loading="lazy">
                 <div class="gallery-info">
                     <strong>${pedido.producto}</strong><br>
                     ${pedido.telefono || pedido.teléfono || 'Sin datos'}
                 </div>
             `;
+
+            if (isEditMode) {
+                // Estructura para Modo Edición (Overlay dividido)
+                item.innerHTML = contentHTML + `
+                    <div class="edit-overlay">
+                        <div class="edit-half edit-half-top">
+                            <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            Previsualizar
+                        </div>
+                        <div class="edit-half edit-half-bottom">
+                            <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            Editar
+                        </div>
+                    </div>
+                `;
+                // Asignar eventos a las mitades
+                const topHalf = item.querySelector('.edit-half-top');
+                const botHalf = item.querySelector('.edit-half-bottom');
+                topHalf.onclick = (e) => { e.stopPropagation(); abrirModal(pedido); };
+                botHalf.onclick = (e) => { e.stopPropagation(); editarPedido(pedido); };
+            } else {
+                // Modo Normal
+                item.innerHTML = contentHTML;
+                item.onclick = () => abrirModal(pedido);
+            }
+
             gallery.appendChild(item);
+        });
+    }
+
+    // --- LÓGICA DE ORDENAMIENTO ---
+    
+    function toggleSortDirection() {
+        isSortAscending = !isSortAscending;
+        updateSortIcon();
+        aplicarOrdenamiento();
+        renderGallery(pedidosFiltrados);
+    }
+
+    function updateSortIcon() {
+        const btn = document.getElementById('sortDirectionBtn');
+        if (isSortAscending) {
+            // Flecha Arriba (Ascendente)
+            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>';
+        } else {
+            // Flecha Abajo (Descendente)
+            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>';
+        }
+    }
+
+    function toggleSortDropdown() {
+        const dropdown = document.getElementById('sortDropdown');
+        if (dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        } else {
+            renderSortOptions();
+            dropdown.classList.add('show');
+        }
+    }
+
+    // Cerrar dropdown al hacer clic fuera
+    window.onclick = function(event) {
+        if (!event.target.closest('.sort-dropdown-container')) {
+            document.getElementById('sortDropdown').classList.remove('show');
+        }
+    }
+
+    function renderSortOptions() {
+        const dropdown = document.getElementById('sortDropdown');
+        const options = [
+            { id: 'fecha', label: 'Fecha' }, // Se mostrará como "Fecha" en opciones, pero "Recientes" en label principal si es default
+            { id: 'estado', label: 'Estado' },
+            { id: 'telefono', label: 'Núm. cliente' }
+        ];
+
+        dropdown.innerHTML = options
+            .filter(opt => opt.id !== currentSortField)
+            .map(opt => `<div class="sort-option" onclick="changeSortField('${opt.id}')">${opt.label}</div>`)
+            .join('');
+    }
+
+    function changeSortField(field) {
+        currentSortField = field;
+        
+        // Actualizar etiqueta principal
+        const labelMap = {
+            'fecha': 'Recientes',
+            'estado': 'Estado',
+            'telefono': 'Núm. cliente'
+        };
+        document.getElementById('currentSortText').innerText = labelMap[field];
+        
+        // Resetear dirección por defecto según el tipo
+        // Fecha: Descendente (Recientes)
+        // Estado: Ascendente (Prioridad)
+        // Telefono: Ascendente
+        isSortAscending = field !== 'fecha'; 
+        updateSortIcon();
+
+        document.getElementById('sortDropdown').classList.remove('show');
+        aplicarOrdenamiento();
+        renderGallery(pedidosFiltrados);
+    }
+
+    function aplicarOrdenamiento() {
+        pedidosFiltrados.sort((a, b) => {
+            let valA, valB;
+            
+            if (currentSortField === 'fecha') {
+                // Convertir "DD/MM/YYYY HH:mm:ss" a Date object
+                const parseDate = (str) => {
+                    if (!str) return 0;
+                    const [date, time] = str.split(' ');
+                    const [d, m, y] = date.split('/');
+                    return new Date(`${y}-${m}-${d}T${time}`);
+                };
+                valA = parseDate(a.fecha).getTime();
+                valB = parseDate(b.fecha).getTime();
+            } else if (currentSortField === 'estado') {
+                // Mapa de prioridades
+                const priorities = {
+                    "creando diseño": 1,
+                    "revisión del cliente": 2,
+                    "listo para entregar": 3, "listo para sublimar": 3, "listo para estampar": 3
+                };
+                const getPriority = (status) => priorities[(status || '').toLowerCase()] || 4;
+                valA = getPriority(a.estado);
+                valB = getPriority(b.estado);
+            } else if (currentSortField === 'telefono') {
+                valA = parseInt(a.telefono || a.teléfono || 0);
+                valB = parseInt(b.telefono || b.teléfono || 0);
+            }
+
+            if (valA < valB) return isSortAscending ? -1 : 1;
+            if (valA > valB) return isSortAscending ? 1 : -1;
+            return 0;
         });
     }
 
@@ -218,14 +445,74 @@
         btn.classList.add('active');
 
         if (categoria === 'todos') {
-            renderGallery(todosLosPedidos);
+            pedidosFiltrados = todosLosPedidos;
         } else {
             // Filtro insensible a mayúsculas/minúsculas
-            const filtrados = todosLosPedidos.filter(p => 
+            pedidosFiltrados = todosLosPedidos.filter(p => 
                 p.producto.toLowerCase().includes(categoria.toLowerCase())
             );
-            renderGallery(filtrados);
         }
+        // Re-aplicar búsqueda si hay texto
+        filtrarBusqueda();
+        // El ordenamiento se mantiene porque filtrarBusqueda llama a renderGallery con la lista filtrada, pero debemos asegurar que se ordene
+    }
+
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        const btn = document.getElementById('btnEditMode');
+        if (isEditMode) {
+            btn.classList.add('active');
+            btn.innerHTML = "❌ Salir de Edición";
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = "✎ Editar Pedido";
+        }
+        // Renderizar de nuevo con el estado actual de filtros
+        renderGallery(pedidosFiltrados);
+    }
+
+    function editarPedido(pedido) {
+        // Aquí iría la lógica para redirigir a la página de edición
+        alert(`Función de editar para el pedido de ${pedido.telefono || 'Cliente'}\n(Funcionalidad en desarrollo)`);
+    }
+
+    function filtrarBusqueda() {
+        const query = document.getElementById('searchInput').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        // Usamos la lista filtrada por categoría (Mug/Camisa) como base, o todos si no hay filtro
+        // Pero para que la búsqueda sea global sobre la categoría seleccionada, mejor filtramos sobre 'pedidosFiltrados' que ya tiene la categoría.
+        // Sin embargo, si el usuario borra la búsqueda, debemos restaurar la categoría.
+        // Estrategia: Filtrar siempre desde 'todosLosPedidos' aplicando Categoría + Búsqueda.
+        
+        const activeCategoryBtn = document.querySelector('.btn-filter.active');
+        const categoria = activeCategoryBtn ? activeCategoryBtn.innerText.toLowerCase() : 'todos';
+        
+        let baseList = todosLosPedidos;
+        if (categoria !== 'todos') {
+            baseList = todosLosPedidos.filter(p => p.producto.toLowerCase().includes(categoria.includes('mug') ? 'mug' : 'camisa'));
+        }
+
+        const resultados = baseList.filter(p => {
+            const tel = (p.telefono || p.teléfono || '').toString();
+            const estado = (p.estado || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            // Lógica de fecha flexible (Convierte "20/01/2026" a texto buscable con meses)
+            const fechaOriginal = (p.fecha || '').toLowerCase();
+            let fechaTexto = fechaOriginal;
+            const parts = fechaOriginal.split(' ')[0].split('/'); // [DD, MM, YYYY]
+            if (parts.length >= 2) {
+                const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+                const mesIdx = parseInt(parts[1]) - 1;
+                if (mesIdx >= 0) fechaTexto += ` ${meses[mesIdx]}`; // Agrega nombre del mes para buscar
+            }
+
+            return tel.includes(query) || estado.includes(query) || fechaTexto.includes(query);
+        });
+        
+        // Actualizamos la variable global para que toggleEditMode funcione sobre estos resultados
+        pedidosFiltrados = resultados;
+        aplicarOrdenamiento(); // Re-ordenar los resultados filtrados
+        renderGallery(resultados);
     }
 
     function abrirModal(pedido) {
