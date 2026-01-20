@@ -175,7 +175,12 @@
 <div class="sort-controls">
     <button class="sort-btn" id="sortDirectionBtn" onclick="toggleSortDirection()" title="Invertir orden">
         <!-- Icono por defecto (Descendente) -->
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Izquierda (Abajo) - Gruesa (Activa por defecto) -->
+            <path d="M8 5v14M4 15l4 4 4-4" stroke-width="3"></path>
+            <!-- Derecha (Arriba) - Fina (Inactiva) -->
+            <path d="M16 19V5M12 9l4-4 4 4" stroke-width="1.5" opacity="0.6"></path>
+        </svg>
     </button>
     
     <div class="sort-dropdown-container">
@@ -342,11 +347,19 @@
     function updateSortIcon() {
         const btn = document.getElementById('sortDirectionBtn');
         if (isSortAscending) {
-            // Flecha Arriba (Ascendente)
-            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>';
+            // Ascendente: Flecha derecha (Arriba) gruesa, Izquierda (Abajo) fina
+            btn.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 5v14M4 15l4 4 4-4" stroke-width="1.5" opacity="0.6"></path>
+                    <path d="M16 19V5M12 9l4-4 4 4" stroke-width="3"></path>
+                </svg>`;
         } else {
-            // Flecha Abajo (Descendente)
-            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>';
+            // Descendente: Flecha izquierda (Abajo) gruesa, Derecha (Arriba) fina
+            btn.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 5v14M4 15l4 4 4-4" stroke-width="3"></path>
+                    <path d="M16 19V5M12 9l4-4 4 4" stroke-width="1.5" opacity="0.6"></path>
+                </svg>`;
         }
     }
 
