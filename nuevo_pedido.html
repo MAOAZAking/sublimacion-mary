@@ -85,7 +85,7 @@
             <select name="producto" id="producto" required>
                 <option value="" disabled selected>Seleccione una opción</option>
                 <option value="Mug Personalizado">Mug</option>
-                <option value="Camisa Estampada">Camisa</option>
+                <option value="Camiseta Estampada">Camiseta</option>
             </select>
         </div>
 
@@ -177,7 +177,7 @@
                         <input type="file" name="plantilla" id="plantilla" accept=".ai" required>
                     </div>
                 `;
-            } else if (tipo === 'Camisa Estampada') {
+            } else if (tipo === 'Camiseta Estampada') {
                 dynamicFiles.innerHTML = `
                     <div class="form-group">
                         <label for="lamina_frontal">Subir Lámina Frontal (Imagen del diseño):</label>
@@ -213,14 +213,14 @@
             const img = document.getElementById('imagen');
             const plant = document.getElementById('plantilla');
             if (img && img.files.length > 0 && plant && plant.files.length > 0) valid = true;
-        } else if (producto === 'Camisa Estampada') {
+        } else if (producto === 'Camiseta Estampada') {
             const frontal = document.getElementById('lamina_frontal');
             const trasera = document.getElementById('lamina_trasera');
             const plantilla = document.getElementById('plantilla');
             
             if (((frontal && frontal.files.length > 0) || (trasera && trasera.files.length > 0)) && (plantilla && plantilla.files.length > 0)) valid = true;
             else {
-                alert("Debe subir al menos una lámina para la camisa ya sea Frontal o Trasera.");
+                alert("Debe subir al menos una lámina para la camiseta ya sea Frontal o Trasera.");
                 return;
             }
         }
@@ -257,7 +257,7 @@
                 const plantFile = document.getElementById('plantilla').files[0];
                 formData.append('imagen', imgFile, imgFile.name.replace(/\s+/g, '-'));
                 formData.append('plantilla', plantFile, plantFile.name.replace(/\s+/g, '-'));
-            } else if (producto === 'Camisa Estampada') {
+            } else if (producto === 'Camiseta Estampada') {
                 const frontalInput = document.getElementById('lamina_frontal');
                 const traseraInput = document.getElementById('lamina_trasera');
                 const plantillaInput = document.getElementById('plantilla');

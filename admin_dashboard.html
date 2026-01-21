@@ -109,10 +109,30 @@
         .edit-icon { width: 32px; height: 32px; margin-bottom: 5px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
         
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; max-width: 1100px; margin: 0 auto; }
-        .gallery-item { border: none; border-radius: 16px; overflow: hidden; cursor: pointer; background: white; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.3s, box-shadow 0.3s; }
+        .gallery-item { border: 4px solid transparent; border-radius: 16px; overflow: hidden; cursor: pointer; background: white; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; }
         .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
         .gallery-img { width: 100%; height: 200px; object-fit: cover; display: block; }
-        .gallery-info { padding: 15px; text-align: center; font-size: 0.9rem; color: #2d3436; background: white; border-top: 1px solid #f1f2f6; }
+        .gallery-info { padding: 15px; text-align: center; font-size: 0.9rem; color: #2d3436; background: white; border-top: 1px solid #f1f2f6; transition: background-color 0.3s; }
+
+        /* Neon Status Borders & Info Background */
+        .status-green {
+            border-color: #2ecc71;
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.8), 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .status-green .gallery-info { background-color: #e8f5e9; }
+        .status-orange {
+            border-color: #f39c12;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.8), 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .status-orange .gallery-info { background-color: #fff8e1; }
+        .status-red {
+            border-color: #e74c3c;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.8), 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .status-red .gallery-info { background-color: #ffebee; }
+        .gallery-item:hover.status-green { box-shadow: 0 0 35px rgba(46, 204, 113, 1), 0 15px 30px rgba(0,0,0,0.1); }
+        .gallery-item:hover.status-orange { box-shadow: 0 0 35px rgba(243, 156, 18, 1), 0 15px 30px rgba(0,0,0,0.1); }
+        .gallery-item:hover.status-red { box-shadow: 0 0 35px rgba(231, 76, 60, 1), 0 15px 30px rgba(0,0,0,0.1); }
 
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center; flex-direction: column; }
@@ -196,7 +216,7 @@
     <h3>Ver Pedidos</h3>
     <button class="btn-filter active" onclick="filtrar('todos', this)">Todos</button>
     <button class="btn-filter" onclick="filtrar('mug', this)">Mugs</button>
-    <button class="btn-filter" onclick="filtrar('camisa', this)">Camisas</button>
+    <button class="btn-filter" onclick="filtrar('camiseta', this)">Camisetas</button>
 </div>
 
 <div id="gallery" class="gallery"></div>
@@ -205,7 +225,7 @@
 <div id="imageModal" class="modal" onclick="cerrarModal()">
     <span class="close">&times;</span>
     <img class="modal-content" id="imgGrande">
-    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camisa, porque tu pedido tiene el estampado en la parte trasera</div>
+    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camiseta, porque tu pedido tiene el estampado en la parte trasera</div>
     <div id="container3D" onclick="event.stopPropagation()"></div>
     <div class="modal-text" id="modalInfo"></div>
     <button id="toggleInfoBtn" class="toggle-info-btn" onclick="event.stopPropagation(); toggleInfo()"></button>
@@ -298,6 +318,16 @@
             const item = document.createElement('div');
             item.className = 'gallery-item';
             
+            // Lógica para asignar color según el estado
+            const estado = (pedido.estado || '').toLowerCase();
+            if (estado.includes('listo para')) { // Verde: Aprobado
+                item.classList.add('status-green');
+            } else if (estado.includes('revisión') || estado.includes('revision')) { // Naranja: Pendiente
+                item.classList.add('status-orange');
+            } else if (estado.includes('creando') || estado.includes('cambio')) { // Rojo: Cambios/Diseño
+                item.classList.add('status-red');
+            }
+
             const contentHTML = `
                 <img src="${pedido.imagen_url}" class="gallery-img" loading="lazy">
                 <div class="gallery-info">
@@ -460,9 +490,8 @@
         if (categoria === 'todos') {
             pedidosFiltrados = todosLosPedidos;
         } else {
-            // Filtro insensible a mayúsculas/minúsculas
             pedidosFiltrados = todosLosPedidos.filter(p => 
-                p.producto.toLowerCase().includes(categoria.toLowerCase())
+                p.producto.toLowerCase().includes(categoria)
             );
         }
         // Re-aplicar búsqueda si hay texto
@@ -502,7 +531,7 @@
         
         let baseList = todosLosPedidos;
         if (categoria !== 'todos') {
-            baseList = todosLosPedidos.filter(p => p.producto.toLowerCase().includes(categoria.includes('mug') ? 'mug' : 'camisa'));
+            baseList = todosLosPedidos.filter(p => p.producto.toLowerCase().includes(categoria.includes('mug') ? 'mug' : 'camiseta'));
         }
 
         const resultados = baseList.filter(p => {
@@ -552,7 +581,7 @@
         if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
             container3D.style.display = 'block';
             init3DMug(pedido.imagen_url, container3D);
-        } else if (pedido.producto && pedido.producto.toLowerCase().includes('camisa')) {
+        } else if (pedido.producto && pedido.producto.toLowerCase().includes('camiseta')) {
             container3D.style.display = 'block';
             
             // Determinar URLs de frontal y trasera
@@ -566,7 +595,7 @@
                 else urls.frontal = pedido.imagen_url; // Asumir frontal por defecto
             }
 
-            init3DCamisa(urls, container3D);
+            init3DCamiseta(urls, container3D);
         } else {
             modalImg.style.display = 'block';
             modalImg.src = pedido.imagen_url;
@@ -707,7 +736,7 @@
         animate();
     }
 
-    function init3DCamisa(urls, container) {
+    function init3DCamiseta(urls, container) {
         const width = window.innerWidth;
         const height = window.innerHeight;
 
