@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Editar Pedido - Admin</title>
+    <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#f0f2f5">
+    <script>
+        if (!sessionStorage.getItem('adminLogueado')) {
+            window.location.href = 'index.html';
+        } else {
+            document.documentElement.style.display = 'block';
+        }
+    </script>
+    <style>
+        html { display: none; }
+        body { font-family: 'Poppins', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); width: 100%; max-width: 450px; }
+        h2 { text-align: center; color: #2d3436; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #636e72; margin-bottom: 25px; font-size: 0.9rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.8rem; color: #636e72; font-weight: 500; font-size: 0.9rem; }
+        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 12px 15px; border: 2px solid #f1f2f6; border-radius: 10px; box-sizing: border-box; background: #f9f9f9; font-family: inherit; transition: all 0.3s; -webkit-appearance: none; }
+        input:focus, select:focus { border-color: #6c5ce7; background: white; outline: none; }
+        button { width: 100%; padding: 15px; background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2); margin-top: 10px; -webkit-appearance: none; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(108, 92, 231, 0.3); }
+        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
+        .alert.error { background-color: #f8d7da; color: #721c24; }
+        .alert.success { background-color: #d4edda; color: #155724; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #666; text-decoration: none; font-size: 0.9rem; }
+        .file-info { font-size: 0.8rem; color: #888; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Editar Pedido</h2>
+    <p id="subtitle" class="subtitle">Cargando datos del pedido...</p>
+
+    <div id="mensajeAlert" class="alert"></div>
+
+    <form id="pedidoForm" style="display: none;">
+        <!-- Identificador del pedido original -->
+        <input type="hidden" name="original_imagen_url" id="original_imagen_url">
+        <input type="hidden" name="producto_tipo" id="producto_tipo">
+
+        <div id="dynamic-files">
+            <!-- Los campos de archivo se insertarán aquí dinámicamente -->
+        </div>
+
+        <div class="form-group">
+            <label for="telefono">Número Celular (Cliente):</label>
+            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+">
+        </div>
+
+        <button type="submit" id="btnSubmit">Actualizar Pedido</button>
+    </form>
+    
+    <a href="admin_dashboard.html" class="back-link">← Volver al Panel de Admin</a>
+</div>
+
+<script>
+    let currentPedido = null;
+
+    window.addEventListener('load', async function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pedidoImgUrl = urlParams.get('pedido');
+
+        if (!pedidoImgUrl) {
+            document.getElementById('subtitle').textContent = "Error: No se especificó un pedido para editar.";
+            return;
+        }
+
+        try {
+            const response = await fetch('pedidos.json');
+            if (!response.ok) throw new Error('No se pudo cargar la base de datos.');
+            const todosLosPedidos = await response.json();
+            
+            currentPedido = todosLosPedidos.find(p => p.imagen_url === pedidoImgUrl);
+
+            if (!currentPedido) {
+                throw new Error('Pedido no encontrado en la base de datos.');
+            }
+
+            initializeForm(currentPedido);
+
+        } catch (error) {
+            document.getElementById('subtitle').textContent = `Error: ${error.message}`;
+            document.getElementById('subtitle').style.color = 'red';
+        }
+    });
+
+    function initializeForm(pedido) {
+        const productoTipoCompleto = pedido.producto;
+        const esMug = productoTipoCompleto.toLowerCase().includes('mug');
+        const esCamiseta = productoTipoCompleto.toLowerCase().includes('camiseta');
+
+        document.getElementById('subtitle').textContent = `Editando: ${productoTipoCompleto} de cliente ${pedido.telefono}`;
+        document.getElementById('telefono').value = pedido.telefono || pedido.teléfono;
+        document.getElementById('original_imagen_url').value = pedido.imagen_url;
+        document.getElementById('producto_tipo').value = productoTipoCompleto;
+
+        const dynamicFiles = document.getElementById('dynamic-files');
+        dynamicFiles.innerHTML = '';
+
+        if (esMug) {
+            dynamicFiles.innerHTML = `
+                <div class="form-group">
+                    <label for="imagen">Subir NUEVA Lámina (Opcional):</label>
+                    <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png">
+                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                </div>
+                <div class="form-group">
+                    <label for="plantilla">Subir NUEVA Plantilla .ai (Opcional):</label>
+                    <input type="file" name="plantilla" id="plantilla" accept=".ai">
+                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                </div>
+            `;
+        } else if (esCamiseta) {
+            dynamicFiles.innerHTML = `
+                <div class="form-group">
+                    <label for="lamina_frontal">Subir NUEVA Lámina Frontal (Opcional):</label>
+                    <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png">
+                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                </div>
+                <div class="form-group">
+                    <label for="lamina_trasera">Subir NUEVA Lámina Trasera (Opcional):</label>
+                    <input type="file" name="lamina_trasera" id="lamina_trasera" accept=".jpg, .jpeg, .png">
+                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                </div>
+                <div class="form-group">
+                    <label for="plantilla">Subir NUEVA Plantilla .ai (Opcional):</label>
+                    <input type="file" name="plantilla" id="plantilla" accept=".ai">
+                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                </div>
+            `;
+        }
+
+        document.getElementById('pedidoForm').style.display = 'block';
+    }
+
+    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
+        e.preventDefault(); 
+
+        const alertBox = document.getElementById('mensajeAlert');
+        const telefono = document.getElementById('telefono').value;
+        const productoTipo = document.getElementById('producto_tipo').value;
+        const originalUrl = document.getElementById('original_imagen_url').value;
+
+        // Validar si al menos se cambió el teléfono o se subió un archivo
+        const files = Array.from(this.querySelectorAll('input[type="file"]')).filter(input => input.files.length > 0);
+        if (files.length === 0 && telefono === (currentPedido.telefono || currentPedido.teléfono)) {
+            alert("No ha realizado ningún cambio. Modifique el teléfono o suba al menos un archivo nuevo para actualizar.");
+            return;
+        }
+
+        alertBox.textContent = "Actualizando pedido en GitHub... Por favor espere, esto puede tardar.";
+        alertBox.className = 'alert';
+        alertBox.style.display = 'block';
+        alertBox.style.backgroundColor = '#fff3cd';
+        alertBox.style.color = '#856404';
+        document.getElementById('btnSubmit').disabled = true;
+        
+        // 1. Generar nueva fecha
+        const now = new Date();
+        const dia = String(now.getDate()).padStart(2, '0');
+        const mes = String(now.getMonth() + 1).padStart(2, '0');
+        const anio = now.getFullYear();
+        const hora = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const seg = String(now.getSeconds()).padStart(2, '0');
+        const fechaCompleta = `${dia}/${mes}/${anio} ${hora}:${min}:${seg}`;
+        const nuevoEstado = "Revisión del cliente";
+
+        // 2. Preparar FormData
+        const formData = new FormData();
+        formData.append('original_imagen_url', originalUrl);
+        formData.append('producto', productoTipo);
+        formData.append('telefono', telefono);
+        formData.append('fecha', fechaCompleta);
+        formData.append('estado', nuevoEstado);
+        
+        // Sanitizar nombres de archivo y añadir a FormData
+        const esCamiseta = productoTipo.toLowerCase().includes('camiseta');
+        if (esCamiseta) {
+            const frontalInput = document.getElementById('lamina_frontal');
+            const traseraInput = document.getElementById('lamina_trasera');
+            const plantillaInput = document.getElementById('plantilla');
+            if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
+            if (traseraInput.files.length > 0) formData.append('lamina_trasera', traseraInput.files[0], traseraInput.files[0].name.replace(/\s+/g, '-'));
+            if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
+        } else { // Es Mug
+            const imgInput = document.getElementById('imagen');
+            const plantInput = document.getElementById('plantilla');
+            if (imgInput.files.length > 0) formData.append('imagen', imgInput.files[0], imgInput.files[0].name.replace(/\s+/g, '-'));
+            if (plantInput.files.length > 0) formData.append('plantilla', plantInput.files[0], plantInput.files[0].name.replace(/\s+/g, '-'));
+        }
+
+        // 3. Enviar al Backend
+        const BACKEND_URL = window.location.hostname.includes('github.io') 
+            ? 'https://sublimacion-mary.onrender.com' 
+            : '';
+
+        fetch(`${BACKEND_URL}/api/pedidos/edit`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Error desconocido en el servidor.");
+            return data;
+        })
+        .then(data => {
+            const pedidoActualizado = data.pedido;
+
+            // 4. Enviar correo de notificación
+            const formDataEmail = new FormData();
+            formDataEmail.append('_subject', `Pedido MODIFICADO - ${pedidoActualizado.telefono}`);
+            formDataEmail.append('_captcha', 'false');
+            formDataEmail.append('_template', 'table');
+            formDataEmail.append('accion', 'Pedido Modificado');
+            formDataEmail.append('datos_pedido', JSON.stringify(pedidoActualizado, null, 4));
+
+            return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formDataEmail });
+        })
+        .then(() => {
+            alertBox.textContent = `¡Pedido actualizado con éxito! Redirigiendo al panel...`;
+            alertBox.className = 'alert success';
+            alertBox.style.display = 'block';
+            
+            setTimeout(() => {
+                window.location.href = 'admin_dashboard.html';
+            }, 3000);
+        })
+        .catch(error => {
+            alertBox.textContent = "Error: " + error.message;
+            alertBox.className = 'alert error';
+            alertBox.style.display = 'block';
+            document.getElementById('btnSubmit').disabled = false;
+        });
+    });
+</script>
+</body>
+</html>
