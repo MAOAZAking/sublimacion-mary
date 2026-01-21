@@ -66,8 +66,10 @@
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             color: #636e72; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             position: relative; z-index: 5;
+            padding: 0;
         }
         .sort-btn:hover { background-color: #f1f2f6; color: #2d3436; transform: scale(1.05); }
+        .hidden { display: none; }
         
         .sort-dropdown-container { position: relative; display: inline-block; }
         .sort-label {
@@ -196,11 +198,8 @@
 <div class="sort-controls">
     <button class="sort-btn" id="sortDirectionBtn" onclick="toggleSortDirection()" title="Invertir orden">
         <!-- Icono por defecto (Ascendente) -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="position: relative; z-index: 10;">
-            <!-- Izquierda (Abajo) - Fina (Inactiva) -->
-            <path d="M8 5v14M4 15l4 4 4-4" stroke="#b2bec3" stroke-width="2"></path>
-            <!-- Derecha (Arriba) - Fina (Inactiva) -->
-            <path d="M16 19V5M12 9l4-4 4 4" stroke="#2d3436" stroke-width="3"></path>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7"/>
         </svg>
     </button>
     
@@ -379,18 +378,16 @@
     function updateSortIcon() {
         const btn = document.getElementById('sortDirectionBtn');
         if (isSortAscending) {
-            // Ascendente: Flecha derecha (Arriba) gruesa, Izquierda (Abajo) fina
+            // Ascendente: Flecha hacia ARRIBA
             btn.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="position: relative; z-index: 10;">
-                    <path d="M8 5v14M4 15l4 4 4-4" stroke="#b2bec3" stroke-width="2"></path>
-                    <path d="M16 19V5M12 9l4-4 4 4" stroke="#2d3436" stroke-width="3"></path>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19V5M5 12l7-7 7 7"/>
                 </svg>`;
         } else {
-            // Descendente: Flecha izquierda (Abajo) gruesa, Derecha (Arriba) fina
+            // Descendente: Flecha hacia ABAJO
             btn.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="position: relative; z-index: 10;">
-                    <path d="M8 5v14M4 15l4 4 4-4" stroke="#2d3436" stroke-width="3"></path>
-                    <path d="M16 19V5M12 9l4-4 4 4" stroke="#b2bec3" stroke-width="2"></path>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
                 </svg>`;
         }
     }
