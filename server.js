@@ -92,24 +92,24 @@ app.post('/api/pedidos', upload.fields([
     // 1. Determinar tipo de producto
     let tipoProducto = 'otros';
     if (producto && producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
-    if (producto && producto.toLowerCase().includes('camisa')) tipoProducto = 'camisa';
+    if (producto && producto.toLowerCase().includes('camiseta')) tipoProducto = 'camiseta';
 
     // 2. Validaciones por tipo de producto
-    if (tipoProducto === 'camisa') {
-        // Validación para Camisas
+    if (tipoProducto === 'camiseta') {
+        // Validación para Camisetas
         if (!files.lamina_frontal && !files.lamina_trasera) {
             // Limpiar plantilla si existe pero faltan láminas
             if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
-            return res.status(400).json({ success: false, error: 'Para camisas, es obligatorio subir al menos una lámina (frontal o trasera).' });
+            return res.status(400).json({ success: false, error: 'Para camisetas, es obligatorio subir al menos una lámina (frontal o trasera).' });
         }
         if (!files.plantilla) {
             // Limpiar láminas si existen pero falta plantilla
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
             if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
-            return res.status(400).json({ success: false, error: 'Para camisas, es obligatorio subir la plantilla (.ai).' });
+            return res.status(400).json({ success: false, error: 'Para camisetas, es obligatorio subir la plantilla (.ai).' });
         }
 
-        const validateCamisa = (file) => {
+        const validateCamiseta = (file) => {
             const dim = sizeOf(file.path);
             // Dimensiones máximas (Aprox A4 300dpi)
             const maxW = 2482; 
@@ -122,8 +122,8 @@ app.post('/api/pedidos', upload.fields([
         };
 
         try {
-            if (files.lamina_frontal) validateCamisa(files.lamina_frontal[0]);
-            if (files.lamina_trasera) validateCamisa(files.lamina_trasera[0]);
+            if (files.lamina_frontal) validateCamiseta(files.lamina_frontal[0]);
+            if (files.lamina_trasera) validateCamiseta(files.lamina_trasera[0]);
         } catch (err) {
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
             if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
@@ -203,7 +203,7 @@ app.post('/api/pedidos', upload.fields([
             let urlFrontal = null;
             let urlTrasera = null;
 
-            if (tipoProducto === 'camisa') {
+            if (tipoProducto === 'camiseta') {
                 // Subir Lámina Frontal
                 if (files.lamina_frontal) {
                     const ext = path.extname(files.lamina_frontal[0].originalname);
@@ -228,7 +228,7 @@ app.post('/api/pedidos', upload.fields([
                     urlTrasera = `/img/${tipoProducto}/${folderName}/${name}`;
                     if (!mainImageUrl) mainImageUrl = urlTrasera;
                 }
-                // Subir Plantilla Camisa
+                // Subir Plantilla Camiseta
                 if (files.plantilla) {
                     const ext = path.extname(files.plantilla[0].originalname);
                     const name = `plantilla-${tipoProducto}-${nextNum}${ext}`;

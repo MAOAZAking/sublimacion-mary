@@ -135,7 +135,7 @@
 <div id="imageModal" class="modal">
     <span class="close" onclick="cerrarModal()">&times;</span>
     <img class="modal-content" id="imgGrande">
-    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camisa, porque tu pedido tiene el estampado en la parte trasera</div>
+    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camiseta, porque tu pedido tiene el estampado en la parte trasera</div>
     <div id="container3D" onclick="event.stopPropagation()"></div>
 
     <!-- Overlay de Feedback -->
@@ -272,7 +272,7 @@
         if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
             container3D.style.display = 'block';
             init3DMug(pedido.imagen_url, container3D);
-        } else if (pedido.producto && pedido.producto.toLowerCase().includes('camisa')) {
+        } else if (pedido.producto && pedido.producto.toLowerCase().includes('camiseta')) {
             container3D.style.display = 'block';
             
             // Determinar URLs
@@ -284,7 +284,7 @@
                 else if (pedido.imagen_url.includes('trasera')) urls.trasera = pedido.imagen_url;
                 else urls.frontal = pedido.imagen_url;
             }
-            init3DCamisa(urls, container3D);
+            init3DCamiseta(urls, container3D);
         } else {
             modalImg.style.display = 'block';
             modalImg.src = pedido.imagen_url;
@@ -390,7 +390,7 @@
         animate();
     }
 
-    function init3DCamisa(urls, container) {
+    function init3DCamiseta(urls, container) {
         const width = window.innerWidth;
         const height = window.innerHeight;
 
@@ -728,7 +728,7 @@
         // Determinar nuevo estado
         let nuevoEstado = "Listo para entregar";
         if (producto.toLowerCase().includes('mug')) nuevoEstado = "Listo para sublimar";
-        if (producto.toLowerCase().includes('camisa')) nuevoEstado = "Listo para estampar";
+        if (producto.toLowerCase().includes('camiseta')) nuevoEstado = "Listo para estampar";
 
         // Actualizar estado localmente y ocultar overlay inmediatamente
         currentPedidoData.estado = nuevoEstado;
