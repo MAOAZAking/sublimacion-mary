@@ -65,6 +65,7 @@
             background: white; border: 1px solid #dfe6e9; border-radius: 50%; width: 40px; height: 40px;
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             color: #636e72; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: relative; z-index: 5;
         }
         .sort-btn:hover { background-color: #f1f2f6; color: #2d3436; transform: scale(1.05); }
         
@@ -194,18 +195,18 @@
 
 <div class="sort-controls">
     <button class="sort-btn" id="sortDirectionBtn" onclick="toggleSortDirection()" title="Invertir orden">
-        <!-- Icono por defecto (Descendente) -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-            <!-- Izquierda (Abajo) - Gruesa (Activa por defecto) -->
-            <path d="M8 5v14M4 15l4 4 4-4" stroke-width="3"></path>
+        <!-- Icono por defecto (Ascendente) -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="position: relative; z-index: 10;">
+            <!-- Izquierda (Abajo) - Fina (Inactiva) -->
+            <path d="M8 5v14M4 15l4 4 4-4" stroke="#b2bec3" stroke-width="2"></path>
             <!-- Derecha (Arriba) - Fina (Inactiva) -->
-            <path d="M16 19V5M12 9l4-4 4 4" stroke-width="1.5" opacity="0.6"></path>
+            <path d="M16 19V5M12 9l4-4 4 4" stroke="#2d3436" stroke-width="3"></path>
         </svg>
     </button>
     
     <div class="sort-dropdown-container">
-        <div class="sort-label" onclick="toggleSortDropdown()">
-            <span id="currentSortText">Recientes</span>
+        <div class="sort-label" onclick="toggleSortDropdown()"> 
+            <span id="currentSortText">Estado</span> <!-- Cambiado de "Recientes" a "Estado" -->
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
         <div id="sortDropdown" class="sort-dropdown"></div>
@@ -240,11 +241,11 @@
 </div>
 
 <script>
-    let todosLosPedidos = [];
-    let pedidosFiltrados = []; // Para mantener el estado actual de la vista
-    let isEditMode = false;
-    let currentSortField = 'fecha'; // 'fecha', 'estado', 'telefono'
-    let isSortAscending = false; // false = Descendente (Más reciente primero), true = Ascendente
+    let todosLosPedidos = []; 
+    let pedidosFiltrados = []; 
+    let isEditMode = false; 
+    let currentSortField = 'estado'; // Valor inicial cambiado a 'estado'
+    let isSortAscending = true; // Valor inicial cambiado a true (ascendente por prioridad/fecha)
     let currentDownloadUrl = '';
     let renderer, scene, camera, controls, animationId;
 
@@ -303,6 +304,7 @@
         .then(data => {
             todosLosPedidos = data;
             pedidosFiltrados = data;
+            updateSortIcon(); // Llamada inicial para establecer el icono correcto
             aplicarOrdenamiento(); // Ordenar inicialmente
             renderGallery(pedidosFiltrados);
         })
@@ -379,16 +381,16 @@
         if (isSortAscending) {
             // Ascendente: Flecha derecha (Arriba) gruesa, Izquierda (Abajo) fina
             btn.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M8 5v14M4 15l4 4 4-4" stroke-width="1.5" opacity="0.6"></path>
-                    <path d="M16 19V5M12 9l4-4 4 4" stroke-width="3"></path>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="position: relative; z-index: 10;">
+                    <path d="M8 5v14M4 15l4 4 4-4" stroke="#b2bec3" stroke-width="2"></path>
+                    <path d="M16 19V5M12 9l4-4 4 4" stroke="#2d3436" stroke-width="3"></path>
                 </svg>`;
         } else {
             // Descendente: Flecha izquierda (Abajo) gruesa, Derecha (Arriba) fina
             btn.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M8 5v14M4 15l4 4 4-4" stroke-width="3"></path>
-                    <path d="M16 19V5M12 9l4-4 4 4" stroke-width="1.5" opacity="0.6"></path>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="position: relative; z-index: 10;">
+                    <path d="M8 5v14M4 15l4 4 4-4" stroke="#2d3436" stroke-width="3"></path>
+                    <path d="M16 19V5M12 9l4-4 4 4" stroke="#b2bec3" stroke-width="2"></path>
                 </svg>`;
         }
     }
@@ -430,7 +432,7 @@
         // Actualizar etiqueta principal
         const labelMap = {
             'fecha': 'Recientes',
-            'estado': 'Estado',
+            'estado': 'Estado', 
             'telefono': 'Núm. cliente'
         };
         document.getElementById('currentSortText').innerText = labelMap[field];
@@ -448,17 +450,21 @@
     }
 
     function aplicarOrdenamiento() {
+        // Convertir "DD/MM/YYYY HH:mm:ss" a Date object
+        const parseDate = (str) => {
+            if (!str) return 0;
+            const [date, time] = str.split(' ');
+            if (!date || !time) return 0; // Evitar errores si el formato es inesperado
+            // Asegurar el formato YYYY-MM-DD para una correcta interpretación de la fecha
+            const [d, m, y] = date.split('/'); 
+            if (!d || !m || !y) return 0; // Evitar errores
+            return new Date(`${y}-${m}-${d}T${time}`);
+        };
+
         pedidosFiltrados.sort((a, b) => {
             let valA, valB;
             
             if (currentSortField === 'fecha') {
-                // Convertir "DD/MM/YYYY HH:mm:ss" a Date object
-                const parseDate = (str) => {
-                    if (!str) return 0;
-                    const [date, time] = str.split(' ');
-                    const [d, m, y] = date.split('/');
-                    return new Date(`${y}-${m}-${d}T${time}`);
-                };
                 valA = parseDate(a.fecha).getTime();
                 valB = parseDate(b.fecha).getTime();
             } else if (currentSortField === 'estado') {
@@ -466,11 +472,21 @@
                 const priorities = {
                     "creando diseño": 1,
                     "revisión del cliente": 2,
-                    "listo para entregar": 3, "listo para sublimar": 3, "listo para estampar": 3
+                    "listo para entregar": 3, "listo para sublimar": 3, "listo para estampar": 3,
+                    "desconocido": 4 // Añadir un valor por defecto para estados no mapeados
                 };
-                const getPriority = (status) => priorities[(status || '').toLowerCase()] || 4;
-                valA = getPriority(a.estado);
-                valB = getPriority(b.estado);
+                const getPriority = (status) => priorities[(status || 'desconocido').toLowerCase()];
+                
+                const priorityA = getPriority(a.estado);
+                const priorityB = getPriority(b.estado);
+
+                if (priorityA !== priorityB) {
+                    return isSortAscending ? (priorityA - priorityB) : (priorityB - priorityA);
+                }
+                // Si los estados son iguales, ordenar por fecha (más antiguo al más reciente)
+                const dateA = parseDate(a.fecha).getTime();
+                const dateB = parseDate(b.fecha).getTime();
+                return dateA - dateB; // Siempre ascendente para la fecha secundaria
             } else if (currentSortField === 'telefono') {
                 valA = parseInt(a.telefono || a.teléfono || 0);
                 valB = parseInt(b.telefono || b.teléfono || 0);
@@ -478,7 +494,7 @@
 
             if (valA < valB) return isSortAscending ? -1 : 1;
             if (valA > valB) return isSortAscending ? 1 : -1;
-            return 0;
+            return 0; 
         });
     }
 
@@ -514,8 +530,8 @@
     }
 
     function editarPedido(pedido) {
-        // Aquí iría la lógica para redirigir a la página de edición
-        alert(`Función de editar para el pedido de ${pedido.telefono || 'Cliente'}\n(Funcionalidad en desarrollo)`);
+        // Redirigir a la página de edición, pasando la URL de la imagen como identificador único
+        window.location.href = `editar_pedido.html?pedido=${encodeURIComponent(pedido.imagen_url)}`;
     }
 
     function filtrarBusqueda() {
@@ -802,21 +818,21 @@
 
             // 1. Cuerpo (Torso Humanoide)
             // Rotamos la costura hacia atrás (3*PI/2) para que el centro de la textura (U=0.5) quede al FRENTE (+Z)
-            const bodyGeo = new THREE.CylinderGeometry(2.3, 2.3, 7.6, 64, 64, false, 3 * Math.PI / 2, 2 * Math.PI);
+            const bodyGeo = new THREE.CylinderGeometry(2.3, 2.3, 7.2, 64, 64, false, 3 * Math.PI / 2, 2 * Math.PI);
             
-            // Función de deformación compartida para asegurar que el recubrimiento coincida con el cuerpo
+            // Función de deformación compartida
             function applyDeformation(geometry) {
                 const pos = geometry.attributes.position;
                 const v = new THREE.Vector3();
                 
                 for (let i = 0; i < pos.count; i++) {
                     v.fromBufferAttribute(pos, i);
-                const y = v.y; // -3.5 a +3.5
+                const y = v.y; // -3.25 a +3.25
 
                 // Simular elevación de perfil (montaña vista de lado)
                 if (y > 1.5) {
                     const zNorm = Math.abs(v.z) / 2.3; // Usar Z para vista de perfil
-                    const rise = (1.0 - zNorm * zNorm) * (y - 1.5) * 0.086; // Parábola y altura reducida
+                    const rise = (1.0 - zNorm * zNorm) * (y - 1.5) * 0.086;
                     v.y += rise;
                 }
 
@@ -835,18 +851,18 @@
                     v.y += riseX;
                 }
 
-                // A. Silueta
+                // A. Silueta (Cintura vs Hombros)
                 let widthFactor = 1.0;
                 if (y > 1.0) {
                     // Forma de hombros redondeada (sin punta)
                     if (y < 3.15) {
-                        // Curva suave (parábola) en lugar de línea recta
+                        // Curva suave (parábola) en lugar de línea recta para un acabado más limpio
                         const t = (y - 1.0) / 2.15;
-                        widthFactor = 1.0 + (t * (2 - t)) * 0.10;
+                        widthFactor = 1.0 + (t * (2 - t)) * 0.1;
                     } else {
                         // Reducir ancho para unirse a la dona (cuello)
                         const baseW = 1.0 + 0.10;
-                        const t = (y - 3.15) / 0.6; 
+                        const t = (y - 3.15) / 0.5;
                         // Cierre suave sin forzar puntos de referencia
                         widthFactor = baseW * (1.0 - t * t * 0.5);
                     }
@@ -855,16 +871,17 @@
                     const t = (1.0 - y) / 0.5;
                     widthFactor = 1.0 - (t * 0.05);
                 } else {
-                    widthFactor = 0.95; 
+                    widthFactor = 0.95;
                 }
 
-                // B. Volumen Pecho y Corrección
+                // B. Volumen Pecho y Corrección Tórax
                 let zOffset = 0;
                 if (v.z > 0) {
                     // Escalar profundidad (Z)
                     let zScale = 0.75; // Base para el pecho (se mantiene igual)
                     v.z *= zScale;
 
+                    // Volumen Pectoral
                     if (y > 0.0 && y < 3.0) {
                         // Curva única suave centrada en el pecho alto (y=2.0)
                         // Cae gradualmente hasta el abdomen (y=0) sin bultos intermedios
@@ -880,12 +897,13 @@
                         }
                     }
                 } else {
+                    // Espalda plana
                     v.z *= 0.5;
                 }
 
                 // Cierre del cuello en Z (Profundidad)
                 if (y > 3.0) {
-                    const t = (y - 3.0) / 0.8;
+                    const t = (y - 3.0) / 0.6;
                     // Cierre suave en Z sin puntos fijos
                     v.z *= (1.0 - t * 0.2);
                 }
@@ -902,19 +920,15 @@
             applyDeformation(bodyGeo);
 
             // --- CREAR RECUBRIMIENTOS (Parches limpios) ---
-            // Creamos geometrías nuevas específicas para el área de impresión (sin filtrar caras)
-            // Esto garantiza una malla continua y UVs perfectas.
-            
             // Parámetros del parche: Radio 2.3, Altura 4.6 (60% aprox), Segmento de cilindro (70% ancho)
             const patchHeight = 4.6;
             const patchArc = 1.8; // Radianes (aprox 100 grados) para cubrir el frente
             
             // Frente: Centrado en +Z (Angulo 0)
-            // ThetaStart = -arc/2
             const frontGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, -patchArc/2, patchArc);
             frontGeo.translate(0, 0.5, 0); // Centrar verticalmente en el pecho (y=0.5)
             applyDeformation(frontGeo); // Deformar igual que el cuerpo
-            remapUVs(frontGeo); // Ajustar UVs para que la imagen cubra todo el parche
+            remapUVs(frontGeo);
 
             // Espalda: Centrado en -Z (Angulo PI)
             const backGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, Math.PI - patchArc/2, patchArc);
@@ -922,7 +936,7 @@
             applyDeformation(backGeo);
             remapUVs(backGeo);
 
-            // Función para remapear UVs (Estirar imagen en el parche)
+            // Función para remapear UVs
             function remapUVs(geometry) {
                 const uv = geometry.attributes.uv;
                 let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
@@ -956,7 +970,7 @@
             frontGeo.translate(0, -0.5, 0);
             backGeo.translate(0, -0.5, 0);
 
-            // 3. Mangas
+            // 3. Mangas (Cilindros rotados)
             // Geometría cónica y segmentada para deformación
             const sleeveGeoL = new THREE.CylinderGeometry(0.6, 1.15, 2.7, 32, 10);
             const posL = sleeveGeoL.attributes.position;
@@ -997,15 +1011,18 @@
             // 4. Cuello (Dona)
             const neckGeo = new THREE.TorusGeometry(1.6, 0.12, 12, 48);
             neckGeo.rotateX(Math.PI / 2);
-            neckGeo.scale(1, 1, 0.65);
-            neckGeo.translate(0, 3.7, 0.3);
+            neckGeo.scale(0.85, 1, 0.65);
+            neckGeo.translate(0, 3.5, 0.3);
 
-            // 5. Unir todo
+            // 5. Unir todo en un solo modelo
+            // Unimos primero las partes blancas (Mangas + Cuello)
             const extrasGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([sleeveGeoL, sleeveGeoR, neckGeo]);
             extrasGeo.clearGroups();
             extrasGeo.addGroup(0, extrasGeo.index.count, 1); // Mat 1: Blanco
             
+            // Verificar si BufferGeometryUtils cargó correctamente
             if (THREE.BufferGeometryUtils) {
+                // Unir Cuerpo (Grupo 0) con Extras (Grupo 1)
                 const finalGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([bodyGeo, extrasGeo], true);
                 
                 // 1. Camisa Base (Blanca completa)
@@ -1019,8 +1036,6 @@
                 // 3. Recubrimiento Trasero
                 const matBack = createMat(texBack) || whiteMat;
                 if (texBack) scene.add(new THREE.Mesh(backGeo, matBack));
-            } else {
-                console.error("BufferGeometryUtils no cargado");
             }
         });
 
