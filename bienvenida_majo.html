@@ -289,9 +289,19 @@
         function irPaso2() {
             const user = document.getElementById('newUsername').value.trim();
             const pass = document.getElementById('newPassword').value;
+            const errorDiv = document.getElementById('errorMsg');
 
-            if (!user || !pass) {
-                alert("Por favor completa ambos campos.");
+            if (!user) {
+                errorDiv.textContent = 'No puedes dejar el usuario vacío.';
+                errorDiv.style.display = 'block';
+                shakeModal();
+                return;
+            }
+
+            if (!pass) {
+                errorDiv.textContent = 'No puedes dejar la contraseña vacía.';
+                errorDiv.style.display = 'block';
+                shakeModal();
                 return;
             }
 

@@ -623,16 +623,23 @@
 
         // Lógica para el botón de descarga
         if (pedido.imagen_url && pedido.imagen_url.includes('/img/')) {
-            const parts = pedido.imagen_url.split('/');
-            // Se espera: ["", "img", "mug", "mug-1", "archivo.png"]
-            if (parts.length >= 4) {
-                const type = parts[2];
-                const folder = parts[3];
-                const BACKEND_URL = window.location.hostname.includes('github.io') 
-                    ? 'https://sublimacion-mary.onrender.com' 
-                    : '';
-                currentDownloadUrl = `${BACKEND_URL}/api/download-folder/${type}/${folder}`;
-                btnDescargar.style.display = 'flex';
+            // Manejar URLs relativas (/img/...) y absolutas (https://.../img/...)
+            const urlParts = pedido.imagen_url.split('/img/');
+            
+            if (urlParts.length > 1) {
+                const pathParts = urlParts[1].split('/'); // [type, folder, file]
+                if (pathParts.length >= 2) {
+                    const type = pathParts[0];
+                    const folder = pathParts[1];
+                    
+                    const BACKEND_URL = window.location.hostname.includes('github.io') 
+                        ? 'https://sublimacion-mary.onrender.com' 
+                        : '';
+                    currentDownloadUrl = `${BACKEND_URL}/api/download-folder/${type}/${folder}`;
+                    btnDescargar.style.display = 'flex';
+                } else {
+                    btnDescargar.style.display = 'none';
+                }
             } else {
                 btnDescargar.style.display = 'none';
             }
