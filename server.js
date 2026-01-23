@@ -114,7 +114,7 @@ app.post('/api/complete-setup', (req, res) => {
 
         user.username = newUsername;
         user.password = newPassword;
-        user.redirectUrl = 'admin_dashboard.html'; // Actualizar redirección para futuros logins
+        user.redirectUrl = 'bienvenida_majo.html'; // Actualizar redirección para futuros logins
         
         try {
             fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(users, null, 4));
