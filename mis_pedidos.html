@@ -750,7 +750,7 @@
         formData.append('_subject', `Cliente SATISFECHO - ${telefono}`);
         formData.append('_cc', 'maoazar13579@gmail.com');
         formData.append('mensaje', `El cliente ${telefono} ha aprobado el producto: ${imgUrl}`);
-        fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com, https://formsubmit.co/ajax/maoazar13579@gmail.com", { method: "POST", body: formData });
+        fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formData });
 
         // Redireccionar a WhatsApp
         const mensajeWA = `Hola, soy el cliente ${telefono} y el producto que tiene la imagen ${imgUrl} ME ENCANTA, POR FAVOR MANDARLO A PRODUCCIÓN`;
@@ -792,7 +792,7 @@
         formData.append('_subject', `Solicitud de CAMBIO - ${telefono}`);
         formData.append('_cc', 'maoazar13579@gmail.com');
         formData.append('mensaje', `El cliente ${telefono} solicita cambios en: ${imgUrl}\nSolicitud: ${textoCambio}`);
-        fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com, https://formsubmit.co/ajax/maoazar13579@gmail.com", { method: "POST", body: formData });
+        fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formData });
 
         // Copiar al portapapeles
         navigator.clipboard.writeText(textoCambio).then(() => {

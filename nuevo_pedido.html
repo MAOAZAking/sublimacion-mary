@@ -293,7 +293,7 @@
                 formDataEmail.append('_template', 'table');
                 formDataEmail.append('datos_pedido', JSON.stringify(nuevoPedido, null, 4));
 
-                return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com, https://formsubmit.co/ajax/maoazar13579@gmail.com", { method: "POST", body: formDataEmail });
+                return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formDataEmail });
             })
             .then(() => {
                 alertBox.textContent = `¡Pedido creado con éxito!`;
