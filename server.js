@@ -104,27 +104,36 @@ app.post('/api/login', (req, res) => {
 // Endpoint para completar configuración (Usuario y Contraseña)
 app.post('/api/complete-setup', (req, res) => {
     const { currentUsername, newUsername, newPassword } = req.body;
-    const user = users.find(u => u.username === currentUsername);
+    
+    // Usuarios que serán reemplazados/eliminados al crear el perfil de Majo
+    const usersToReplace = ['mary', '3209287029'];
 
-    if (user) {
-        // Validar si el nuevo nombre de usuario ya está en uso por otra persona
-        if (newUsername !== currentUsername && users.some(u => u.username.toLowerCase() === newUsername.toLowerCase())) {
-             return res.status(400).json({ success: false, error: 'El nombre de usuario ya está en uso.' });
-        }
+    // Validar si el nuevo nombre de usuario ya está en uso (excluyendo los que se van a borrar)
+    const isTaken = users.some(u => 
+        !usersToReplace.includes(u.username) && 
+        u.username.toLowerCase() === newUsername.toLowerCase()
+    );
 
-        user.username = newUsername;
-        user.password = newPassword;
-        user.redirectUrl = 'bienvenida_majo.html'; // Actualizar redirección para futuros logins
-        
-        try {
-            fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(users, null, 4));
-            res.json({ success: true });
-        } catch (err) {
-            console.error("Error guardando usuarios.json:", err);
-            res.status(500).json({ success: false, error: 'Error guardando cambios.' });
-        }
-    } else {
-        res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+    if (isTaken) {
+         return res.status(400).json({ success: false, error: 'El nombre de usuario ya está en uso.' });
+    }
+
+    // 1. Eliminar usuarios antiguos
+    users = users.filter(u => !usersToReplace.includes(u.username));
+
+    // 2. Agregar nuevo usuario
+    users.push({
+        username: newUsername,
+        password: newPassword,
+        redirectUrl: 'admin_dashboard.html'
+    });
+    
+    try {
+        fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(users, null, 4));
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Error guardando usuarios.json:", err);
+        res.status(500).json({ success: false, error: 'Error guardando cambios.' });
     }
 });
 
