@@ -66,7 +66,7 @@ app.post('/api/check-user', (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).json({ error: 'Usuario requerido' });
 
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    const user = users.find(u => u.username === username);
     
     if (user) {
         // Si la contraseña está vacía, requiere configuración (Flujo Majo)
@@ -81,7 +81,7 @@ app.post('/api/check-user', (req, res) => {
 // Endpoint para hacer login
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    const user = users.find(u => u.username === username);
 
     if (user) {
         // Verificar contraseña (soporte para variables de entorno con prefijo ENV:)
