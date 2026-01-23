@@ -1,3 +1,5 @@
 {
-    "liveServer.settings.multiRootWorkspaceName": "sublimacion-mary"
+    "liveServer.settings.multiRootWorkspaceName": "sublimacion-mary",
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": []
 }

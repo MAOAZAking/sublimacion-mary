@@ -6,7 +6,7 @@
     <title>Mis Pedidos - Sublimación Mary</title>
     <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <meta name="theme-color" content="#f8f9fa">
+    <meta name="theme-color" content="#121212">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,21 +21,21 @@
     </script>
     <style>
         body { 
-            font-family: 'Poppins', sans-serif; background-color: #f8f9fa; margin: 0; color: #333;
+            font-family: 'Poppins', sans-serif; background-color: #121212; margin: 0; color: white;
             padding: 20px;
             padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
         }
-        .header { text-align: center; margin-bottom: 40px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        h2 { color: #2d3436; margin: 0 0 10px 0; }
-        #infoCliente { color: #636e72; font-size: 0.9rem; }
+        .header { text-align: center; margin-bottom: 40px; background: #1e1e1e; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid #333; }
+        h2 { color: #ffffff; margin: 0 0 10px 0; }
+        #infoCliente { color: #b0b0b0; font-size: 0.9rem; }
         
         /* Grid de Imágenes */
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto; }
-        .gallery-item { border: none; border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.3s; background: white; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .gallery-item { border: none; border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.3s; background: #1e1e1e; box-shadow: 0 10px 20px rgba(0,0,0,0.3); border: 1px solid #333; }
         .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
         .gallery-img { width: 100%; height: 160px; object-fit: cover; display: block; }
-        .gallery-info { padding: 12px; text-align: center; font-size: 0.85rem; color: #636e72; border-top: 1px solid #f1f2f6; }
-        .gallery-info strong { color: #2d3436; display: block; margin-bottom: 4px; font-size: 0.95rem; }
+        .gallery-info { padding: 12px; text-align: center; font-size: 0.85rem; color: #b0b0b0; border-top: 1px solid #333; }
+        .gallery-info strong { color: #ffffff; display: block; margin-bottom: 4px; font-size: 0.95rem; }
 
         /* Modal (Imagen Grande) */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
@@ -43,8 +43,8 @@
         .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1001; }
         #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; touch-action: none; }
         
-        .back-btn { display: block; width: fit-content; margin: 30px auto; padding: 10px 25px; background: #636e72; color: white; text-decoration: none; border-radius: 50px; position: relative; z-index: 1; font-weight: 500; transition: 0.3s; }
-        .back-btn:hover { background: #2d3436; transform: translateY(-2px); }
+        .back-btn { display: block; width: fit-content; margin: 30px auto; padding: 10px 25px; background: #2d2d2d; color: #b0b0b0; text-decoration: none; border-radius: 50px; position: relative; z-index: 1; font-weight: 500; transition: 0.3s; border: 1px solid #333; }
+        .back-btn:hover { background: #333; color: white; transform: translateY(-2px); }
 
         /* Loader Styles */
         #global-loader {

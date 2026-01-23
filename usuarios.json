@@ -5,7 +5,7 @@
         "redirectUrl": "admin_dashboard.html"
     },
     {
-        "username": "maoazaking",
+        "username": "MAOAZAking",
         "password": "ENV:ADMIN_PASS_MAOAZAKING",
         "redirectUrl": "admin_dashboard.html"
     },
