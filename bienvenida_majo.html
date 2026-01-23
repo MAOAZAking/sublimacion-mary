@@ -136,19 +136,59 @@
             z-index: 1000;
         }
         .setup-content {
-            background: #2d3436; padding: 30px; border-radius: 15px;
+            background: #1e1b29; /* Fondo oscuro con tinte morado */
+            padding: 40px; 
+            border-radius: 25px;
             text-align: center; width: 90%; max-width: 400px;
-            border: 1px solid #ff00cc;
-            box-shadow: 0 0 20px rgba(255, 0, 204, 0.2);
+            border: 2px solid #9b59b6; /* Borde morado creativo */
+            box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
+            animation: fadeIn 0.5s ease-out;
         }
         .setup-input {
-            width: 100%; padding: 12px; margin: 20px 0;
-            border-radius: 8px; border: none; text-align: center;
+            width: 100%; padding: 15px; margin: 12px 0;
+            border-radius: 15px; 
+            border: 2px solid #3c304a;
+            background: #2d2438;
+            color: #fff;
+            text-align: center;
             font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+        .setup-input:focus {
+            border-color: #9b59b6;
+            background: #362b45;
+            outline: none;
+            box-shadow: 0 0 15px rgba(155, 89, 182, 0.3);
         }
         .btn-save {
-            background: linear-gradient(to right, #ff00cc, #3333ff);
-            color: white; border: none; padding: 10px 30px; border-radius: 50px; cursor: pointer; font-weight: bold;
+            background: linear-gradient(135deg, #8e44ad, #9b59b6); /* Gradiente morado */
+            color: white; border: none; padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: bold;
+            font-size: 1.1rem; width: 100%; margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-save:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(142, 68, 173, 0.6);
+        }
+        .btn-back {
+            background: transparent;
+            border: 2px solid #9b59b6;
+            color: #e0aaff;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            width: 100%;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: rgba(155, 89, 182, 0.2);
+            color: white;
         }
 
         /* Estilos del Confeti Neón */
@@ -172,6 +212,16 @@
             0% { transform: translateY(-20px) rotate(0deg) translateX(0); opacity: 1; }
             100% { transform: translateY(105vh) rotate(720deg) translateX(20px); opacity: 0; }
         }
+
+        /* Animación de rechazo (shake) */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-12px); }
+            40%, 80% { transform: translateX(12px); }
+        }
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -188,36 +238,96 @@
 
         <div class="buttons-container">
             <button class="btn-neon btn-yes" onclick="mostrarSetup()">Sí</button>
-            <button class="btn-neon btn-no" onclick="window.location.href='index.html'">No</button>
+            <button class="btn-neon btn-no" onclick="window.location.href='admin_dashboard.html'">No</button>
         </div>
     </div>
 
     <!-- Modal para crear contraseña -->
     <div id="setupModal">
         <div class="setup-content">
-            <h3 style="margin-top:0">¡Genial!</h3>
-            <p>Para proteger tu acceso, establece tu usuario y una contraseña única:</p>
-            
-            <input type="text" id="newUsername" class="setup-input" placeholder="Nuevo Usuario (Ej: Majo)" style="margin-bottom: 10px;">
-            <input type="password" id="newPassword" class="setup-input" placeholder="Nueva Contraseña" style="margin-top: 0;">
-            
-            <button class="btn-save" onclick="guardarConfiguracion()">Guardar y Entrar</button>
+            <!-- Paso 1: Ingreso inicial -->
+            <div id="step1">
+                <h3 style="margin-top:0; color: #e0aaff; font-size: 1.8rem;">¡Genial!</h3>
+                <p style="color: #d1c4e9;">Para proteger tu acceso, establece tu usuario y una contraseña única:</p>
+                
+                <input type="text" id="newUsername" class="setup-input" placeholder="Nuevo Usuario (Ej: Majo)">
+                <input type="password" id="newPassword" class="setup-input" placeholder="Nueva Contraseña">
+                
+                <button class="btn-save" onclick="irPaso2()">Continuar</button>
+            </div>
+
+            <!-- Paso 2: Confirmación -->
+            <div id="step2" style="display: none;">
+                <h3 style="margin-top:0; color: #e0aaff; font-size: 1.8rem;">Confirmación</h3>
+                <p style="color: #d1c4e9;">Majo, para rectificar tus nuevas credenciales, por favor repite tu usuario y contraseña que estableciste anteriormente:</p>
+                <input type="text" id="confirmUsername" class="setup-input" placeholder="Repite tu Usuario">
+                <input type="password" id="confirmPassword" class="setup-input" placeholder="Repite tu Contraseña">
+                <button class="btn-save" onclick="guardarConfiguracionFinal()">Crear perfil admin. y entrar</button>
+                <button class="btn-back" onclick="volverPaso1()">Corregir datos anteriores</button>
+            </div>
+
             <div id="errorMsg" style="color: #ff7675; margin-top: 10px; display: none;">Error al guardar</div>
         </div>
     </div>
 
     <script>
+        let tempUser = '';
+        let tempPass = '';
+
+        function shakeModal() {
+            const modalContent = document.querySelector('.setup-content');
+            modalContent.classList.remove('shake');
+            void modalContent.offsetWidth; // Forzar reinicio de la animación
+            modalContent.classList.add('shake');
+        }
+
         function mostrarSetup() {
             document.getElementById('setupModal').style.display = 'flex';
             document.getElementById('newUsername').focus();
         }
 
-        async function guardarConfiguracion() {
+        function irPaso2() {
             const user = document.getElementById('newUsername').value.trim();
             const pass = document.getElementById('newPassword').value;
-            
+
             if (!user || !pass) {
                 alert("Por favor completa ambos campos.");
+                return;
+            }
+
+            tempUser = user;
+            tempPass = pass;
+
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'block';
+            document.getElementById('confirmUsername').focus();
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        function volverPaso1() {
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('step1').style.display = 'block';
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        async function guardarConfiguracionFinal() {
+            const confUser = document.getElementById('confirmUsername').value.trim();
+            const confPass = document.getElementById('confirmPassword').value;
+
+            const userMatch = confUser === tempUser;
+            const passMatch = confPass === tempPass;
+
+            if (!userMatch || !passMatch) {
+                const errorDiv = document.getElementById('errorMsg');
+                if (!userMatch && !passMatch) {
+                    errorDiv.textContent = 'El usuario y la contraseña no coinciden.';
+                } else if (!userMatch) {
+                    errorDiv.textContent = 'El nombre de usuario no coincide. Inténtalo de nuevo.';
+                } else { // !passMatch
+                    errorDiv.textContent = 'La contraseña no coincide. Inténtalo de nuevo.';
+                }
+                errorDiv.style.display = 'block';
+                shakeModal();
                 return;
             }
 
@@ -229,8 +339,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         currentUsername: '3209287029', 
-                        newUsername: user, 
-                        newPassword: pass 
+                        newUsername: tempUser, 
+                        newPassword: tempPass 
                     })
                 });
                 const data = await res.json();
@@ -271,6 +381,20 @@
         
         // Iniciar lluvia de confeti
         setInterval(createConfettiPiece, 100);
+
+        // Eventos de teclado para el formulario
+        document.getElementById('newUsername').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') document.getElementById('newPassword').focus();
+        });
+        document.getElementById('newPassword').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') irPaso2();
+        });
+        document.getElementById('confirmUsername').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') document.getElementById('confirmPassword').focus();
+        });
+        document.getElementById('confirmPassword').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') guardarConfiguracionFinal();
+        });
     </script>
 </body>
 </html>
