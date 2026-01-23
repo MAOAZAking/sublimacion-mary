@@ -53,10 +53,11 @@
         h1 {
             font-size: 2.5rem;
             margin-bottom: 20px;
-            background: linear-gradient(to right, #ff00cc, #3333ff);
+            background: linear-gradient(to right, #9b59b6, #8e44ad);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 0 20px rgba(255, 0, 204, 0.3);
+            animation: pulseZoom 2s infinite ease-in-out;
         }
 
         p {
@@ -163,7 +164,7 @@
             box-shadow: 0 0 15px rgba(155, 89, 182, 0.3);
         }
         .btn-save {
-            background: linear-gradient(135deg, #8e44ad, #9b59b6); /* Gradiente morado */
+            background: linear-gradient(135deg, #9b59b6, #8e44ad); /* Gradiente morado */
             color: white; border: none; padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: bold;
             font-size: 1.1rem; width: 100%; margin-top: 20px;
             box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
@@ -222,6 +223,12 @@
         .shake {
             animation: shake 0.5s ease-in-out;
         }
+
+        /* Animación de aumento y encogida */
+        @keyframes pulseZoom {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
     </style>
 </head>
 <body>
@@ -230,8 +237,8 @@
     <div class="confetti-container" id="confetti"></div>
 
     <div class="content-container">
-        <h1>Bienvenida Majo</h1>
-        <p>Es un placer por fin tener a nuestra razón de existir en el servidor</p>
+        <h1>¡Bienvenida Majo!</h1>
+        <p>Es un placer por fin tener a nuestra razón de existir 🤗 en el servidor</p>
         <p>Esperamos que este servidor sea de tu agrado pues fue creado con mucho codigo y cariño para ti</p>
         
         <p class="question"><br>¿Estas lista para ayudarte a terminar de configurarte como admin?</p>
@@ -349,11 +356,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         currentUsername: '3209287029', 
-                        newUsername: tempUser, 
-                        newPassword: tempPass 
-                    }),
-                    body: JSON.stringify({ 
-                        currentUsername: 'mary', 
                         newUsername: tempUser, 
                         newPassword: tempPass 
                     })

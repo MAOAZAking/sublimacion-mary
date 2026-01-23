@@ -94,7 +94,7 @@ app.post('/api/login', (req, res) => {
         }
 
         if (valid) {
-            return res.json({ success: true, redirectUrl: user.redirectUrl || 'admin_dashboard.html' });
+            return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html' });
         }
     }
     
