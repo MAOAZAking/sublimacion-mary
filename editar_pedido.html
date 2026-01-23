@@ -223,7 +223,7 @@
             formDataEmail.append('accion', 'Pedido Modificado');
             formDataEmail.append('datos_pedido', JSON.stringify(pedidoActualizado, null, 4));
 
-            return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formDataEmail });
+            return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com,maoazar13579@gmail.com", { method: "POST", body: formDataEmail });
         })
         .then(() => {
             alertBox.textContent = `¡Pedido actualizado con éxito! Redirigiendo al panel...`;
