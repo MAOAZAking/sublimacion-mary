@@ -1,4 +1,17 @@
-{
-    "mary": "admin234",
-    "MAOAZAking": "admin123"
-}
+[
+    {
+        "username": "mary",
+        "password": "ENV:ADMIN_PASS_MARY",
+        "redirectUrl": "admin_dashboard.html"
+    },
+    {
+        "username": "maoazaking",
+        "password": "ENV:ADMIN_PASS_MAOAZAKING",
+        "redirectUrl": "admin_dashboard.html"
+    },
+    {
+        "username": "3209287029",
+        "password": "",
+        "redirectUrl": "bienvenida_majo.html"
+    }
+]

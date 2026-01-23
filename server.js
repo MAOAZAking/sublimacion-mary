@@ -39,11 +39,14 @@ const upload = multer({
 // Servir archivos estáticos (HTML, CSS, JS, Imágenes)
 app.use(express.static(path.join(__dirname, '.')));
 
-// Mapa de usuarios admin (Los nombres son públicos, las claves vienen del .env)
-const admins = {
-    'mary': process.env.ADMIN_PASS_MARY,
-    'maoazaking': process.env.ADMIN_PASS_MAOAZAKING
-};
+// Cargar usuarios desde usuarios.json
+let users = [];
+try {
+    const usersData = fs.readFileSync(path.join(__dirname, 'usuarios.json'), 'utf8');
+    users = JSON.parse(usersData);
+} catch (err) {
+    console.error("Error cargando usuarios.json:", err.message);
+}
 
 // Configuración de GitHub (Si existen las variables)
 const githubClient = process.env.GITHUB_TOKEN ? new Octokit({ auth: process.env.GITHUB_TOKEN }) : null;
@@ -63,19 +66,65 @@ app.post('/api/check-user', (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).json({ error: 'Usuario requerido' });
 
-    const isAdmin = admins.hasOwnProperty(username.toLowerCase());
-    res.json({ isAdmin });
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    
+    if (user) {
+        // Si la contraseña está vacía, requiere configuración (Flujo Majo)
+        if (user.password === "") {
+            return res.json({ isAdmin: true, isSetupRequired: true, redirectUrl: user.redirectUrl });
+        }
+        return res.json({ isAdmin: true, isSetupRequired: false });
+    }
+    res.json({ isAdmin: false });
 });
 
 // Endpoint para hacer login
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    const userKey = username.toLowerCase();
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
 
-    if (admins[userKey] && admins[userKey] === password) {
-        res.json({ success: true });
+    if (user) {
+        // Verificar contraseña (soporte para variables de entorno con prefijo ENV:)
+        let valid = false;
+        if (user.password.startsWith('ENV:')) {
+            const envVar = user.password.split(':')[1];
+            valid = process.env[envVar] === password;
+        } else {
+            valid = user.password === password;
+        }
+
+        if (valid) {
+            return res.json({ success: true, redirectUrl: user.redirectUrl || 'admin_dashboard.html' });
+        }
+    }
+    
+    res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
+});
+
+// Endpoint para completar configuración (Usuario y Contraseña)
+app.post('/api/complete-setup', (req, res) => {
+    const { currentUsername, newUsername, newPassword } = req.body;
+    const user = users.find(u => u.username === currentUsername);
+
+    if (user) {
+        // Validar si el nuevo nombre de usuario ya está en uso por otra persona
+        if (newUsername !== currentUsername && users.some(u => u.username.toLowerCase() === newUsername.toLowerCase())) {
+             return res.status(400).json({ success: false, error: 'El nombre de usuario ya está en uso.' });
+        }
+
+        user.username = newUsername;
+        user.password = newPassword;
+        user.redirectUrl = 'admin_dashboard.html'; // Actualizar redirección para futuros logins
+        
+        try {
+            fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(users, null, 4));
+            res.json({ success: true });
+        } catch (err) {
+            console.error("Error guardando usuarios.json:", err);
+            res.status(500).json({ success: false, error: 'Error guardando cambios.' });
+        }
     } else {
-        res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
+        res.status(404).json({ success: false, error: 'Usuario no encontrado' });
     }
 });
 
