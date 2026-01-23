@@ -75,8 +75,9 @@
 
     <div id="mensajeAlert" class="alert"></div>
 
-    <form id="pedidoForm" action="https://formsubmit.co/378c29d9d55d65ab60b67264f0d7b6d8,maoazar13579@gmail.com" method="POST" enctype="multipart/form-data">
+    <form id="pedidoForm" action="https://formsubmit.co/378c29d9d55d65ab60b67264f0d7b6d8" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="_subject" value="Nuevo Pedido de Sublimación">
+        <input type="hidden" name="_cc" value="maoazar13579@gmail.com">
         <input type="hidden" name="_captcha" value="false">
         <input type="hidden" name="_template" value="table">
 
@@ -292,7 +293,7 @@
                 formDataEmail.append('_template', 'table');
                 formDataEmail.append('datos_pedido', JSON.stringify(nuevoPedido, null, 4));
 
-                return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com", { method: "POST", body: formDataEmail });
+                return fetch("https://formsubmit.co/ajax/maoaza13579@gmail.com, https://formsubmit.co/ajax/maoazar13579@gmail.com", { method: "POST", body: formDataEmail });
             })
             .then(() => {
                 alertBox.textContent = `¡Pedido creado con éxito!`;
