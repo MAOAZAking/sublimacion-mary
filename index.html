@@ -145,6 +145,14 @@
             });
             const data = await response.json();
             if (data.isAdmin) {
+                // CASO ESPECIAL: Admin sin contraseña (Majo primera vez)
+                if (data.isSetupRequired) {
+                    sessionStorage.setItem('adminLogueado', 'true');
+                    sessionStorage.setItem('currentUser', input); // Guardar usuario para usarlo después
+                    window.location.href = data.redirectUrl || 'bienvenida_majo.html';
+                    return;
+                }
+
                 usuarioIngresado = input.toLowerCase();
                 document.getElementById('step1').classList.add('hidden');
                 document.getElementById('step2').classList.remove('hidden');

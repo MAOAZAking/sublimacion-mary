@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Bienvenida Majo</title>
+    <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#1a1a1a">
+    <script>
+        // SEGURIDAD: Verificar si el usuario inició sesión
+        if (!sessionStorage.getItem('adminLogueado')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a1a1a;
+            margin: 0;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Background Logo (Mismas especificaciones que admin_dashboard) */
+        #background-logo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background-image: url('img/logo-sin-fondo.png');
+            background-position: center; background-repeat: no-repeat;
+            opacity: 0.1;
+        }
+
+        .content-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 600px;
+            width: 100%;
+            animation: fadeIn 1.5s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #ff00cc, #3333ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 0, 204, 0.3);
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #e0e0e0;
+        }
+
+        .question {
+            margin-top: 30px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn-neon {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            border: 2px solid;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+            position: relative;
+            font-family: 'Poppins', sans-serif;
+            text-decoration: none;
+        }
+
+        .btn-yes {
+            color: #00ff00;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px #00ff00, inset 0 0 10px #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .btn-yes:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+        }
+
+        .btn-no {
+            color: #ff00de;
+            border-color: #ff00de;
+            box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de;
+            text-shadow: 0 0 5px #ff00de;
+        }
+
+        .btn-no:hover {
+            background: #ff00de;
+            color: #000;
+            box-shadow: 0 0 20px #ff00de, 0 0 40px #ff00de;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Modal de Contraseña */
+        #setupModal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .setup-content {
+            background: #2d3436; padding: 30px; border-radius: 15px;
+            text-align: center; width: 90%; max-width: 400px;
+            border: 1px solid #ff00cc;
+            box-shadow: 0 0 20px rgba(255, 0, 204, 0.2);
+        }
+        .setup-input {
+            width: 100%; padding: 12px; margin: 20px 0;
+            border-radius: 8px; border: none; text-align: center;
+            font-family: 'Poppins', sans-serif;
+        }
+        .btn-save {
+            background: linear-gradient(to right, #ff00cc, #3333ff);
+            color: white; border: none; padding: 10px 30px; border-radius: 50px; cursor: pointer; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="background-logo"></div>
+
+    <div class="content-container">
+        <h1>Bienvenida Majo</h1>
+        <p>Es un placer por fin tener a nuestra razón de existir por fin en el servidor</p>
+        <p>Esperamos que este servidor sea de tu agrado pues fue creado con mucho codigo y cariño para ti</p>
+        
+        <p class="question"><br>¿Estas lista para ayudarte a terminar de configurarte como admin?</p>
+
+        <div class="buttons-container">
+            <button class="btn-neon btn-yes" onclick="mostrarSetup()">Sí</button>
+            <button class="btn-neon btn-no" onclick="window.location.href='index.html'">No</button>
+        </div>
+    </div>
+
+    <!-- Modal para crear contraseña -->
+    <div id="setupModal">
+        <div class="setup-content">
+            <h3 style="margin-top:0">¡Genial!</h3>
+            <p>Para proteger tu acceso, establece tu usuario y una contraseña única:</p>
+            
+            <input type="text" id="newUsername" class="setup-input" placeholder="Nuevo Usuario (Ej: Majo)" style="margin-bottom: 10px;">
+            <input type="password" id="newPassword" class="setup-input" placeholder="Nueva Contraseña" style="margin-top: 0;">
+            
+            <button class="btn-save" onclick="guardarConfiguracion()">Guardar y Entrar</button>
+            <div id="errorMsg" style="color: #ff7675; margin-top: 10px; display: none;">Error al guardar</div>
+        </div>
+    </div>
+
+    <script>
+        function mostrarSetup() {
+            document.getElementById('setupModal').style.display = 'flex';
+            document.getElementById('newUsername').focus();
+        }
+
+        async function guardarConfiguracion() {
+            const user = document.getElementById('newUsername').value.trim();
+            const pass = document.getElementById('newPassword').value;
+            
+            if (!user || !pass) {
+                alert("Por favor completa ambos campos.");
+                return;
+            }
+
+            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+            
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/complete-setup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        currentUsername: '3209287029', 
+                        newUsername: user, 
+                        newPassword: pass 
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = 'admin_dashboard.html';
+                } else {
+                    const errorDiv = document.getElementById('errorMsg');
+                    errorDiv.textContent = data.error || 'Error al guardar';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (e) { console.error(e); }
+        }
+    </script>
+</body>
+</html>
