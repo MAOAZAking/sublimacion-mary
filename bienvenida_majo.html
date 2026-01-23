@@ -351,6 +351,11 @@
                         currentUsername: '3209287029', 
                         newUsername: tempUser, 
                         newPassword: tempPass 
+                    }),
+                    body: JSON.stringify({ 
+                        currentUsername: 'mary', 
+                        newUsername: tempUser, 
+                        newPassword: tempPass 
                     })
                 });
                 const data = await res.json();
