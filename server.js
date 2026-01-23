@@ -220,6 +220,10 @@ app.post('/api/pedidos', upload.fields([
         try {
             console.log("Procesando pedido vía GitHub API...");
             
+            // 0. Obtener información del repositorio (Rama principal) para construir URLs absolutas
+            const { data: repoData } = await githubClient.repos.get({ owner: GITHUB_OWNER, repo: GITHUB_REPO });
+            const branch = repoData.default_branch;
+            
             // A. Calcular siguiente ID mirando la carpeta en GitHub
             let nextNum = 1;
             try {
@@ -257,24 +261,26 @@ app.post('/api/pedidos', upload.fields([
                 if (files.lamina_frontal) {
                     const ext = path.extname(files.lamina_frontal[0].originalname);
                     const name = `lamina-frontal-${tipoProducto}-${nextNum}${ext}`;
+                    const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                     uploads.push({
-                        path: `img/${tipoProducto}/${folderName}/${name}`,
+                        path: relativePath,
                         content: fs.readFileSync(files.lamina_frontal[0].path),
                         msg: `Add frontal image ${folderName}`
                     });
-                    urlFrontal = `/img/${tipoProducto}/${folderName}/${name}`;
+                    urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                     mainImageUrl = urlFrontal;
                 }
                 // Subir Lámina Trasera
                 if (files.lamina_trasera) {
                     const ext = path.extname(files.lamina_trasera[0].originalname);
                     const name = `lamina-trasera-${tipoProducto}-${nextNum}${ext}`;
+                    const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                     uploads.push({
-                        path: `img/${tipoProducto}/${folderName}/${name}`,
+                        path: relativePath,
                         content: fs.readFileSync(files.lamina_trasera[0].path),
                         msg: `Add trasera image ${folderName}`
                     });
-                    urlTrasera = `/img/${tipoProducto}/${folderName}/${name}`;
+                    urlTrasera = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                     if (!mainImageUrl) mainImageUrl = urlTrasera;
                 }
                 // Subir Plantilla Camiseta
@@ -294,17 +300,20 @@ app.post('/api/pedidos', upload.fields([
                 const imagenName = `lamina-${tipoProducto}-${nextNum}${imagenExt}`;
                 const plantillaName = `plantilla-${tipoProducto}-${nextNum}${plantillaExt}`;
 
+                const relativeImgPath = `img/${tipoProducto}/${folderName}/${imagenName}`;
+                const relativeTemplatePath = `img/${tipoProducto}/${folderName}/${plantillaName}`;
+
                 uploads.push({
-                    path: `img/${tipoProducto}/${folderName}/${imagenName}`,
+                    path: relativeImgPath,
                     content: fs.readFileSync(files.imagen[0].path),
                     msg: `Add order image ${folderName}`
                 });
                 uploads.push({
-                    path: `img/${tipoProducto}/${folderName}/${plantillaName}`,
+                    path: relativeTemplatePath,
                     content: fs.readFileSync(files.plantilla[0].path),
                     msg: `Add order template ${folderName}`
                 });
-                mainImageUrl = `/img/${tipoProducto}/${folderName}/${imagenName}`;
+                mainImageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativeImgPath}`;
             }
 
             // C. SUBIDA ROBUSTA (Git Data API)
@@ -331,10 +340,7 @@ app.post('/api/pedidos', upload.fields([
                 await delay(500); // Pequeña pausa para estabilidad
             }
 
-            // 2. Obtener estado actual del repositorio
-            const { data: repoData } = await githubClient.repos.get({ owner: GITHUB_OWNER, repo: GITHUB_REPO });
-            const branch = repoData.default_branch;
-
+            // 2. Obtener referencia del último commit
             const { data: refData } = await githubClient.git.getRef({
                 owner: GITHUB_OWNER,
                 repo: GITHUB_REPO,

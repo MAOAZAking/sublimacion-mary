@@ -53,24 +53,24 @@
         "producto": "Mug Personalizado",
         "fecha": "16/01/2026 10:38:40",
         "estado": "Listo para sublimar",
-        "imagen_url": "/img/mug/mug-1/lamina-mug-1.png"
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug-1/lamina-mug-1.png"
     },
     {
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
         "fecha": "16/01/2026 15:08:11",
         "estado": "Revisión del cliente",
-        "imagen_url": "/img/mug/mug-2/lamina-mug-2.png"
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug-2/lamina-mug-2.png"
     },
     {
         "telefono": "3169445092",
         "producto": "Camiseta Estampada",
         "fecha": "19/01/2026 16:52:18",
         "estado": "Creando diseño",
-        "imagen_url": "/img/camiseta/camiseta-2/lamina-trasera-camiseta-2.png",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta-2/lamina-trasera-camiseta-2.png",
         "imagenes": {
             "frontal": null,
-            "trasera": "/img/camiseta/camiseta-2/lamina-trasera-camiseta-2.png"
+            "trasera": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta-2/lamina-trasera-camiseta-2.png"
         }
     },
     {
@@ -80,8 +80,8 @@
         "estado": "Revisión del cliente",
         "imagen_url": "/img/camiseta/camiseta-3/lamina-frontal-camiseta-3.png",
         "imagenes": {
-            "frontal": "/img/camiseta/camiseta-3/lamina-frontal-camiseta-3.png",
-            "trasera": "/img/camiseta/camiseta-3/lamina-trasera-camiseta-3.png"
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta-3/lamina-frontal-camiseta-3.png",
+            "trasera": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta-3/lamina-trasera-camiseta-3.png"
         }
     }
 ]
