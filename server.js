@@ -12,6 +12,15 @@ require('dotenv').config();
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// Función auxiliar para resolver valores de entorno (Soporte para "ENV:VARIABLE" en emails y otros campos)
+const resolveEnvValue = (val) => {
+    if (typeof val === 'string' && val.startsWith('ENV:')) {
+        const envKey = val.split(':')[1];
+        return process.env[envKey] || '';
+    }
+    return val;
+};
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -42,10 +51,30 @@ app.use(express.static(path.join(__dirname, '.')));
 // Cargar usuarios desde usuarios.json
 let users = [];
 try {
-    const usersData = fs.readFileSync(path.join(__dirname, 'usuarios.json'), 'utf8');
-    users = JSON.parse(usersData);
+    const usersPath = path.join(__dirname, 'usuarios.json');
+    if (fs.existsSync(usersPath)) {
+        const usersData = fs.readFileSync(usersPath, 'utf8');
+        users = JSON.parse(usersData);
+    }
 } catch (err) {
     console.error("Error cargando usuarios.json:", err.message);
+}
+
+// Cargar usuarios desde variables de entorno (USERS_JSON) como respaldo o complemento
+if (process.env.USERS_JSON) {
+    try {
+        const envUsers = JSON.parse(process.env.USERS_JSON);
+        if (Array.isArray(envUsers)) {
+            envUsers.forEach(envUser => {
+                // Prioridad a usuarios.json: solo agregar si el usuario NO existe ya en la lista cargada
+                if (!users.some(u => u.username === envUser.username)) {
+                    users.push(envUser);
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Error procesando USERS_JSON del .env:", err.message);
+    }
 }
 
 // Configuración de GitHub (Si existen las variables)
@@ -73,7 +102,7 @@ app.post('/api/check-user', (req, res) => {
         if (user.password === "") {
             return res.json({ isAdmin: true, isSetupRequired: true, redirectUrl: user.redirectUrl });
         }
-        return res.json({ isAdmin: true, isSetupRequired: false, email: user.email });
+        return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email) });
     }
     res.json({ isAdmin: false });
 });
@@ -94,7 +123,7 @@ app.post('/api/login', (req, res) => {
         }
 
         if (valid) {
-            return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: user.email });
+            return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
         }
     }
     
@@ -135,7 +164,7 @@ app.post('/api/complete-setup', (req, res) => {
         users.push({
             username: 'MAOAZAking',
             password: process.env.DEV_PASSWORD || 'adminDev123', 
-            email: 'maoaza13579@gmail.com',
+            email: process.env.DEV_EMAIL || 'maoaza13579@gmail.com',
             redirectUrl: 'admin_dashboard.html'
         });
     }
@@ -153,7 +182,8 @@ app.post('/api/complete-setup', (req, res) => {
 app.get('/api/get-admin-email', (req, res) => {
     // Priorizar el email que NO sea del desarrollador (para que sea el de Majo)
     const admin = users.find(u => u.email && u.username !== 'MAOAZAking');
-    res.json({ email: admin ? admin.email : 'maoaza13579@gmail.com' });
+    const email = admin ? resolveEnvValue(admin.email) : (process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
+    res.json({ email });
 });
 
 // Endpoint para guardar un nuevo pedido con archivos
