@@ -73,7 +73,7 @@ app.post('/api/check-user', (req, res) => {
         if (user.password === "") {
             return res.json({ isAdmin: true, isSetupRequired: true, redirectUrl: user.redirectUrl });
         }
-        return res.json({ isAdmin: true, isSetupRequired: false });
+        return res.json({ isAdmin: true, isSetupRequired: false, email: user.email });
     }
     res.json({ isAdmin: false });
 });
@@ -94,7 +94,7 @@ app.post('/api/login', (req, res) => {
         }
 
         if (valid) {
-            return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html' });
+            return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: user.email });
         }
     }
     
@@ -103,30 +103,42 @@ app.post('/api/login', (req, res) => {
 
 // Endpoint para completar configuración (Usuario y Contraseña)
 app.post('/api/complete-setup', (req, res) => {
-    const { currentUsername, newUsername, newPassword } = req.body;
+    const { currentUsername, newUsername, newPassword, newEmail } = req.body;
     
-    // Usuarios que serán reemplazados/eliminados al crear el perfil de Majo
-    const usersToReplace = ['mary', '3209287029'];
+    // Usuarios antiguos a los que se les actualizará el email (sin eliminarlos)
+    const usersToUpdate = ['mary', '3209287029'];
 
-    // Validar si el nuevo nombre de usuario ya está en uso (excluyendo los que se van a borrar)
-    const isTaken = users.some(u => 
-        !usersToReplace.includes(u.username) && 
-        u.username.toLowerCase() === newUsername.toLowerCase()
-    );
+    // Actualizar email de usuarios antiguos
+    users.forEach(u => {
+        if (usersToUpdate.includes(u.username)) {
+            u.email = newEmail;
+        }
+    });
+
+    // Validar si el nuevo nombre de usuario ya está en uso
+    const isTaken = users.some(u => u.username.toLowerCase() === newUsername.toLowerCase());
 
     if (isTaken) {
          return res.status(400).json({ success: false, error: 'El nombre de usuario ya está en uso.' });
     }
 
-    // 1. Eliminar usuarios antiguos
-    users = users.filter(u => !usersToReplace.includes(u.username));
-
     // 2. Agregar nuevo usuario
     users.push({
         username: newUsername,
         password: newPassword,
+        email: newEmail,
         redirectUrl: 'admin_dashboard.html'
     });
+
+    // Asegurar que el desarrollador (MAOAZAking) esté registrado con su correo principal
+    if (!users.some(u => u.username === 'MAOAZAking')) {
+        users.push({
+            username: 'MAOAZAking',
+            password: process.env.DEV_PASSWORD || 'adminDev123', 
+            email: 'maoaza13579@gmail.com',
+            redirectUrl: 'admin_dashboard.html'
+        });
+    }
     
     try {
         fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(users, null, 4));
@@ -137,12 +149,20 @@ app.post('/api/complete-setup', (req, res) => {
     }
 });
 
+// Endpoint para obtener el correo del administrador (para notificaciones)
+app.get('/api/get-admin-email', (req, res) => {
+    // Priorizar el email que NO sea del desarrollador (para que sea el de Majo)
+    const admin = users.find(u => u.email && u.username !== 'MAOAZAking');
+    res.json({ email: admin ? admin.email : 'maoaza13579@gmail.com' });
+});
+
 // Endpoint para guardar un nuevo pedido con archivos
 app.post('/api/pedidos', upload.fields([
     { name: 'imagen', maxCount: 1 }, 
     { name: 'plantilla', maxCount: 1 },
     { name: 'lamina_frontal', maxCount: 1 },
-    { name: 'lamina_trasera', maxCount: 1 }
+    { name: 'lamina_trasera', maxCount: 1 },
+    { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
     const { producto, telefono, fecha, estado } = req.body;
     const files = req.files || {};
@@ -264,6 +284,7 @@ app.post('/api/pedidos', upload.fields([
             let mainImageUrl = '';
             let urlFrontal = null;
             let urlTrasera = null;
+            let urlFotoDiseno = null;
 
             if (tipoProducto === 'camiseta') {
                 // Subir Lámina Frontal
@@ -325,6 +346,19 @@ app.post('/api/pedidos', upload.fields([
                 mainImageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativeImgPath}`;
             }
 
+            // Subir Foto Usada en Diseño (Opcional)
+            if (files.foto_diseno) {
+                const ext = path.extname(files.foto_diseno[0].originalname);
+                const name = `foto-usada-en-${tipoProducto}-${nextNum}${ext}`;
+                const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
+                uploads.push({
+                    path: relativePath,
+                    content: fs.readFileSync(files.foto_diseno[0].path),
+                    msg: `Add design reference photo ${folderName}`
+                });
+                urlFotoDiseno = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+            }
+
             // C. SUBIDA ROBUSTA (Git Data API)
             // Usamos la API de bajo nivel (Blobs/Trees) para soportar archivos grandes y evitar timeouts.
             
@@ -379,7 +413,8 @@ app.post('/api/pedidos', upload.fields([
             const nuevoPedido = { 
                 telefono, producto, fecha, estado, 
                 imagen_url: mainImageUrl,
-                imagenes: { frontal: urlFrontal, trasera: urlTrasera }
+                imagenes: { frontal: urlFrontal, trasera: urlTrasera },
+                foto_diseno_url: urlFotoDiseno
             };
             pedidos.push(nuevoPedido);
 
@@ -427,6 +462,7 @@ app.post('/api/pedidos', upload.fields([
             if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
             if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
+            if (files.foto_diseno) try { fs.unlinkSync(files.foto_diseno[0].path); } catch(e){}
 
             return res.json({ success: true, pedido: nuevoPedido });
 

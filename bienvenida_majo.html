@@ -39,6 +39,13 @@
             opacity: 0.1;
         }
 
+        /* Definición para animar el ángulo del gradiente cónico */
+        @property --angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+
         .content-container {
             background: rgba(0, 0, 0, 0.6);
             padding: 40px;
@@ -48,15 +55,42 @@
             max-width: 600px;
             width: 100%;
             animation: fadeIn 1.5s ease-out;
+            position: relative;
+            border: 2px solid transparent; /* Reserva espacio */
+        }
+
+        /* Borde Neón en Movimiento */
+        .content-container::before {
+            content: '';
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            z-index: -1;
+            border-radius: 24px;
+            
+            /* Gradiente Cónico para efecto de reloj */
+            background: conic-gradient(from var(--angle), #d500f9, #0000ff, #ffffff, #d500f9, #0000ff, #ffffff,#d500f9, #0000ff, #ffffff);
+            
+            /* Animación de rotación del ángulo */
+            animation: neonBorderRotate 6s linear infinite;
+
+            /* Máscara para dejar solo el borde visible (evita que se vea en el centro transparente) */
+            padding: 4px; /* Grosor del borde */
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        @keyframes neonBorderRotate {
+            to { --angle: 360deg; }
         }
 
         h1 {
             font-size: 2.5rem;
             margin-bottom: 20px;
-            background: linear-gradient(to right, #9b59b6, #8e44ad);
+            background: linear-gradient(to right, #d500f9, #0000ff); /* Morado Neón a Azul Oscuro Neón */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 20px rgba(255, 0, 204, 0.3);
+            text-shadow: 0 0 20px rgba(213, 0, 249, 0.3);
             animation: pulseZoom 2s infinite ease-in-out;
         }
 
@@ -256,10 +290,11 @@
             <!-- Paso 1: Ingreso inicial -->
             <div id="step1">
                 <h3 style="margin-top:0; color: #e0aaff; font-size: 1.8rem;">¡Genial!</h3>
-                <p style="color: #d1c4e9;">Para proteger tu acceso, establece tu usuario y una contraseña única:</p>
+                <p style="color: #d1c4e9;">Para proteger tu acceso, establece tu usuario, contraseña y correo para notificaciones:</p>
                 
                 <input type="text" id="newUsername" class="setup-input" placeholder="Nuevo Usuario (Ej: Majo)">
                 <input type="password" id="newPassword" class="setup-input" placeholder="Nueva Contraseña">
+                <input type="email" id="newEmail" class="setup-input" placeholder="Tu Correo Electrónico">
                 
                 <button class="btn-save" onclick="irPaso2()">Continuar</button>
             </div>
@@ -270,6 +305,15 @@
                 <p style="color: #d1c4e9;">Majo, para rectificar tus nuevas credenciales, por favor repite tu usuario y contraseña que estableciste anteriormente:</p>
                 <input type="text" id="confirmUsername" class="setup-input" placeholder="Repite tu Usuario">
                 <input type="password" id="confirmPassword" class="setup-input" placeholder="Repite tu Contraseña">
+                
+                <p style="color: #d1c4e9; margin-top: 15px; margin-bottom: 5px; font-weight: 600;">Tu correo es:</p>
+                <input type="email" id="confirmEmail" class="setup-input" placeholder="Correo electrónico">
+                
+                <div id="emailMismatchContainer" style="display:none;">
+                    <p style="color: #ff7675; font-size: 0.9rem; margin: 5px 0;">Cambiaste el correo, confírmalo:</p>
+                    <input type="email" id="reConfirmEmail" class="setup-input" placeholder="Repite tu nuevo correo">
+                </div>
+
                 <button class="btn-save" onclick="guardarConfiguracionFinal()">Crear perfil admin. y entrar</button>
                 <button class="btn-back" onclick="volverPaso1()">Corregir datos anteriores</button>
             </div>
@@ -281,6 +325,7 @@
     <script>
         let tempUser = '';
         let tempPass = '';
+        let tempEmail = '';
 
         function shakeModal() {
             const modalContent = document.querySelector('.setup-content');
@@ -297,6 +342,7 @@
         function irPaso2() {
             const user = document.getElementById('newUsername').value.trim();
             const pass = document.getElementById('newPassword').value;
+            const email = document.getElementById('newEmail').value.trim();
             const errorDiv = document.getElementById('errorMsg');
 
             if (!user) {
@@ -313,8 +359,20 @@
                 return;
             }
 
+            if (!email || !email.includes('@.')) {
+                errorDiv.textContent = 'Por favor ingresa un correo válido.';
+                errorDiv.style.display = 'block';
+                shakeModal();
+                return;
+            }
+
             tempUser = user;
             tempPass = pass;
+            tempEmail = email;
+
+            // Pre-llenar el correo en el paso 2
+            document.getElementById('confirmEmail').value = tempEmail;
+            document.getElementById('emailMismatchContainer').style.display = 'none';
 
             document.getElementById('step1').style.display = 'none';
             document.getElementById('step2').style.display = 'block';
@@ -331,12 +389,32 @@
         async function guardarConfiguracionFinal() {
             const confUser = document.getElementById('confirmUsername').value.trim();
             const confPass = document.getElementById('confirmPassword').value;
+            const confEmail = document.getElementById('confirmEmail').value.trim();
+            const errorDiv = document.getElementById('errorMsg');
+
+            // Validar Correo
+            let finalEmail = tempEmail;
+            if (confEmail !== tempEmail) {
+                const reConfEmail = document.getElementById('reConfirmEmail').value.trim();
+                if (!confEmail.includes('@')) {
+                    errorDiv.textContent = 'El correo modificado no es válido.';
+                    errorDiv.style.display = 'block';
+                    shakeModal();
+                    return;
+                }
+                if (confEmail !== reConfEmail) {
+                    errorDiv.textContent = 'La confirmación del nuevo correo no coincide.';
+                    errorDiv.style.display = 'block';
+                    shakeModal();
+                    return;
+                }
+                finalEmail = confEmail;
+            }
 
             const userMatch = confUser === tempUser;
             const passMatch = confPass === tempPass;
 
             if (!userMatch || !passMatch) {
-                const errorDiv = document.getElementById('errorMsg');
                 if (!userMatch && !passMatch) {
                     errorDiv.textContent = 'El usuario y la contraseña no coinciden.';
                 } else if (!userMatch) {
@@ -358,11 +436,13 @@
                     body: JSON.stringify({ 
                         currentUsername: '3209287029', 
                         newUsername: tempUser, 
-                        newPassword: tempPass 
+                        newPassword: tempPass,
+                        newEmail: finalEmail
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
+                    sessionStorage.setItem('adminEmail', finalEmail);
                     window.location.href = 'admin_dashboard.html';
                 } else {
                     const errorDiv = document.getElementById('errorMsg');
@@ -405,6 +485,9 @@
             if (e.key === 'Enter') document.getElementById('newPassword').focus();
         });
         document.getElementById('newPassword').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') document.getElementById('newEmail').focus();
+        });
+        document.getElementById('newEmail').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') irPaso2();
         });
         document.getElementById('confirmUsername').addEventListener('keypress', function (e) {
@@ -412,6 +495,18 @@
         });
         document.getElementById('confirmPassword').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') guardarConfiguracionFinal();
+        });
+
+        // Listener para detectar cambios en el correo del paso 2
+        document.getElementById('confirmEmail').addEventListener('input', function() {
+            const currentVal = this.value.trim();
+            const mismatchDiv = document.getElementById('emailMismatchContainer');
+            if (currentVal !== tempEmail) {
+                mismatchDiv.style.display = 'block';
+            } else {
+                mismatchDiv.style.display = 'none';
+                document.getElementById('reConfirmEmail').value = '';
+            }
         });
     </script>
 </body>

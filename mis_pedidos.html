@@ -718,7 +718,16 @@
         document.getElementById('feedbackButtons').style.display = 'flex';
     }
 
-    function enviarMeEncanta() {
+    async function getAdminEmail() {
+        const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/get-admin-email`);
+            const data = await res.json();
+            return data.email || 'maoaza13579@gmail.com';
+        } catch (e) { return 'maoaza13579@gmail.com'; }
+    }
+
+    async function enviarMeEncanta() {
         if (!currentPedidoData) return;
         
         const telefono = currentPedidoData.telefono || currentPedidoData.teléfono;
@@ -746,9 +755,10 @@
         });
         
         // Enviar correo silencioso
+        const adminEmail = await getAdminEmail();
         const formData = new FormData();
         formData.append('_subject', `Cliente SATISFECHO - ${telefono}`);
-        formData.append('_cc', 'maoazar13579@gmail.com');
+        formData.append('_cc', adminEmail);
         formData.append('mensaje', `El cliente ${telefono} ha aprobado el producto: ${imgUrl}`);
         fetch("https://formsubmit.co/ajax/378c29d9d55d65ab60b67264f0d7b6d8", { method: "POST", body: formData });
 
@@ -759,7 +769,7 @@
         window.location.href = urlWA;
     }
 
-    function enviarSolicitudCambio() {
+    async function enviarSolicitudCambio() {
         if (!currentPedidoData) return;
 
         const textoCambio = document.getElementById('cambioTexto').value.trim();
@@ -788,9 +798,10 @@
         });
 
         // Enviar correo silencioso
+        const adminEmail = await getAdminEmail();
         const formData = new FormData();
         formData.append('_subject', `Solicitud de CAMBIO - ${telefono}`);
-        formData.append('_cc', 'maoazar13579@gmail.com');
+        formData.append('_cc', adminEmail);
         formData.append('mensaje', `El cliente ${telefono} solicita cambios en: ${imgUrl}\nSolicitud: ${textoCambio}`);
         fetch("https://formsubmit.co/ajax/378c29d9d55d65ab60b67264f0d7b6d8", { method: "POST", body: formData });
 
