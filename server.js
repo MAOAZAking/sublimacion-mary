@@ -296,8 +296,8 @@ app.post('/api/pedidos', upload.fields([
                 let maxNum = 0;
                 if (Array.isArray(folderContent)) {
                     folderContent.forEach(item => {
-                        if (item.type === 'dir' && item.name.startsWith(`${tipoProducto}-`)) {
-                            const num = parseInt(item.name.split('-')[1]);
+                        if (item.type === 'dir' && item.name.startsWith(`${tipoProducto}_`)) {
+                            const num = parseInt(item.name.split('_')[1]);
                             if (!isNaN(num) && num > maxNum) maxNum = num;
                         }
                     });
@@ -307,7 +307,7 @@ app.post('/api/pedidos', upload.fields([
                 console.log("Carpeta no existe o error leyendo, iniciando en 1");
             }
 
-            const folderName = `${tipoProducto}-${nextNum}`;
+            const folderName = `${tipoProducto}_${nextNum}`;
             
             // B. Preparar subidas según tipo de producto
             const uploads = [];
@@ -320,7 +320,7 @@ app.post('/api/pedidos', upload.fields([
                 // Subir Lámina Frontal
                 if (files.lamina_frontal) {
                     const ext = path.extname(files.lamina_frontal[0].originalname);
-                    const name = `lamina-frontal-${tipoProducto}-${nextNum}${ext}`;
+                    const name = `lamina_frontal_${tipoProducto}_${nextNum}${ext}`;
                     const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                     uploads.push({
                         path: relativePath,
@@ -333,7 +333,7 @@ app.post('/api/pedidos', upload.fields([
                 // Subir Lámina Trasera
                 if (files.lamina_trasera) {
                     const ext = path.extname(files.lamina_trasera[0].originalname);
-                    const name = `lamina-trasera-${tipoProducto}-${nextNum}${ext}`;
+                    const name = `lamina_trasera_${tipoProducto}_${nextNum}${ext}`;
                     const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                     uploads.push({
                         path: relativePath,
@@ -346,7 +346,7 @@ app.post('/api/pedidos', upload.fields([
                 // Subir Plantilla Camiseta
                 if (files.plantilla) {
                     const ext = path.extname(files.plantilla[0].originalname);
-                    const name = `plantilla-${tipoProducto}-${nextNum}${ext}`;
+                    const name = `plantilla_${tipoProducto}_${nextNum}${ext}`;
                     uploads.push({
                         path: `img/${tipoProducto}/${folderName}/${name}`,
                         content: fs.readFileSync(files.plantilla[0].path),
@@ -357,8 +357,8 @@ app.post('/api/pedidos', upload.fields([
                 // Mugs (Comportamiento original)
                 const imagenExt = path.extname(files.imagen[0].originalname);
                 const plantillaExt = path.extname(files.plantilla[0].originalname);
-                const imagenName = `lamina-${tipoProducto}-${nextNum}${imagenExt}`;
-                const plantillaName = `plantilla-${tipoProducto}-${nextNum}${plantillaExt}`;
+                const imagenName = `lamina_${tipoProducto}_${nextNum}${imagenExt}`;
+                const plantillaName = `plantilla_${tipoProducto}_${nextNum}${plantillaExt}`;
 
                 const relativeImgPath = `img/${tipoProducto}/${folderName}/${imagenName}`;
                 const relativeTemplatePath = `img/${tipoProducto}/${folderName}/${plantillaName}`;
@@ -379,7 +379,7 @@ app.post('/api/pedidos', upload.fields([
             // Subir Foto Usada en Diseño (Opcional)
             if (files.foto_diseno) {
                 const ext = path.extname(files.foto_diseno[0].originalname);
-                const name = `foto-usada-en-${tipoProducto}-${nextNum}${ext}`;
+                const name = `foto_usada_en_${tipoProducto}_${nextNum}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({
                     path: relativePath,
