@@ -8,7 +8,7 @@
     {
         "username": "MAOAZAking",
         "password": "ENV:ADMIN_PASS_MAOAZAKING",
-        "email": "378c29d9d55d65ab60b67264f0d7b6d8",
+        "email": "ENV:ADMIN_EMAIL_MAOAZAKING",
         "redirectUrl": "admin_dashboard.html"
     },
     {
