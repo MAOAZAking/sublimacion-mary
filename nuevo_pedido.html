@@ -77,7 +77,7 @@
 
     <form id="pedidoForm" action="https://formsubmit.co/378c29d9d55d65ab60b67264f0d7b6d8" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="_subject" value="Nuevo Pedido de Sublimación">
-        <input type="hidden" name="_cc" value="maoazar13579@gmail.com">
+        <input type="hidden" name="_cc" id="cc_email" value="maoaza13579@gmail.com">
         <input type="hidden" name="_captcha" value="false">
         <input type="hidden" name="_template" value="table">
 
@@ -174,8 +174,12 @@
                         <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
                     </div>
                     <div class="form-group">
-                        <label for="plantilla">Subir Plantilla (.ai):</label>
-                        <input type="file" name="plantilla" id="plantilla" accept=".ai" required>
+                        <label for="plantilla">Subir Plantilla (.ai, .psd, .pdf, etc):</label>
+                        <input type="file" name="plantilla" id="plantilla" accept=".ai, .psd, .psb, .psdc, .eps, .pdf, .svg, .tiff, .ait" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="foto_diseno">Foto usada en el diseño (Opcional):</label>
+                        <input type="file" name="foto_diseno" id="foto_diseno" accept=".jpg, .jpeg, .png, .webp">
                     </div>
                 `;
             } else if (tipo === 'Camiseta Estampada') {
@@ -189,8 +193,12 @@
                         <input type="file" name="lamina_trasera" id="lamina_trasera" accept=".jpg, .jpeg, .png">
                     </div>
                     <div class="form-group">
-                        <label for="plantilla">Subir Plantilla (.ai):</label>
-                        <input type="file" name="plantilla" id="plantilla" accept=".ai" required>
+                        <label for="plantilla">Subir Plantilla (.ai, .psd, .pdf, etc):</label>
+                        <input type="file" name="plantilla" id="plantilla" accept=".ai, .psd, .psb, .psdc, .eps, .pdf, .svg, .tiff, .ait" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="foto_diseno">Foto usada en el diseño (Opcional):</label>
+                        <input type="file" name="foto_diseno" id="foto_diseno" accept=".jpg, .jpeg, .png, .webp">
                     </div>
                     <p style="font-size: 0.85rem; color: #666; margin-top: -10px; margin-bottom: 20px;">* Es obligatorio subir al menos una de las dos láminas y la plantilla.</p>
                 `;
@@ -256,15 +264,19 @@
             if (producto === 'Mug Personalizado') {
                 const imgFile = document.getElementById('imagen').files[0];
                 const plantFile = document.getElementById('plantilla').files[0];
+                const fotoDiseno = document.getElementById('foto_diseno').files[0];
                 formData.append('imagen', imgFile, imgFile.name.replace(/\s+/g, '-'));
                 formData.append('plantilla', plantFile, plantFile.name.replace(/\s+/g, '-'));
+                if (fotoDiseno) formData.append('foto_diseno', fotoDiseno, fotoDiseno.name.replace(/\s+/g, '-'));
             } else if (producto === 'Camiseta Estampada') {
                 const frontalInput = document.getElementById('lamina_frontal');
                 const traseraInput = document.getElementById('lamina_trasera');
                 const plantillaInput = document.getElementById('plantilla');
+                const fotoDisenoInput = document.getElementById('foto_diseno');
                 if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
                 if (traseraInput.files.length > 0) formData.append('lamina_trasera', traseraInput.files[0], traseraInput.files[0].name.replace(/\s+/g, '-'));
                 if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
+                if (fotoDisenoInput.files.length > 0) formData.append('foto_diseno', fotoDisenoInput.files[0], fotoDisenoInput.files[0].name.replace(/\s+/g, '-'));
             }
 
             // 3. Enviar al Backend (Detectar si estamos en GitHub Pages o Local/Render)
@@ -289,7 +301,8 @@
                 // 4. Enviar correo de notificación
                 const formDataEmail = new FormData();
                 formDataEmail.append('_subject', 'Nuevo Pedido JSON');
-                formDataEmail.append('_cc', 'maoazar13579@gmail.com');
+                const adminEmail = sessionStorage.getItem('adminEmail') || 'maoaza13579@gmail.com';
+                formDataEmail.append('_cc', adminEmail);
                 formDataEmail.append('_captcha', 'false');
                 formDataEmail.append('_template', 'table');
                 formDataEmail.append('datos_pedido', JSON.stringify(nuevoPedido, null, 4));

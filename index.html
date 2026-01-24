@@ -149,6 +149,7 @@
                 if (data.isSetupRequired) {
                     sessionStorage.setItem('adminLogueado', 'true');
                     sessionStorage.setItem('currentUser', input); // Guardar usuario para usarlo después
+                    if (data.email) sessionStorage.setItem('adminEmail', data.email);
                     window.location.href = data.redirectUrl || 'bienvenida_majo.html';
                     return;
                 }
@@ -198,6 +199,7 @@
 
             if (data.success) {
                 sessionStorage.setItem('adminLogueado', 'true');
+                if (data.email) sessionStorage.setItem('adminEmail', data.email);
                 window.location.href = "admin_dashboard.html";
             } else {
                 errorMsg.textContent = "Credenciales incorrectas.";

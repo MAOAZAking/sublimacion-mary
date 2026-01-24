@@ -217,11 +217,12 @@
 
             // 4. Enviar correo de notificación
             const formDataEmail = new FormData();
+            const adminEmail = sessionStorage.getItem('adminEmail') || 'maoaza13579@gmail.com';
             formDataEmail.append('_subject', `Pedido MODIFICADO - ${pedidoActualizado.telefono}`);
             formDataEmail.append('_captcha', 'false');
             formDataEmail.append('_template', 'table');
             formDataEmail.append('accion', 'Pedido Modificado');
-            formDataEmail.append('_cc', 'maoazar13579@gmail.com');
+            formDataEmail.append('_cc', adminEmail);
             formDataEmail.append('datos_pedido', JSON.stringify(pedidoActualizado, null, 4));
 
             return fetch("https://formsubmit.co/ajax/378c29d9d55d65ab60b67264f0d7b6d8", { method: "POST", body: formDataEmail });

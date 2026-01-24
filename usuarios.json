@@ -2,16 +2,19 @@
     {
         "username": "mary",
         "password": "ENV:ADMIN_PASS_MARY",
+        "email": "",
         "redirectUrl": "admin_dashboard.html"
     },
     {
         "username": "MAOAZAking",
         "password": "ENV:ADMIN_PASS_MAOAZAKING",
+        "email": "378c29d9d55d65ab60b67264f0d7b6d8",
         "redirectUrl": "admin_dashboard.html"
     },
     {
         "username": "3209287029",
         "password": "",
+        "email": "",
         "redirectUrl": "bienvenida_majo.html"
     }
 ]
