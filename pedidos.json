@@ -49,8 +49,8 @@
         "estado": "Creando diseño",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_camiseta_1.png",
         "imagenes": {
-            "frontal": null,
-            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_camiseta_1.png"
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_camiseta_1.png",
+            "espaldar": null
         }
     },
     {
