@@ -595,6 +595,14 @@ app.get('/api/download-folder/:type/:folder', async (req, res) => {
     }
 });
 
+// Endpoint para obtener configuración de modelos 3D desde variables de entorno
+app.get('/api/config-models', (req, res) => {
+    res.json({
+        hombre: process.env.MODELO_3D_HOMBRE,
+        mujer: process.env.MODELO_3D_MUJER
+    });
+});
+
 const server = app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
