@@ -191,7 +191,7 @@ app.post('/api/pedidos', upload.fields([
     { name: 'imagen', maxCount: 1 }, 
     { name: 'plantilla', maxCount: 1 },
     { name: 'lamina_frontal', maxCount: 1 },
-    { name: 'lamina_trasera', maxCount: 1 },
+    { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
     const { producto, telefono, fecha, estado } = req.body;
@@ -205,15 +205,15 @@ app.post('/api/pedidos', upload.fields([
     // 2. Validaciones por tipo de producto
     if (tipoProducto === 'camiseta') {
         // Validación para Camisetas
-        if (!files.lamina_frontal && !files.lamina_trasera) {
+        if (!files.lamina_frontal && !files.lamina_espaldar) {
             // Limpiar plantilla si existe pero faltan láminas
             if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
-            return res.status(400).json({ success: false, error: 'Para camisetas, es obligatorio subir al menos una lámina (frontal o trasera).' });
+            return res.status(400).json({ success: false, error: 'Para camisetas, es obligatorio subir al menos una lámina (frontal o espaldar).' });
         }
         if (!files.plantilla) {
             // Limpiar láminas si existen pero falta plantilla
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
-            if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
+            if (files.lamina_espaldar) try { fs.unlinkSync(files.lamina_espaldar[0].path); } catch(e){}
             return res.status(400).json({ success: false, error: 'Para camisetas, es obligatorio subir la plantilla (.ai).' });
         }
 
@@ -231,10 +231,10 @@ app.post('/api/pedidos', upload.fields([
 
         try {
             if (files.lamina_frontal) validateCamiseta(files.lamina_frontal[0]);
-            if (files.lamina_trasera) validateCamiseta(files.lamina_trasera[0]);
+            if (files.lamina_espaldar) validateCamiseta(files.lamina_espaldar[0]);
         } catch (err) {
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
-            if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
+            if (files.lamina_espaldar) try { fs.unlinkSync(files.lamina_espaldar[0].path); } catch(e){}
             if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
             return res.status(400).json({ success: false, error: err.message });
         }
@@ -313,7 +313,7 @@ app.post('/api/pedidos', upload.fields([
             const uploads = [];
             let mainImageUrl = '';
             let urlFrontal = null;
-            let urlTrasera = null;
+            let urlespaldar = null;
             let urlFotoDiseno = null;
 
             if (tipoProducto === 'camiseta') {
@@ -330,18 +330,18 @@ app.post('/api/pedidos', upload.fields([
                     urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                     mainImageUrl = urlFrontal;
                 }
-                // Subir Lámina Trasera
-                if (files.lamina_trasera) {
-                    const ext = path.extname(files.lamina_trasera[0].originalname);
-                    const name = `lamina_trasera_${tipoProducto}_${nextNum}${ext}`;
+                // Subir Lámina espaldar
+                if (files.lamina_espaldar) {
+                    const ext = path.extname(files.lamina_espaldar[0].originalname);
+                    const name = `lamina_espaldar_${tipoProducto}_${nextNum}${ext}`;
                     const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                     uploads.push({
                         path: relativePath,
-                        content: fs.readFileSync(files.lamina_trasera[0].path),
-                        msg: `Add trasera image ${folderName}`
+                        content: fs.readFileSync(files.lamina_espaldar[0].path),
+                        msg: `Add espaldar image ${folderName}`
                     });
-                    urlTrasera = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
-                    if (!mainImageUrl) mainImageUrl = urlTrasera;
+                    urlespaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+                    if (!mainImageUrl) mainImageUrl = urlespaldar;
                 }
                 // Subir Plantilla Camiseta
                 if (files.plantilla) {
@@ -443,7 +443,7 @@ app.post('/api/pedidos', upload.fields([
             const nuevoPedido = { 
                 telefono, producto, fecha, estado, 
                 imagen_url: mainImageUrl,
-                imagenes: { frontal: urlFrontal, trasera: urlTrasera },
+                imagenes: { frontal: urlFrontal, espaldar: urlespaldar },
                 foto_diseno_url: urlFotoDiseno
             };
             pedidos.push(nuevoPedido);
@@ -491,7 +491,7 @@ app.post('/api/pedidos', upload.fields([
             if (files.imagen) try { fs.unlinkSync(files.imagen[0].path); } catch(e){}
             if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
-            if (files.lamina_trasera) try { fs.unlinkSync(files.lamina_trasera[0].path); } catch(e){}
+            if (files.lamina_espaldar) try { fs.unlinkSync(files.lamina_espaldar[0].path); } catch(e){}
             if (files.foto_diseno) try { fs.unlinkSync(files.foto_diseno[0].path); } catch(e){}
 
             return res.json({ success: true, pedido: nuevoPedido });

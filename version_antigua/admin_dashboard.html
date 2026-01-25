@@ -13,7 +13,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <script>
         // SEGURIDAD: Verificar si el usuario inició sesión
         if (!sessionStorage.getItem('adminLogueado')) {
@@ -601,14 +600,11 @@
             // Determinar URLs de frontal y espaldar
             let urls = { frontal: null, espaldar: null };
             if (pedido.imagenes) {
-                urls = {
-                    frontal: pedido.imagenes.frontal ? pedido.imagenes.frontal.trim() : null,
-                    espaldar: (pedido.imagenes.espaldar || pedido.imagenes.trasera) ? (pedido.imagenes.espaldar || pedido.imagenes.trasera).trim() : null
-                };
+                urls = pedido.imagenes;
             } else {
                 // Fallback para pedidos antiguos
                 if (pedido.imagen_url.includes('frontal')) urls.frontal = pedido.imagen_url;
-                else if (pedido.imagen_url.includes('espaldar') || pedido.imagen_url.includes('trasera')) urls.espaldar = pedido.imagen_url;
+                else if (pedido.imagen_url.includes('espaldar')) urls.espaldar = pedido.imagen_url;
                 else urls.frontal = pedido.imagen_url; // Asumir frontal por defecto
             }
 
@@ -761,96 +757,298 @@
     }
 
     function init3DCamiseta(urls, container) {
-        container.innerHTML = ''; // Limpiar contenedor
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x333333);
+
+        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 0, 14);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
+        container.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
 
         // Mostrar mensaje si solo hay espaldar
         if (!urls.frontal && urls.espaldar) {
             document.getElementById('rotationMsg').style.display = 'block';
         }
 
-        const viewer = document.createElement('model-viewer');
-        viewer.src = "https://models.readyplayer.me/6975338ff226985966ebec85.glb";
-        viewer.alt = "Modelo 3D de camiseta";
-        viewer.setAttribute('auto-rotate', '');
-        viewer.setAttribute('camera-controls', '');
-        viewer.setAttribute('shadow-intensity', '1');
-        viewer.setAttribute('ar', '');
-        viewer.setAttribute('camera-target', '0m 1m 0m');
-        viewer.setAttribute('environment-image', 'neutral');
-        viewer.style.width = '100%';
-        viewer.style.height = '100%';
-        
-        container.appendChild(viewer);
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
 
-        viewer.addEventListener('load', async () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const size = 1024; 
-            canvas.width = size;
-            canvas.height = size;
-
-            // Función para cargar imagen desde URL
-            const loadImage = (src) => new Promise((resolve) => {
-                if (!src) return resolve(null);
-                const img = new Image();
-                img.crossOrigin = "anonymous";
-                // Agregar timestamp para evitar caché CORS y asegurar carga fresca
-                img.src = src.startsWith('data:') ? src : (src + (src.includes('?') ? '&' : '?') + 't=' + new Date().getTime());
-                img.onload = () => resolve(img);
-                img.onerror = () => { console.error("Error cargando imagen:", src); resolve(null); };
+        const loadTexture = (url) => {
+            return new Promise((resolve) => {
+                if (!url) resolve(null);
+                else loader.load(url, resolve, undefined, () => resolve(null));
             });
+        };
 
-            const [frontImg, backImg] = await Promise.all([
-                loadImage(urls.frontal),
-                loadImage(urls.espaldar)
-            ]);
-
-            // 1. Limpiar canvas (Fondo blanco para simular la tela)
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, size, size);
-
-            // Función de dibujo (copiada del beta)
-            const drawImageOnCanvas = (img, offsetX, offsetY) => {
-                const shirtAreaSize = size * 0.4; 
-                const maxAllowedWidth = shirtAreaSize * 0.75;
-                const maxAllowedHeight = shirtAreaSize * 0.75;
-                
-                const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
-                const drawWidth = img.width * scale;
-                const drawHeight = img.height * scale;
-
-                const x = ((size - drawWidth) / 2) + offsetX;
-                const y = ((size * 0.4) - (drawHeight / 2)) + offsetY;
-
-                ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        Promise.all([
+            loadTexture(urls.frontal),
+            loadTexture(urls.espaldar)
+        ]).then(([texFront, texBack]) => {
+            
+            const createMat = (tex) => {
+                if (!tex) return null;
+                tex.wrapS = THREE.ClampToEdgeWrapping;
+                tex.wrapT = THREE.ClampToEdgeWrapping;
+                return new THREE.MeshStandardMaterial({ 
+                    map: tex, 
+                    side: THREE.FrontSide,
+                    roughness: 0.5,
+                    transparent: true,
+                    polygonOffset: true,
+                    polygonOffsetFactor: -4,
+                    polygonOffsetUnits: -4
+                });
             };
 
-            // 2. Dibujar Frente
-            if (frontImg) {
-                drawImageOnCanvas(frontImg, -240, 250);
-            }
+            const whiteMat = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff, 
+                roughness: 0.5 
+            });
 
-            // 3. Dibujar Espalda
-            if (backImg) {
-                drawImageOnCanvas(backImg, 272, 250); 
-            }
+            // 1. Cuerpo (Torso Humanoide)
+            // Rotamos la costura hacia atrás (3*PI/2) para que el centro de la textura (U=0.5) quede al FRENTE (+Z)
+            const bodyGeo = new THREE.CylinderGeometry(2.3, 2.3, 7.2, 64, 64, false, 3 * Math.PI / 2, 2 * Math.PI);
+            
+            // Función de deformación compartida
+            function applyDeformation(geometry) {
+                const pos = geometry.attributes.position;
+                const v = new THREE.Vector3();
+                
+                for (let i = 0; i < pos.count; i++) {
+                    v.fromBufferAttribute(pos, i);
+                const y = v.y; // -3.25 a +3.25
 
-            // 4. Aplicar textura
-            try {
-                const dataUrl = canvas.toDataURL("image/png");
-                const texture = await viewer.createTexture(dataUrl);
-                const material = viewer.model.materials.find(m => m.name === 'Wolf3D_Outfit_Top');
-                if (material) {
-                    material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
-                    material.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
-                    material.pbrMetallicRoughness.setMetallicFactor(0);
-                    material.pbrMetallicRoughness.setRoughnessFactor(1);
-                    material.setAlphaMode('OPAQUE');
+                // Simular elevación de perfil (montaña vista de lado)
+                if (y > 1.5) {
+                    const zNorm = Math.abs(v.z) / 2.3; // Usar Z para vista de perfil
+                    const rise = (1.0 - zNorm * zNorm) * (y - 1.5) * 0.086;
+                    v.y += rise;
                 }
-            } catch (e) {
-                console.error("Error generando textura (posible bloqueo CORS):", e);
+
+                // Simular elevación de hombros desde el borde externo (Trapecios continuos)
+                if (y > 1.5) {
+                    const xAbs = Math.abs(v.x);
+                    const peakX = 0.6; // Donde termina el hombro y empieza el cuello
+                    const edgeX = 2.3; // Borde exterior del cuerpo
+                    
+                    // Curva que va desde 0 en el borde hasta 1 en el cuello
+                    const t = Math.max(0, (edgeX - xAbs) / (edgeX - peakX));
+                    const smoothT = 1 - Math.pow(1 - t, 2); // Suavizar la transición para evitar puntas
+                    const factor = (xAbs > peakX) ? (0.85 + 0.15 * smoothT) : 1.0;
+                    
+                    const riseX = factor * (y - 1.5) * 0.25;
+                    v.y += riseX;
+                }
+
+                // A. Silueta (Cintura vs Hombros)
+                let widthFactor = 1.0;
+                if (y > 1.0) {
+                    // Forma de hombros redondeada (sin punta)
+                    if (y < 3.15) {
+                        // Curva suave (parábola) en lugar de línea recta para un acabado más limpio
+                        const t = (y - 1.0) / 2.15;
+                        widthFactor = 1.0 + (t * (2 - t)) * 0.1;
+                    } else {
+                        // Reducir ancho para unirse a la dona (cuello)
+                        const baseW = 1.0 + 0.10;
+                        const t = (y - 3.15) / 0.5;
+                        // Cierre suave sin forzar puntos de referencia
+                        widthFactor = baseW * (1.0 - t * t * 0.5);
+                    }
+                } else if (y > 0.5) {
+                    // Suavizar transición de pecho (1.0) a cintura (0.95) para evitar corte en la imagen
+                    const t = (1.0 - y) / 0.5;
+                    widthFactor = 1.0 - (t * 0.05);
+                } else {
+                    widthFactor = 0.95;
+                }
+
+                // B. Volumen Pecho y Corrección Tórax
+                let zOffset = 0;
+                if (v.z > 0) {
+                    // Escalar profundidad (Z)
+                    let zScale = 0.75; // Base para el pecho (se mantiene igual)
+                    v.z *= zScale;
+
+                    // Volumen Pectoral
+                    if (y > 0.0 && y < 3.0) {
+                        // Curva única suave centrada en el pecho alto (y=2.0)
+                        // Cae gradualmente hasta el abdomen (y=0) sin bultos intermedios
+                        const peakY = 2.0;
+                        const dist = Math.abs(y - peakY);
+                        const range = (y < peakY) ? 2.0 : 1.0; // Caída larga y suave hacia abajo
+                        
+                        if (dist < range) {
+                            const t = dist / range;
+                            // Curva coseno suave: 1 en el pico, 0 en los extremos (liso)
+                            const shape = (1 + Math.cos(t * Math.PI)) * 0.5;
+                            zOffset += 0.35 * shape;
+                        }
+                    }
+                } else {
+                    // Espalda plana
+                    v.z *= 0.5;
+                }
+
+                // Cierre del cuello en Z (Profundidad)
+                if (y > 3.0) {
+                    const t = (y - 3.0) / 0.6;
+                    // Cierre suave en Z sin puntos fijos
+                    v.z *= (1.0 - t * 0.2);
+                }
+
+                v.x *= widthFactor;
+                v.z += zOffset;
+                
+                    pos.setXYZ(i, v.x, v.y, v.z);
+                }
+                geometry.computeVertexNormals();
+            }
+
+            // Aplicar deformación al cuerpo base
+            applyDeformation(bodyGeo);
+
+            // --- CREAR RECUBRIMIENTOS (Parches limpios) ---
+            // Parámetros del parche: Radio 2.3, Altura 4.6 (60% aprox), Segmento de cilindro (70% ancho)
+            const patchHeight = 4.6;
+            const patchArc = 1.8; // Radianes (aprox 100 grados) para cubrir el frente
+            
+            // Frente: Centrado en +Z (Angulo 0)
+            const frontGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, -patchArc/2, patchArc);
+            frontGeo.translate(0, 0.5, 0); // Centrar verticalmente en el pecho (y=0.5)
+            applyDeformation(frontGeo); // Deformar igual que el cuerpo
+            remapUVs(frontGeo);
+
+            // Espalda: Centrado en -Z (Angulo PI)
+            const backGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, Math.PI - patchArc/2, patchArc);
+            backGeo.translate(0, 0.5, 0);
+            applyDeformation(backGeo);
+            remapUVs(backGeo);
+
+            // Función para remapear UVs
+            function remapUVs(geometry) {
+                const uv = geometry.attributes.uv;
+                let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+                for (let i = 0; i < uv.count; i++) {
+                    minU = Math.min(minU, uv.getX(i)); maxU = Math.max(maxU, uv.getX(i));
+                    minV = Math.min(minV, uv.getY(i)); maxV = Math.max(maxV, uv.getY(i));
+                }
+                for (let i = 0; i < uv.count; i++) {
+                    uv.setXY(i, (uv.getX(i) - minU) / (maxU - minU), (uv.getY(i) - minV) / (maxV - minV));
+                }
+                uv.needsUpdate = true;
+            }
+
+            // Inflar los recubrimientos para que no se oculten (Offset)
+            function inflateGeometry(geo, offset) {
+                const pos = geo.attributes.position;
+                const norm = geo.attributes.normal;
+                const v = new THREE.Vector3();
+                const n = new THREE.Vector3();
+                for (let i = 0; i < pos.count; i++) {
+                    v.fromBufferAttribute(pos, i);
+                    n.fromBufferAttribute(norm, i);
+                    v.addScaledVector(n, offset);
+                    pos.setXYZ(i, v.x, v.y, v.z);
+                }
+            }
+            inflateGeometry(frontGeo, 0.01); // Pegado al cuerpo (mínima separación)
+            inflateGeometry(backGeo, 0.01);
+            
+            bodyGeo.translate(0, -0.5, 0);
+            frontGeo.translate(0, -0.5, 0);
+            backGeo.translate(0, -0.5, 0);
+
+            // 3. Mangas (Cilindros rotados)
+            // Geometría cónica y segmentada para deformación
+            const sleeveGeoL = new THREE.CylinderGeometry(0.6, 1.15, 2.7, 32, 10);
+            const posL = sleeveGeoL.attributes.position;
+            const vL = new THREE.Vector3();
+            for (let i = 0; i < posL.count; i++) {
+                vL.fromBufferAttribute(posL, i);
+                // Curvar la parte superior hacia adentro para conectar con el hombro
+                if (vL.y > 0) {
+                    const t = vL.y / 1.35; 
+                    vL.x -= t * 0.4; // Curva hacia el cuerpo
+                    vL.z *= 1.0 + (t * 0.3); // Más volumen en el deltoides
+                }
+                posL.setXYZ(i, vL.x, vL.y, vL.z);
+            }
+            sleeveGeoL.scale(1, 1, 0.7);
+            sleeveGeoL.translate(0, -1.35, 0); // Pivote arriba
+            sleeveGeoL.rotateZ(Math.PI / 4.5);
+            sleeveGeoL.translate(2.2, 3.25, 0); // Posición alta en el hombro
+
+            const sleeveGeoR = new THREE.CylinderGeometry(0.6, 1.15, 2.7, 32, 10);
+            const posR = sleeveGeoR.attributes.position;
+            const vR = new THREE.Vector3();
+            for (let i = 0; i < posR.count; i++) {
+                vR.fromBufferAttribute(posR, i);
+                // Espejo para el otro lado
+                if (vR.y > 0) {
+                    const t = vR.y / 1.35;
+                    vR.x += t * 0.4; // Curva hacia el cuerpo (lado opuesto)
+                    vR.z *= 1.0 + (t * 0.3);
+                }
+                posR.setXYZ(i, vR.x, vR.y, vR.z);
+            }
+            sleeveGeoR.scale(1, 1, 0.7);
+            sleeveGeoR.translate(0, -1.35, 0);
+            sleeveGeoR.rotateZ(-Math.PI / 4.5);
+            sleeveGeoR.translate(-2.2, 3.25, 0);
+
+            // 4. Cuello (Dona)
+            const neckGeo = new THREE.TorusGeometry(1.6, 0.12, 12, 48);
+            neckGeo.rotateX(Math.PI / 2);
+            neckGeo.scale(0.85, 1, 0.65);
+            neckGeo.translate(0, 3.5, 0.3);
+
+            // 5. Unir todo en un solo modelo
+            // Unimos primero las partes blancas (Mangas + Cuello)
+            const extrasGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([sleeveGeoL, sleeveGeoR, neckGeo]);
+            extrasGeo.clearGroups();
+            extrasGeo.addGroup(0, extrasGeo.index.count, 1); // Mat 1: Blanco
+            
+            // Verificar si BufferGeometryUtils cargó correctamente
+            if (THREE.BufferGeometryUtils) {
+                // Unir Cuerpo (Grupo 0) con Extras (Grupo 1)
+                const finalGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([bodyGeo, extrasGeo], true);
+                
+                // 1. Camisa Base (Blanca completa)
+                const shirtBase = new THREE.Mesh(finalGeo, whiteMat);
+                scene.add(shirtBase);
+
+                // 2. Recubrimiento Frontal
+                const matFront = createMat(texFront) || whiteMat;
+                if (texFront) scene.add(new THREE.Mesh(frontGeo, matFront));
+
+                // 3. Recubrimiento Trasero
+                const matBack = createMat(texBack) || whiteMat;
+                if (texBack) scene.add(new THREE.Mesh(backGeo, matBack));
             }
         });
+
+        const animate = function () {
+            animationId = requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        };
+        animate();
     }
 
     function cerrarModal() {
