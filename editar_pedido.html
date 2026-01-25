@@ -52,7 +52,7 @@
 
         <div class="form-group">
             <label for="telefono">Número Celular (Cliente):</label>
-            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+">
+            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+" disabled>
         </div>
 
         <button type="submit" id="btnSubmit">Actualizar Pedido</button>
@@ -152,7 +152,7 @@
         // Validar si al menos se cambió el teléfono o se subió un archivo
         const files = Array.from(this.querySelectorAll('input[type="file"]')).filter(input => input.files.length > 0);
         if (files.length === 0 && telefono === (currentPedido.telefono || currentPedido.teléfono)) {
-            alert("No ha realizado ningún cambio. Modifique el teléfono o suba al menos un archivo nuevo para actualizar.");
+            alert("No ha realizado ningún cambio. Suba al menos un archivo nuevo para actualizar.");
             return;
         }
 

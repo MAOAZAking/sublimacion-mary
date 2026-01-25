@@ -101,6 +101,7 @@
             backdrop-filter: blur(3px); z-index: 10;
         }
         .gallery-item:hover .edit-overlay { opacity: 1; }
+        .gallery-item.mobile-active .edit-overlay { opacity: 1; }
         
         .edit-half {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -355,8 +356,27 @@
                 // Asignar eventos a las mitades
                 const topHalf = item.querySelector('.edit-half-top');
                 const botHalf = item.querySelector('.edit-half-bottom');
-                topHalf.onclick = (e) => { e.stopPropagation(); abrirModal(pedido); };
-                botHalf.onclick = (e) => { e.stopPropagation(); editarPedido(pedido); };
+                
+                // Función unificada para manejar clicks (Móvil: 1er toque activa, 2do ejecuta)
+                const handleEditClick = (e, action) => {
+                    e.stopPropagation();
+                    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+                    
+                    if (isMobile) {
+                        if (item.classList.contains('mobile-active')) {
+                            action(); // Ya estaba activo, ejecutar
+                        } else {
+                            // Activar este y desactivar otros
+                            document.querySelectorAll('.gallery-item.mobile-active').forEach(el => el.classList.remove('mobile-active'));
+                            item.classList.add('mobile-active');
+                        }
+                    } else {
+                        action(); // Desktop: ejecutar directo
+                    }
+                };
+
+                topHalf.onclick = (e) => handleEditClick(e, () => abrirModal(pedido));
+                botHalf.onclick = (e) => handleEditClick(e, () => editarPedido(pedido));
             } else {
                 // Modo Normal
                 item.innerHTML = contentHTML;
