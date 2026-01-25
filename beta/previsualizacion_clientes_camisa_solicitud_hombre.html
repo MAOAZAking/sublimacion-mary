@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Shirt 3D Mockup</title>
+    <!-- Importar el componente model-viewer -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: #f4f4f4; /* Color de fondo suave */
+            overflow: hidden;
+        }
+        model-viewer {
+            width: 100%;
+            height: 100%;
+        }
+        /* Estilos para el botón de carga */
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 100;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-upload {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .btn-upload:hover {
+            background-color: #1d4ed8;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        input[type="color"] {
+            border: none;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            background: none;
+        }
+    </style>
+</head>
+<body>
+    <model-viewer 
+        id="tshirt-viewer"
+        src="https://models.readyplayer.me/6975338ff226985966ebec85.glb"
+        alt="Modelo 3D de camiseta" 
+        auto-rotate 
+        camera-controls 
+        shadow-intensity="1" 
+        ar
+        camera-target="0m 1m 0m"
+        environment-image="neutral"
+    >
+    </model-viewer>
+
+    <!-- Interfaz de usuario -->
+    <div class="controls">
+        <span>Personalizar:</span>
+        <input type="color" id="color-picker" value="#ffffff" title="Color de camiseta">
+
+        <label for="file-input-front" class="btn-upload">Frente</label>
+        <input type="file" id="file-input-front" accept="image/*">
+        
+        <label for="file-input-back" class="btn-upload">Espalda</label>
+        <input type="file" id="file-input-back" accept="image/*">
+    </div>
+
+    <script>
+        const modelViewer = document.querySelector('#tshirt-viewer');
+        const colorPicker = document.querySelector('#color-picker');
+        const fileInputFront = document.querySelector('#file-input-front');
+        const fileInputBack = document.querySelector('#file-input-back');
+
+        // Variables para almacenar las imágenes cargadas
+        let tshirtColor = '#ffffff';
+        let frontImage = null;
+        let backImage = null;
+
+        // Configuración del Canvas (se crea una sola vez)
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = 1024; 
+        canvas.width = size;
+        canvas.height = size;
+
+        // Función reutilizable para procesar y dibujar una imagen (Frente o Espalda)
+        const drawImageOnCanvas = (img, offsetX, offsetY) => {
+            const shirtAreaSize = size * 0.4; 
+            const maxAllowedWidth = shirtAreaSize * 0.75;
+            const maxAllowedHeight = shirtAreaSize * 0.75;
+            
+            // Lógica de escalado inteligente (funciona para imágenes grandes y pequeñas)
+            const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
+            const drawWidth = img.width * scale;
+            const drawHeight = img.height * scale;
+
+            // Calcular coordenadas
+            const x = ((size - drawWidth) / 2) + offsetX;
+            const y = ((size * 0.4) - (drawHeight / 2)) + offsetY;
+
+            ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        };
+
+        // Función principal para actualizar la textura completa
+        const updateTexture = async () => {
+            // 1. Limpiar canvas (Fondo con el color seleccionado)
+            ctx.fillStyle = tshirtColor;
+            ctx.fillRect(0, 0, size, size);
+
+            // 2. Dibujar Frente (si existe)
+            if (frontImage) {
+                drawImageOnCanvas(frontImage, -240, 250);
+            }
+
+            // 3. Dibujar Espalda (si existe)
+            // Usamos un offset positivo (272) para ubicarla en la parte espaldar del mapa UV
+            if (backImage) {
+                drawImageOnCanvas(backImage, 272, 250); 
+            }
+
+            // 4. Aplicar textura al modelo
+            const texture = await modelViewer.createTexture(canvas.toDataURL());
+            const material = modelViewer.model.materials.find(m => m.name === 'Wolf3D_Outfit_Top');
+            if (material) {
+                material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+                // Forzar color blanco puro y eliminar brillos metálicos que oscurecen la tela
+                material.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                material.pbrMetallicRoughness.setMetallicFactor(0);
+                material.pbrMetallicRoughness.setRoughnessFactor(1);
+            }
+        };
+
+        // Manejador de carga de imágenes
+        const handleImageUpload = (event, isFront) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    if (isFront) frontImage = img;
+                    else backImage = img;
+                    updateTexture();
+                };
+            };
+            reader.readAsDataURL(file);
+        };
+
+        fileInputFront.addEventListener('change', (e) => handleImageUpload(e, true));
+        fileInputBack.addEventListener('change', (e) => handleImageUpload(e, false));
+
+        colorPicker.addEventListener('input', (e) => {
+            tshirtColor = e.target.value;
+            updateTexture();
+        });
+    </script>
+</body>
+</html>

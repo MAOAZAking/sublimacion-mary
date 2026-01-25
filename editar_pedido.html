@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Editar Pedido - Admin</title>
-    <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
+    <link rel="icon" href="img/logo_sin_fondo.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <meta name="theme-color" content="#121212">
     <script>
@@ -126,8 +126,8 @@
                     <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
                 </div>
                 <div class="form-group">
-                    <label for="lamina_trasera">Subir NUEVA Lámina Trasera (Opcional):</label>
-                    <input type="file" name="lamina_trasera" id="lamina_trasera" accept=".jpg, .jpeg, .png">
+                    <label for="lamina_espaldar">Subir NUEVA Lámina espaldar (Opcional):</label>
+                    <input type="file" name="lamina_espaldar" id="lamina_espaldar" accept=".jpg, .jpeg, .png">
                     <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
                 </div>
                 <div class="form-group">
@@ -186,16 +186,16 @@
         const esCamiseta = productoTipo.toLowerCase().includes('camiseta');
         if (esCamiseta) {
             const frontalInput = document.getElementById('lamina_frontal');
-            const traseraInput = document.getElementById('lamina_trasera');
+            const espaldarInput = document.getElementById('lamina_espaldar');
             const plantillaInput = document.getElementById('plantilla');
-            if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
-            if (traseraInput.files.length > 0) formData.append('lamina_trasera', traseraInput.files[0], traseraInput.files[0].name.replace(/\s+/g, '-'));
-            if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
+            if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '_'));
+            if (espaldarInput.files.length > 0) formData.append('lamina_espaldar', espaldarInput.files[0], espaldarInput.files[0].name.replace(/\s+/g, '_'));
+            if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '_'));
         } else { // Es Mug
             const imgInput = document.getElementById('imagen');
             const plantInput = document.getElementById('plantilla');
-            if (imgInput.files.length > 0) formData.append('imagen', imgInput.files[0], imgInput.files[0].name.replace(/\s+/g, '-'));
-            if (plantInput.files.length > 0) formData.append('plantilla', plantInput.files[0], plantInput.files[0].name.replace(/\s+/g, '-'));
+            if (imgInput.files.length > 0) formData.append('imagen', imgInput.files[0], imgInput.files[0].name.replace(/\s+/g, '_'));
+            if (plantInput.files.length > 0) formData.append('plantilla', plantInput.files[0], plantInput.files[0].name.replace(/\s+/g, '_'));
         }
 
         // 3. Enviar al Backend

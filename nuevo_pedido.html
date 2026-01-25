@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Nuevo Pedido - Admin</title>
-    <link rel="icon" href="img/logo-sin-fondo.png" type="image/png">
+    <link rel="icon" href="img/logo_sin_fondo.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <meta name="theme-color" content="#121212">
     <meta name="mobile-web-app-capable" content="yes">
@@ -57,7 +57,7 @@
         #background-logo {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; pointer-events: none;
-            background-image: url('img/logo-sin-fondo.png');
+            background-image: url('img/logo_sin_fondo.png');
             background-position: center; background-repeat: no-repeat;
             opacity: 0.1;
         }
@@ -189,8 +189,8 @@
                         <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png">
                     </div>
                     <div class="form-group">
-                        <label for="lamina_trasera">Subir Lámina Trasera (Imagen del diseño):</label>
-                        <input type="file" name="lamina_trasera" id="lamina_trasera" accept=".jpg, .jpeg, .png">
+                        <label for="lamina_espaldar">Subir Lámina espaldar (Imagen del diseño):</label>
+                        <input type="file" name="lamina_espaldar" id="lamina_espaldar" accept=".jpg, .jpeg, .png">
                     </div>
                     <div class="form-group">
                         <label for="plantilla">Subir Plantilla (.ai, .psd, .pdf, etc):</label>
@@ -224,12 +224,12 @@
             if (img && img.files.length > 0 && plant && plant.files.length > 0) valid = true;
         } else if (producto === 'Camiseta Estampada') {
             const frontal = document.getElementById('lamina_frontal');
-            const trasera = document.getElementById('lamina_trasera');
+            const espaldar = document.getElementById('lamina_espaldar');
             const plantilla = document.getElementById('plantilla');
             
-            if (((frontal && frontal.files.length > 0) || (trasera && trasera.files.length > 0)) && (plantilla && plantilla.files.length > 0)) valid = true;
+            if (((frontal && frontal.files.length > 0) || (espaldar && espaldar.files.length > 0)) && (plantilla && plantilla.files.length > 0)) valid = true;
             else {
-                alert("Debe subir al menos una lámina para la camiseta ya sea Frontal o Trasera.");
+                alert("Debe subir al menos una lámina para la camiseta ya sea Frontal o espaldar.");
                 return;
             }
         }
@@ -270,11 +270,11 @@
                 if (fotoDiseno) formData.append('foto_diseno', fotoDiseno, fotoDiseno.name.replace(/\s+/g, '-'));
             } else if (producto === 'Camiseta Estampada') {
                 const frontalInput = document.getElementById('lamina_frontal');
-                const traseraInput = document.getElementById('lamina_trasera');
+                const espaldarInput = document.getElementById('lamina_espaldar');
                 const plantillaInput = document.getElementById('plantilla');
                 const fotoDisenoInput = document.getElementById('foto_diseno');
                 if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
-                if (traseraInput.files.length > 0) formData.append('lamina_trasera', traseraInput.files[0], traseraInput.files[0].name.replace(/\s+/g, '-'));
+                if (espaldarInput.files.length > 0) formData.append('lamina_espaldar', espaldarInput.files[0], espaldarInput.files[0].name.replace(/\s+/g, '-'));
                 if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
                 if (fotoDisenoInput.files.length > 0) formData.append('foto_diseno', fotoDisenoInput.files[0], fotoDisenoInput.files[0].name.replace(/\s+/g, '-'));
             }
