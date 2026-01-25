@@ -760,7 +760,7 @@
         animate();
     }
 
-    function init3DCamiseta(urls, container) {
+    async function init3DCamiseta(urls, container) {
         container.innerHTML = ''; // Limpiar contenedor
 
         // Mostrar mensaje si solo hay espaldar
@@ -768,42 +768,53 @@
             document.getElementById('rotationMsg').style.display = 'block';
         }
 
-        const viewer = document.createElement('model-viewer');
-        viewer.src = "https://models.readyplayer.me/6975338ff226985966ebec85.glb";
-        viewer.alt = "Modelo 3D de camiseta";
-        viewer.setAttribute('auto-rotate', '');
-        viewer.setAttribute('camera-controls', '');
-        viewer.setAttribute('shadow-intensity', '1');
-        viewer.setAttribute('ar', '');
-        viewer.setAttribute('camera-target', '0m 1m 0m');
-        viewer.setAttribute('environment-image', 'neutral');
-        viewer.style.width = '100%';
-        viewer.style.height = '100%';
-        
-        container.appendChild(viewer);
+        // 1. Obtener URLs de modelos desde el servidor
+        let models = { hombre: '', mujer: '' };
+        try {
+            let BACKEND_URL = '';
+            if (window.location.hostname.includes('github.io')) {
+                BACKEND_URL = 'https://sublimacion-mary.onrender.com';
+            } else if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000') {
+                BACKEND_URL = 'http://localhost:3000';
+            }
 
+            const res = await fetch(`${BACKEND_URL}/api/config-models`);
+            if (res.ok) models = await res.json();
+        } catch (e) {
+            console.error("Error cargando config de modelos:", e);
+        }
+
+        if (!models.hombre) {
+            container.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>Verifique que el servidor esté corriendo y las variables de entorno (.env) estén configuradas.</div>';
+            return;
+        }
+
+        // 2. Precargar imágenes para no recargarlas al cambiar de modelo
+        const loadImage = (src) => new Promise((resolve) => {
+            if (!src) return resolve(null);
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = src.startsWith('data:') ? src : (src + (src.includes('?') ? '&' : '?') + 't=' + new Date().getTime());
+            img.onload = () => resolve(img);
+            img.onerror = () => { console.error("Error cargando imagen:", src); resolve(null); };
+        });
+
+        const [frontImg, backImg] = await Promise.all([
+            loadImage(urls.frontal),
+            loadImage(urls.espaldar)
+        ]);
+
+        let currentGender = 'hombre'; // Estado inicial
+
+        const viewer = document.createElement('model-viewer');
+        
+        // IMPORTANTE: Configurar el evento 'load' ANTES de asignar el src para asegurar que capture el cambio
         viewer.addEventListener('load', async () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             const size = 1024; 
             canvas.width = size;
             canvas.height = size;
-
-            // Función para cargar imagen desde URL
-            const loadImage = (src) => new Promise((resolve) => {
-                if (!src) return resolve(null);
-                const img = new Image();
-                img.crossOrigin = "anonymous";
-                // Agregar timestamp para evitar caché CORS y asegurar carga fresca
-                img.src = src.startsWith('data:') ? src : (src + (src.includes('?') ? '&' : '?') + 't=' + new Date().getTime());
-                img.onload = () => resolve(img);
-                img.onerror = () => { console.error("Error cargando imagen:", src); resolve(null); };
-            });
-
-            const [frontImg, backImg] = await Promise.all([
-                loadImage(urls.frontal),
-                loadImage(urls.espaldar)
-            ]);
 
             // 1. Limpiar canvas (Fondo blanco para simular la tela)
             ctx.fillStyle = '#ffffff';
@@ -851,6 +862,68 @@
                 console.error("Error generando textura (posible bloqueo CORS):", e);
             }
         });
+
+        viewer.src = models.hombre;
+        viewer.alt = "Modelo 3D de camiseta";
+        viewer.setAttribute('auto-rotate', '');
+        viewer.setAttribute('camera-controls', '');
+        viewer.setAttribute('shadow-intensity', '1');
+        viewer.setAttribute('ar', '');
+        viewer.setAttribute('camera-target', '0m 1m 0m');
+        viewer.setAttribute('environment-image', 'neutral');
+        viewer.style.width = '100%';
+        viewer.style.height = '100%';
+        
+        container.appendChild(viewer);
+
+        // 3. Crear Botón de Cambio de Género
+        if (models.mujer) {
+        const toggleBtn = document.createElement('button');
+        // Estilos inline para el botón flotante
+        Object.assign(toggleBtn.style, {
+            position: 'absolute',
+            left: '20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: '1005',
+            padding: '10px 15px',
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: '2px solid white',
+            borderRadius: '50px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: '600',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.3s',
+            fontSize: '0.9rem'
+        });
+
+        const updateButton = () => {
+            if (currentGender === 'hombre') {
+                toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
+            } else {
+                toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
+            }
+        };
+        updateButton();
+
+        toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            currentGender = currentGender === 'hombre' ? 'mujer' : 'hombre';
+            viewer.src = models[currentGender];
+            updateButton();
+        };
+        
+        // Efecto hover simple
+        toggleBtn.onmouseover = () => { toggleBtn.style.background = 'rgba(255, 255, 255, 0.4)'; };
+        toggleBtn.onmouseout = () => { toggleBtn.style.background = 'rgba(255, 255, 255, 0.2)'; };
+
+        container.appendChild(toggleBtn);
+        }
+
     }
 
     function cerrarModal() {
