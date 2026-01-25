@@ -534,7 +534,7 @@
         // --- CONFIGURACIÓN DE LA SECUENCIA DE GIFs ---
         // Aquí puedes agregar o quitar GIFs y definir cuánto dura cada uno (en milisegundos)
         const gifSequence = [
-            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_like.gif", duration: 5000 }, //5000
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_like.gif", duration: 4000 }, //5000
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_baile_1.gif", duration: 4000 },
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_tira_confetti.gif", duration: 4000 },
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_baile_2.gif", duration: 3000 },
@@ -550,26 +550,83 @@
             // { src: "URL_DE_TU_OTRO_GIF.gif", duration: 3000 },
         ];
 
+        // Variables globales para control de GIFs
+        let gifTimer = null;
+        let gifCurrentIndex = 0;
+        let gifStartTime = 0;
+        let gifRemainingTime = 0;
+        let isGifPlaying = false;
+
         function startGifSequence() {
             const gifElement = document.getElementById('ath1Gif');
             if (!gifElement || gifSequence.length === 0) return;
 
-            let currentIndex = 0;
-            gifElement.style.display = 'block'; // Mostrar imagen
-
-            const showNextGif = () => {
-                const item = gifSequence[currentIndex];
-                gifElement.src = item.src;
-
-                // Programar el siguiente cambio
-                setTimeout(() => {
-                    currentIndex = (currentIndex + 1) % gifSequence.length; // Avanzar al siguiente (o volver al inicio)
-                    showNextGif();
-                }, item.duration);
-            };
-
-            showNextGif();
+            isGifPlaying = true;
+            gifCurrentIndex = 0;
+            gifElement.style.display = 'block';
+            runGifLoop();
         }
+
+        function runGifLoop() {
+            if (!isGifPlaying) return;
+
+            const item = gifSequence[gifCurrentIndex];
+            const gifElement = document.getElementById('ath1Gif');
+            gifElement.src = item.src;
+
+            gifRemainingTime = item.duration;
+            gifStartTime = Date.now();
+
+            clearTimeout(gifTimer);
+            gifTimer = setTimeout(() => {
+                gifCurrentIndex = (gifCurrentIndex + 1) % gifSequence.length;
+                runGifLoop();
+            }, gifRemainingTime);
+        }
+
+        function pauseGif() {
+            if (isGifPlaying && gifTimer) {
+                clearTimeout(gifTimer);
+                const elapsed = Date.now() - gifStartTime;
+                gifRemainingTime -= elapsed;
+                isGifPlaying = false;
+            }
+        }
+
+        function resumeGif() {
+            if (!isGifPlaying && gifRemainingTime > 0) {
+                isGifPlaying = true;
+                gifStartTime = Date.now();
+                gifTimer = setTimeout(() => {
+                    gifCurrentIndex = (gifCurrentIndex + 1) % gifSequence.length;
+                    runGifLoop();
+                }, gifRemainingTime);
+            }
+        }
+
+        // Helper para pausar escritura si la pestaña no está visible
+        async function checkVisibility() {
+            if (document.hidden) {
+                await new Promise(resolve => {
+                    const onVisible = () => {
+                        if (!document.hidden) {
+                            document.removeEventListener('visibilitychange', onVisible);
+                            resolve();
+                        }
+                    };
+                    document.addEventListener('visibilitychange', onVisible);
+                });
+            }
+        }
+
+        // Listener global de visibilidad
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pauseGif();
+            } else {
+                resumeGif();
+            }
+        });
 
         // Efecto de Máquina de Escribir
         async function typeWriterEffect() {
@@ -583,6 +640,9 @@
             paragraphs.forEach(p => p.style.visibility = 'visible'); // Hacer visible el contenedor vacío
             
             const delay = ms => new Promise(res => setTimeout(res, ms));
+
+            // Iniciar GIFs sincronizados con el texto
+            startGifSequence();
 
             // Pausas específicas
             const pauses = {
@@ -622,6 +682,7 @@
                     } else if (isTag) {
                         buffer += char;
                     } else {
+                        await checkVisibility(); // Pausar si está oculto
                         p.innerHTML += char;
                         await delay(90); // Velocidad de escritura reducida
                         
@@ -642,7 +703,6 @@
 
         window.addEventListener('load', () => {
             setTimeout(typeWriterEffect, 500);
-            startGifSequence(); // Iniciar la secuencia de GIFs
         });
     </script>
 </body>
