@@ -99,6 +99,7 @@
             line-height: 1.6;
             margin-bottom: 15px;
             color: #e0e0e0;
+            visibility: hidden; /* Ocultar inicialmente para efecto de escritura */
         }
 
         .question {
@@ -114,6 +115,8 @@
             gap: 30px;
             margin-top: 30px;
             flex-wrap: wrap;
+            opacity: 0; /* Oculto inicialmente para el efecto */
+            transition: opacity 1s;
         }
 
         .btn-neon {
@@ -263,12 +266,31 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
+
+        /* Contenedor del GIF lateral */
+        .gif-sidebar {
+            position: fixed;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            pointer-events: none; /* Para no bloquear clicks si es transparente */
+        }
+        .gif-sidebar img {
+            width: 250px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(213, 0, 249, 0.3)); /* Resplandor neón sutil */
+        }
     </style>
 </head>
 <body>
 
     <div id="background-logo"></div>
     <div class="confetti-container" id="confetti"></div>
+
+    <div class="gif-sidebar">
+        <img src="" id="ath1Gif" alt="ATH1" style="display: none;">
+    </div>
 
     <div class="content-container">
         <h1>¡Bienvenida Majo!</h1>
@@ -507,6 +529,109 @@
                 mismatchDiv.style.display = 'none';
                 document.getElementById('reConfirmEmail').value = '';
             }
+        });
+
+        // --- CONFIGURACIÓN DE LA SECUENCIA DE GIFs ---
+        // Aquí puedes agregar o quitar GIFs y definir cuánto dura cada uno (en milisegundos)
+        const gifSequence = [
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_like.gif", duration: 5000 },
+            // Copia y pega la línea de abajo para agregar más GIFs:
+            // { src: "URL_DE_TU_OTRO_GIF.gif", duration: 3000 },
+        ];
+
+        function startGifSequence() {
+            const gifElement = document.getElementById('ath1Gif');
+            if (!gifElement || gifSequence.length === 0) return;
+
+            let currentIndex = 0;
+            gifElement.style.display = 'block'; // Mostrar imagen
+
+            const showNextGif = () => {
+                const item = gifSequence[currentIndex];
+                gifElement.src = item.src;
+
+                // Programar el siguiente cambio
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % gifSequence.length; // Avanzar al siguiente (o volver al inicio)
+                    showNextGif();
+                }, item.duration);
+            };
+
+            showNextGif();
+        }
+
+        // Efecto de Máquina de Escribir
+        async function typeWriterEffect() {
+            const container = document.querySelector('.content-container');
+            const paragraphs = Array.from(container.querySelectorAll('p'));
+            const buttons = container.querySelector('.buttons-container');
+            
+            // Guardar contenido original y limpiar
+            const contents = paragraphs.map(p => p.innerHTML);
+            paragraphs.forEach(p => p.innerHTML = '');
+            paragraphs.forEach(p => p.style.visibility = 'visible'); // Hacer visible el contenedor vacío
+            
+            const delay = ms => new Promise(res => setTimeout(res, ms));
+
+            // Pausas específicas
+            const pauses = {
+                "<b>ATH1</b>": 800,
+                "por fin conocerte": 800,
+                "vez en el servidor,": 800,
+                "estoy muy contento ☺️": 800,
+                "emprendimiento fui creado🥹": 800,
+                "hemos añorado este día": 800,
+                "se hizo con esmero🤗": 800,
+                "cariño SOLO PARA TI</b>": 2500 // Pausa larga antes de la pregunta
+            };
+
+            for (let i = 0; i < paragraphs.length; i++) {
+                const p = paragraphs[i];
+                const html = contents[i];
+                let buffer = '';
+                let isTag = false;
+                let currentText = '';
+
+                for (const char of html) {
+                    currentText += char;
+
+                    if (char === '<') {
+                        isTag = true;
+                        buffer += char;
+                    } else if (char === '>') {
+                        isTag = false;
+                        buffer += char;
+                        p.innerHTML += buffer;
+                        buffer = '';
+                        
+                        // Verificar pausas después de cerrar etiqueta
+                        for (const [phrase, time] of Object.entries(pauses)) {
+                            if (currentText.endsWith(phrase)) await delay(time);
+                        }
+                    } else if (isTag) {
+                        buffer += char;
+                    } else {
+                        p.innerHTML += char;
+                        await delay(90); // Velocidad de escritura reducida
+                        
+                        // Verificar pausas después de carácter
+                        for (const [phrase, time] of Object.entries(pauses)) {
+                            if (currentText.endsWith(phrase)) await delay(time);
+                        }
+                    }
+                }
+                if (!currentText.endsWith("cariño SOLO PARA TI</b>")) {
+                    await delay(300); // Pausa estándar entre párrafos si no hubo pausa especial
+                }
+            }
+            
+            // Mostrar botones al finalizar
+            buttons.style.opacity = '1';
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(typeWriterEffect, 500);
+            startGifSequence(); // Iniciar la secuencia de GIFs
         });
     </script>
 </body>
