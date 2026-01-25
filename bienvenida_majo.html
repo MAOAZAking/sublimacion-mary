@@ -281,6 +281,11 @@
             height: auto;
             filter: drop-shadow(0 0 20px rgba(213, 0, 249, 0.3)); /* Resplandor neón sutil */
         }
+        .gif-sidebar canvas {
+            width: 250px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(213, 0, 249, 0.3));
+        }
     </style>
 </head>
 <body>
@@ -290,6 +295,7 @@
 
     <div class="gif-sidebar">
         <img src="" id="ath1Gif" alt="ATH1" style="display: none;">
+        <canvas id="gifCanvas" style="display: none;"></canvas>
     </div>
 
     <div class="content-container">
@@ -301,8 +307,8 @@
         <p class="question"><br>¿Estas lista para ayudarte a terminar de configurarte como admin?</p>
 
         <div class="buttons-container">
-            <button class="btn-neon btn-yes" onclick="mostrarSetup()">Sí</button>
-            <button class="btn-neon btn-no" onclick="window.location.href='admin_dashboard.html'">No</button>
+            <button class="btn-neon btn-yes" onclick="mostrarSetup()" onmouseenter="showHoverGif()" onmouseleave="restoreGifSequence()">Sí</button>
+            <button class="btn-neon btn-no" onclick="window.location.href='admin_dashboard.html'" onmouseenter="showHoverGif()" onmouseleave="restoreGifSequence()">No</button>
         </div>
     </div>
 
@@ -545,7 +551,7 @@
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_regalo.gif", duration: 4000 },
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_corazon.gif", duration: 5000 },
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_pregunta.gif", duration: 6000 },
-            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_ohh_yeah.gif", duration: 99999999 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_ohh_yeah.gif", duration: 999999999999 },
             // Copia y pega la línea de abajo para agregar más GIFs:
             // { src: "URL_DE_TU_OTRO_GIF.gif", duration: 3000 },
         ];
@@ -590,11 +596,33 @@
                 const elapsed = Date.now() - gifStartTime;
                 gifRemainingTime -= elapsed;
                 isGifPlaying = false;
+
+                // Congelar visualmente el GIF usando Canvas
+                const gifElement = document.getElementById('ath1Gif');
+                const canvas = document.getElementById('gifCanvas');
+                if (gifElement && canvas && gifElement.complete && gifElement.naturalWidth > 0) {
+                    canvas.width = gifElement.naturalWidth;
+                    canvas.height = gifElement.naturalHeight;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(gifElement, 0, 0);
+                    
+                    gifElement.style.display = 'none';
+                    canvas.style.display = 'block';
+                }
             }
         }
 
         function resumeGif() {
             if (!isGifPlaying && gifRemainingTime > 0) {
+                // Reanudar visualmente (Ocultar canvas estático, mostrar GIF)
+                const gifElement = document.getElementById('ath1Gif');
+                const canvas = document.getElementById('gifCanvas');
+                if (gifElement && canvas) {
+                    canvas.style.display = 'none';
+                    gifElement.style.display = 'block';
+                }
+
                 isGifPlaying = true;
                 gifStartTime = Date.now();
                 gifTimer = setTimeout(() => {
@@ -602,6 +630,35 @@
                     runGifLoop();
                 }, gifRemainingTime);
             }
+        }
+
+        // Funciones para el hover de los botones (Patineta)
+        let hoverTimeout = null;
+
+        function showHoverGif() {
+            if (hoverTimeout) clearTimeout(hoverTimeout);
+            if (gifTimer) clearTimeout(gifTimer);
+            isGifPlaying = false;
+
+            const gifElement = document.getElementById('ath1Gif');
+            const canvas = document.getElementById('gifCanvas');
+            const hoverSrc = "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_en_patineta.gif";
+            
+            if (gifElement) {
+                if (canvas) canvas.style.display = 'none';
+                gifElement.style.display = 'block';
+
+                // Evitar recargar si ya es el GIF actual
+                if (gifElement.src === hoverSrc) return;
+                gifElement.src = hoverSrc;
+            }
+        }
+
+        function restoreGifSequence() {
+            hoverTimeout = setTimeout(() => {
+                isGifPlaying = true;
+                runGifLoop();
+            }, 100);
         }
 
         // Helper para pausar escritura si la pestaña no está visible
