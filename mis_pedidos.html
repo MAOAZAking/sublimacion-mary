@@ -395,6 +395,13 @@
     }
 
     async function init3DCamiseta(urls, container) {
+        // Mostrar Loader Global
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.style.display = 'flex';
+            setTimeout(() => { loader.style.opacity = '1'; }, 10);
+        }
+
         container.innerHTML = ''; // Limpiar contenedor
 
         // Mostrar mensaje si solo hay espaldar
@@ -420,6 +427,7 @@
 
         if (!models.hombre) {
             container.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>Verifique que el servidor esté corriendo y las variables de entorno (.env) estén configuradas.</div>';
+            if (loader) { loader.style.opacity = '0'; setTimeout(() => { loader.style.display = 'none'; }, 500); }
             return;
         }
 
@@ -494,6 +502,12 @@
                 }
             } catch (e) {
                 console.error("Error generando textura (posible bloqueo CORS):", e);
+            } finally {
+                // Ocultar Loader Global cuando termine de cargar
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => { loader.style.display = 'none'; }, 500);
+                }
             }
         });
 
@@ -520,8 +534,6 @@
             transform: 'translateY(-50%)',
             zIndex: '1005',
             padding: '10px 15px',
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: '2px solid white',
             borderRadius: '50px',
             color: 'white',
             cursor: 'pointer',
@@ -537,21 +549,31 @@
         const updateButton = () => {
             if (currentGender === 'hombre') {
                 toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
+                // Estilo Morado Neón (#d500f9)
+                toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
+                toggleBtn.style.border = '2px solid #d500f9';
+                toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
             } else {
                 toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
+                // Estilo Azul Oscuro Neón (#0000ff)
+                toggleBtn.style.background = 'rgba(0, 0, 255, 0.3)';
+                toggleBtn.style.border = '2px solid #0000ff';
+                toggleBtn.style.boxShadow = '0 0 15px rgba(0, 0, 255, 0.5)';
             }
         };
         updateButton();
 
         toggleBtn.onclick = (e) => {
             e.stopPropagation();
+            // Mostrar loader al cambiar
+            if (loader) { loader.style.display = 'flex'; loader.style.opacity = '1'; }
             currentGender = currentGender === 'hombre' ? 'mujer' : 'hombre';
             viewer.src = models[currentGender];
             updateButton();
         };
 
-        toggleBtn.onmouseover = () => { toggleBtn.style.background = 'rgba(255, 255, 255, 0.4)'; };
-        toggleBtn.onmouseout = () => { toggleBtn.style.background = 'rgba(255, 255, 255, 0.2)'; };
+        toggleBtn.onmouseover = () => { toggleBtn.style.filter = 'brightness(1.2)'; };
+        toggleBtn.onmouseout = () => { toggleBtn.style.filter = 'brightness(1)'; };
 
         container.appendChild(toggleBtn);
         }
