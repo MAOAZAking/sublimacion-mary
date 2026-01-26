@@ -471,9 +471,8 @@
         ctx.fillRect(0, 0, size, size);
 
         const drawImageOnCanvas = (img, offsetX, offsetY) => {
-            const shirtAreaSize = size * 0.4;
-            const maxAllowedWidth = shirtAreaSize * 0.75;
-            const maxAllowedHeight = shirtAreaSize * 0.75;
+            const maxAllowedWidth = 307;
+            const maxAllowedHeight = 307;
 
             const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
             const drawWidth = img.width * scale;
@@ -493,6 +492,7 @@
         }
 
         const texture = new THREE.CanvasTexture(canvas);
+        texture.flipY = false;
         texture.colorSpace = THREE.SRGBColorSpace;
 
         const gltfLoader = new GLTFLoader();

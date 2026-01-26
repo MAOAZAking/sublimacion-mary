@@ -133,9 +133,8 @@
         canvas.height = size;
 
         const drawImageOnCanvas = (img, offsetX, offsetY) => {
-            const shirtAreaSize = size * 0.4; 
-            const maxAllowedWidth = shirtAreaSize * 0.75;
-            const maxAllowedHeight = shirtAreaSize * 0.75;
+            const maxAllowedWidth = 307;
+            const maxAllowedHeight = 307;
             
             // Lógica de escalado inteligente (funciona para imágenes grandes y pequeñas)
             const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
@@ -164,6 +163,7 @@
             }
 
             const newTexture = new THREE.CanvasTexture(canvas);
+            newTexture.flipY = false;
             newTexture.colorSpace = THREE.SRGBColorSpace;
 
             model.traverse((child) => {
