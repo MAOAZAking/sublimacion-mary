@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>T-Shirt 3D Mockup</title>
-    <!-- Importar el componente model-viewer -->
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <script type="importmap">
+        { "imports": { "three": "../js/three.module.js" } }
+    </script>
     <style>
         body {
             margin: 0;
@@ -14,7 +15,7 @@
             background-color: #f4f4f4; /* Color de fondo suave */
             overflow: hidden;
         }
-        model-viewer {
+        #container3D {
             width: 100%;
             height: 100%;
         }
@@ -59,18 +60,7 @@
     </style>
 </head>
 <body>
-    <model-viewer 
-        id="tshirt-viewer"
-        src="https://models.readyplayer.me/697534e0f226985966ec0a4d.glb"
-        alt="Modelo 3D de camiseta" 
-        auto-rotate 
-        camera-controls 
-        shadow-intensity="1" 
-        ar
-        camera-target="0m 1m 0m"
-        environment-image="neutral"
-    >
-    </model-viewer>
+    <div id="container3D"></div>
 
     <!-- Interfaz de usuario -->
     <div class="controls">
@@ -84,13 +74,53 @@
         <input type="file" id="file-input-back" accept="image/*">
     </div>
 
-    <script>
-        const modelViewer = document.querySelector('#tshirt-viewer');
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from '../js/GLTFLoader.js';
+        import { OrbitControls } from '../js/OrbitControls.js';
+
         const colorPicker = document.querySelector('#color-picker');
         const fileInputFront = document.querySelector('#file-input-front');
         const fileInputBack = document.querySelector('#file-input-back');
 
-        // Variables para almacenar las imágenes cargadas
+        const container = document.getElementById('container3D');
+        let scene, camera, renderer, controls, model;
+
+        // 1. Setup Three.js
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf4f4f4);
+        camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+        camera.position.set(0, 1, 3);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        container.appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 1, 0);
+        controls.enableDamping = true;
+
+        const ambient = new THREE.AmbientLight(0xffffff, 2.0);
+        scene.add(ambient);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
         let tshirtColor = '#ffffff';
         let frontImage = null;
         let backImage = null;
@@ -102,7 +132,6 @@
         canvas.width = size;
         canvas.height = size;
 
-        // Función reutilizable para procesar y dibujar una imagen (Frente o Espalda)
         const drawImageOnCanvas = (img, offsetX, offsetY) => {
             const shirtAreaSize = size * 0.4; 
             const maxAllowedWidth = shirtAreaSize * 0.75;
@@ -113,7 +142,6 @@
             const drawWidth = img.width * scale;
             const drawHeight = img.height * scale;
 
-            // Calcular coordenadas
             const x = ((size - drawWidth) / 2) + offsetX;
             const y = ((size * 0.4) - (drawHeight / 2)) + offsetY;
 
@@ -121,35 +149,40 @@
         };
 
         // Función principal para actualizar la textura completa
-        const updateTexture = async () => {
-            // 1. Limpiar canvas (Fondo con el color seleccionado)
+        const updateTexture = () => {
+            if (!model) return;
+
             ctx.fillStyle = tshirtColor;
             ctx.fillRect(0, 0, size, size);
 
-            // 2. Dibujar Frente (si existe)
             if (frontImage) {
                 drawImageOnCanvas(frontImage, -240, 250);
             }
 
-            // 3. Dibujar Espalda (si existe)
-            // Usamos un offset positivo (272) para ubicarla en la parte espaldar del mapa UV
             if (backImage) {
                 drawImageOnCanvas(backImage, 272, 250); 
             }
 
-            // 4. Aplicar textura al modelo
-            const texture = await modelViewer.createTexture(canvas.toDataURL());
-            const material = modelViewer.model.materials.find(m => m.name === 'Wolf3D_Outfit_Top');
-            if (material) {
-                material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
-                // Forzar color blanco puro y eliminar brillos metálicos que oscurecen la tela
-                material.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
-                material.pbrMetallicRoughness.setMetallicFactor(0);
-                material.pbrMetallicRoughness.setRoughnessFactor(1);
-            }
+            const newTexture = new THREE.CanvasTexture(canvas);
+            newTexture.colorSpace = THREE.SRGBColorSpace;
+
+            model.traverse((child) => {
+                if (child.isMesh && child.material && child.material.name === 'Wolf3D_Outfit_Top') {
+                    child.material.map = newTexture;
+                    child.material.metalness = 0;
+                    child.material.roughness = 1;
+                    child.material.needsUpdate = true;
+                }
+            });
         };
 
-        // Manejador de carga de imágenes
+        const loader = new GLTFLoader();
+        loader.load('../modelo_3D/MUJER/MODELO_3D_MUJER_camiseta.glb', (gltf) => {
+            model = gltf.scene;
+            scene.add(model);
+            updateTexture(); // Apply initial texture
+        });
+
         const handleImageUpload = (event, isFront) => {
             const file = event.target.files[0];
             if (!file) return;

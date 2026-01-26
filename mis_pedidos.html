@@ -10,10 +10,13 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./js/three.module.js"
+            }
+        }
+    </script>
     <script>
         // SEGURIDAD: Verificar si el cliente inició sesión (pasó por el index)
         if (!sessionStorage.getItem('clienteLogueado')) {
@@ -163,7 +166,12 @@
     </div>
 </div>
 
-<script>
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from './js/OrbitControls.js';
+    import { GLTFLoader } from './js/GLTFLoader.js';
+
+
     window.addEventListener('load', function() {
         const loader = document.getElementById('global-loader');
         if (loader) {
@@ -325,7 +333,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
         container.appendChild(renderer.domElement);
 
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -394,44 +402,51 @@
         animate();
     }
 
-    async function init3DCamiseta(urls, container) {
-        // Mostrar Loader Global
-        const loader = document.getElementById('global-loader');
-        if (loader) {
-            loader.style.display = 'flex';
-            setTimeout(() => { loader.style.opacity = '1'; }, 10);
+     async function init3DCamiseta(urls, container) {
+        const loaderElement = document.getElementById('global-loader');
+        if (loaderElement) {
+            loaderElement.style.display = 'flex';
+            setTimeout(() => { loaderElement.style.opacity = '1'; }, 10);
         }
 
-        container.innerHTML = ''; // Limpiar contenedor
+        container.innerHTML = '';
 
-        // Mostrar mensaje si solo hay espaldar
         if (!urls.frontal && urls.espaldar) {
             document.getElementById('rotationMsg').style.display = 'block';
         }
 
-        // 1. Obtener URLs de modelos desde el servidor
-        let models = { hombre: '', mujer: '' };
-        try {
-            let BACKEND_URL = '';
-            if (window.location.hostname.includes('github.io')) {
-                BACKEND_URL = 'https://sublimacion-mary.onrender.com';
-            } else if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000') {
-                BACKEND_URL = 'http://localhost:3000';
-            }
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-            const res = await fetch(`${BACKEND_URL}/api/config-models`);
-            if (res.ok) models = await res.json();
-        } catch (e) {
-            console.error("Error cargando config de modelos:", e);
-        }
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x333333);
 
-        if (!models.hombre) {
-            container.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>Verifique que el servidor esté corriendo y las variables de entorno (.env) estén configuradas.</div>';
-            if (loader) { loader.style.opacity = '0'; setTimeout(() => { loader.style.display = 'none'; }, 500); }
-            return;
-        }
+        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 1, 3);
 
-        // 2. Precargar imágenes
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        container.appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.target.set(0, 1, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        const animate = function () {
+            animationId = requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        };
+        animate();
+
         const loadImage = (src) => new Promise((resolve) => {
             if (!src) return resolve(null);
             const img = new Image();
@@ -446,86 +461,87 @@
             loadImage(urls.espaldar)
         ]);
 
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = 1024;
+        canvas.width = size;
+        canvas.height = size;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+
+        const drawImageOnCanvas = (img, offsetX, offsetY) => {
+            const shirtAreaSize = size * 0.4;
+            const maxAllowedWidth = shirtAreaSize * 0.75;
+            const maxAllowedHeight = shirtAreaSize * 0.75;
+
+            const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
+            const drawWidth = img.width * scale;
+            const drawHeight = img.height * scale;
+
+            const x = ((size - drawWidth) / 2) + offsetX;
+            const y = ((size * 0.4) - (drawHeight / 2)) + offsetY;
+
+            ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        };
+
+        if (frontImg) {
+            drawImageOnCanvas(frontImg, -240, 250);
+        }
+        if (backImg) {
+            drawImageOnCanvas(backImg, 272, 250);
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const gltfLoader = new GLTFLoader();
+        let currentModel;
+
+        const loadModel = (gender) => {
+            if (loaderElement) { loaderElement.style.display = 'flex'; loaderElement.style.opacity = '1'; }
+
+            const productType = 'camiseta';
+            const modelPath = `modelo_3D/${gender.toUpperCase()}/MODELO_3D_${gender.toUpperCase()}_${productType}.glb`;
+
+            gltfLoader.load(modelPath, (gltf) => {
+                if (currentModel) {
+                    scene.remove(currentModel);
+                }
+                currentModel = gltf.scene;
+
+                currentModel.traverse((child) => {
+                    if (child.isMesh && child.material && child.material.name === 'Wolf3D_Outfit_Top') {
+                        const material = child.material;
+                        material.map = texture;
+                        material.metalness = 0;
+                        material.roughness = 1;
+                        material.needsUpdate = true;
+                    }
+                });
+
+                scene.add(currentModel);
+
+                const box = new THREE.Box3().setFromObject(currentModel);
+                const center = box.getCenter(new THREE.Vector3());
+                controls.target.copy(center);
+                camera.position.set(center.x, center.y, center.z + 2);
+                controls.update();
+
+                if (loaderElement) {
+                    loaderElement.style.opacity = '0';
+                    setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+                }
+            }, undefined, (error) => {
+                console.error('Error loading 3D model:', error);
+                container.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>No se pudo cargar el archivo: ${modelPath}</div>`;
+                if (loaderElement) { loaderElement.style.opacity = '0'; setTimeout(() => { loaderElement.style.display = 'none'; }, 500); }
+            });
+        };
+
         let currentGender = 'hombre';
+        loadModel(currentGender);
 
-        const viewer = document.createElement('model-viewer');
-        
-        // IMPORTANTE: Configurar el evento 'load' ANTES de asignar el src
-        viewer.addEventListener('load', async () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const size = 1024; 
-            canvas.width = size;
-            canvas.height = size;
-
-            // 1. Limpiar canvas (Fondo blanco para simular la tela)
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, size, size);
-
-            // Función de dibujo (copiada del beta)
-            const drawImageOnCanvas = (img, offsetX, offsetY) => {
-                const shirtAreaSize = size * 0.4; 
-                const maxAllowedWidth = shirtAreaSize * 0.75;
-                const maxAllowedHeight = shirtAreaSize * 0.75;
-                
-                const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
-                const drawWidth = img.width * scale;
-                const drawHeight = img.height * scale;
-
-                const x = ((size - drawWidth) / 2) + offsetX;
-                const y = ((size * 0.4) - (drawHeight / 2)) + offsetY;
-
-                ctx.drawImage(img, x, y, drawWidth, drawHeight);
-            };
-
-            // 2. Dibujar Frente
-            if (frontImg) {
-                drawImageOnCanvas(frontImg, -240, 250);
-            }
-
-            // 3. Dibujar Espalda
-            if (backImg) {
-                drawImageOnCanvas(backImg, 272, 250); 
-            }
-
-            // 4. Aplicar textura
-            try {
-                const dataUrl = canvas.toDataURL("image/png");
-                const texture = await viewer.createTexture(dataUrl);
-                const material = viewer.model.materials.find(m => m.name === 'Wolf3D_Outfit_Top');
-                if (material) {
-                    material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
-                    material.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
-                    material.pbrMetallicRoughness.setMetallicFactor(0);
-                    material.pbrMetallicRoughness.setRoughnessFactor(1);
-                    material.setAlphaMode('OPAQUE');
-                }
-            } catch (e) {
-                console.error("Error generando textura (posible bloqueo CORS):", e);
-            } finally {
-                // Ocultar Loader Global cuando termine de cargar
-                if (loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => { loader.style.display = 'none'; }, 500);
-                }
-            }
-        });
-
-        viewer.src = models.hombre;
-        viewer.alt = "Modelo 3D de camiseta";
-        viewer.setAttribute('auto-rotate', '');
-        viewer.setAttribute('camera-controls', '');
-        viewer.setAttribute('shadow-intensity', '1');
-        viewer.setAttribute('ar', '');
-        viewer.setAttribute('camera-target', '0m 1m 0m');
-        viewer.setAttribute('environment-image', 'neutral');
-        viewer.style.width = '100%';
-        viewer.style.height = '100%';
-        
-        container.appendChild(viewer);
-
-        // 3. Crear Botón de Cambio de Género
-        if (models.mujer) {
         const toggleBtn = document.createElement('button');
         Object.assign(toggleBtn.style, {
             position: 'absolute',
@@ -549,13 +565,11 @@
         const updateButton = () => {
             if (currentGender === 'hombre') {
                 toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
-                // Estilo Morado Neón (#d500f9)
                 toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
                 toggleBtn.style.border = '2px solid #d500f9';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
             } else {
                 toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
-                // Estilo Azul Oscuro Neón (#0000ff)
                 toggleBtn.style.background = 'rgba(0, 0, 255, 0.3)';
                 toggleBtn.style.border = '2px solid #0000ff';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(0, 0, 255, 0.5)';
@@ -565,10 +579,8 @@
 
         toggleBtn.onclick = (e) => {
             e.stopPropagation();
-            // Mostrar loader al cambiar
-            if (loader) { loader.style.display = 'flex'; loader.style.opacity = '1'; }
             currentGender = currentGender === 'hombre' ? 'mujer' : 'hombre';
-            viewer.src = models[currentGender];
+            loadModel(currentGender);
             updateButton();
         };
 
@@ -576,7 +588,6 @@
         toggleBtn.onmouseout = () => { toggleBtn.style.filter = 'brightness(1)'; };
 
         container.appendChild(toggleBtn);
-        }
     }
 
     function cerrarModal() {
@@ -718,6 +729,15 @@
         sessionStorage.removeItem('clienteLogueado');
         window.location.href = 'index.html';
     }
+
+    // Exponer funciones al scope global para los `onclick` del HTML
+    window.cerrarSesionCliente = cerrarSesionCliente;
+    window.abrirModal = abrirModal;
+    window.cerrarModal = cerrarModal;
+    window.mostrarFormularioCambio = mostrarFormularioCambio;
+    window.cancelarCambio = cancelarCambio;
+    window.enviarMeEncanta = enviarMeEncanta;
+    window.enviarSolicitudCambio = enviarSolicitudCambio;
 </script>
 
 </body>
