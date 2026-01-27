@@ -910,18 +910,18 @@
 
                 scene.add(currentModel);
 
-                const box = new THREE.Box3().setFromObject(targetMesh);
-                const center = box.getCenter(new THREE.Vector3());
+                // Usar el modelo completo para calcular la caja delimitadora correcta
+                const box = new THREE.Box3().setFromObject(currentModel);
                 const size = new THREE.Vector3();
                 box.getSize(size);
+                const center = box.getCenter(new THREE.Vector3());
                 
-                /////////////////////// CAMARA CENTRADA EN CAMISA ////////////////////////
-                // Ajustar foco: Usar centro de la camiseta y bajar ligeramente (10% de su altura) para encuadrar mejor
-                center.y -= size.y * -5;
+                // Calcular posición del pecho (aprox 75% de la altura total)
+                const chestY = box.min.y + (size.y * 0.75);
 
-                controls.target.copy(center);
-                // Distancia dinámica: Se adapta si el modelo es grande (cm) o pequeño (m) para llenar la pantalla
-                camera.position.set(center.x, center.y, center.z + (size.y * 4.5));
+                controls.target.set(center.x, chestY, center.z);
+                // Ajustar cámara: Distancia proporcional a la altura del modelo
+                camera.position.set(center.x, chestY, box.max.z + (size.y * 0.6));
                 controls.update();
 
                 //////////////////////// CAMARA EN TODO EL MODELO 3D ////////////////////////
