@@ -291,6 +291,10 @@
         
         /* Orientación Vertical: GIF abajo a la izquierda */
         @media (max-width: 768px) and (orientation: portrait) {
+            body {
+                justify-content: flex-start;
+                padding-top: 5px;
+            }
             .gif-sidebar {
                 left: 10px;
                 bottom: 10px;
@@ -298,17 +302,51 @@
                 transform: none;
             }
             .gif-sidebar img, .gif-sidebar canvas {
-                width: 150px; /* Reducir tamaño para que quepa bien */
+                width: 180px;
             }
         }
 
         /* Orientación Horizontal: GIF a la izquierda (más pegado) */
         @media (max-width: 900px) and (orientation: landscape) {
+            body {
+                padding: 0;
+                align-items: flex-start; /* Alinear a la izquierda para controlar márgenes manualmente */
+            }
+            .content-container {
+                padding: 10px 20px;
+                margin-left: 130px; /* Espacio reservado para el GIF (110px + margen) */
+                margin-right: 5px;  /* Llegar hasta 5px del borde derecho */
+                width: calc(100% - 140px); /* Calcular ancho restante exacto */
+                max-width: none;
+                max-height: 100vh; /* Forzar que no supere el alto de pantalla */
+                overflow-y: auto; /* Habilitar scroll interno si el contenido excede el alto */
+                box-sizing: border-box; /* Asegurar que el padding no aumente el tamaño total */
+            }
+            h1 {
+                font-size: 1.4rem;
+                margin-bottom: 5px;
+            }
+            p {
+                font-size: 0.85rem;
+                line-height: 1.2;
+                margin-bottom: 5px;
+            }
+            .question {
+                margin-top: 5px;
+                font-size: 0.95rem;
+            }
+            .buttons-container {
+                margin-top: 8px;
+            }
+            .btn-neon {
+                padding: 5px 20px;
+                font-size: 0.9rem;
+            }
             .gif-sidebar {
                 left: 10px;
             }
             .gif-sidebar img, .gif-sidebar canvas {
-                width: 140px; /* Ajustar tamaño para pantallas apaisadas pequeñas */
+                width: 110px; /* Reducir GIF para dar más espacio */
             }
         }
     </style>
