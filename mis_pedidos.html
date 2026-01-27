@@ -419,7 +419,7 @@
         const height = window.innerHeight;
 
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x333333);
+        scene.background = new THREE.Color(0xb3b3b3);
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
         camera.position.set(0, 1, 3);
@@ -510,6 +510,8 @@
                 }
                 currentModel = gltf.scene;
 
+                let targetMesh = currentModel;
+
                 currentModel.traverse((child) => {
                     if (child.isMesh && child.material && child.material.name === 'Wolf3D_Outfit_Top') {
                         const material = child.material;
@@ -517,16 +519,33 @@
                         material.metalness = 0;
                         material.roughness = 1;
                         material.needsUpdate = true;
+                        targetMesh = child;
                     }
                 });
 
                 scene.add(currentModel);
 
-                const box = new THREE.Box3().setFromObject(currentModel);
+                const box = new THREE.Box3().setFromObject(targetMesh);
                 const center = box.getCenter(new THREE.Vector3());
+                const size = new THREE.Vector3();
+                box.getSize(size);
+                //////////////////////// CAMARA CENTRADA EN CAMISA ////////////////////////
+                // Ajustar foco: Usar centro de la camiseta y bajar ligeramente (10% de su altura) para encuadrar mejor
+                center.y -= size.y * -3.5;
+
                 controls.target.copy(center);
-                camera.position.set(center.x, center.y, center.z + 2);
+                // Distancia dinámica: Se adapta si el modelo es grande (cm) o pequeño (m) para llenar la pantalla
+                camera.position.set(center.x, center.y, center.z + (size.y * 10.5));
                 controls.update();
+
+                //////////////////////// CAMARA EN TODO EL MODELO 3D ////////////////////////
+                // Ajustar foco: Usar centro de la camiseta y bajar ligeramente (10% de su altura) para encuadrar mejor
+                //center.y -= size.y * -3.5;
+
+                //controls.target.copy(center);
+                // Distancia dinámica: Se adapta si el modelo es grande (cm) o pequeño (m) para llenar la pantalla
+                //camera.position.set(center.x, center.y, center.z + (size.y * 10.5));
+                //controls.update();
 
                 if (loaderElement) {
                     loaderElement.style.opacity = '0';
