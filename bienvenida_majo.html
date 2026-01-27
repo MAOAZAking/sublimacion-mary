@@ -758,8 +758,28 @@
             buttons.style.opacity = '1';
         }
 
-        window.addEventListener('load', () => {
-            setTimeout(typeWriterEffect, 500);
+        window.addEventListener('load', async () => {
+            const loader = document.getElementById('global-loader');
+            
+            // Asegurar que el loader esté visible mientras cargamos los GIFs
+            if (loader) { loader.style.display = 'flex'; loader.style.opacity = '1'; }
+
+            // Precargar GIFs para sincronización perfecta
+            const preloadImage = (src) => new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = src; });
+            const gifsToLoad = [...gifSequence.map(g => g.src), "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_en_patineta.gif"];
+            
+            await Promise.all(gifsToLoad.map(preloadImage));
+
+            // Ocultar loader y comenzar experiencia
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { 
+                    loader.style.display = 'none'; 
+                    typeWriterEffect();
+                }, 500);
+            } else {
+                typeWriterEffect();
+            }
         });
     </script>
 </body>
