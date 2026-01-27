@@ -887,7 +887,7 @@
             if (loaderElement) { loaderElement.style.display = 'flex'; loaderElement.style.opacity = '1'; }
 
             const productType = 'camiseta';
-            const modelPath = `modelo_3D/${gender.toUpperCase()}/MODELO_3D_${gender.toUpperCase()}_${productType}.glb`;
+            const modelPath = `modelo_3d/${gender.toUpperCase()}/modelo_3d_${gender.toUpperCase()}_${productType}.glb`;
 
             gltfLoader.load(modelPath, (gltf) => {
                 if (currentModel) {
