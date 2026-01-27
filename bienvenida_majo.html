@@ -286,6 +286,31 @@
             height: auto;
             filter: drop-shadow(0 0 20px rgba(0, 0, 255, 0.6));
         }
+
+        /* --- Ajustes Responsivos para Móviles --- */
+        
+        /* Orientación Vertical: GIF abajo a la izquierda */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .gif-sidebar {
+                left: 10px;
+                bottom: 10px;
+                top: auto;
+                transform: none;
+            }
+            .gif-sidebar img, .gif-sidebar canvas {
+                width: 150px; /* Reducir tamaño para que quepa bien */
+            }
+        }
+
+        /* Orientación Horizontal: GIF a la izquierda (más pegado) */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .gif-sidebar {
+                left: 10px;
+            }
+            .gif-sidebar img, .gif-sidebar canvas {
+                width: 140px; /* Ajustar tamaño para pantallas apaisadas pequeñas */
+            }
+        }
     </style>
 </head>
 <body>
