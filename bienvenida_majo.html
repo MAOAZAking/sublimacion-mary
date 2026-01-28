@@ -181,6 +181,21 @@
             border: 2px solid #9b59b6; /* Borde morado creativo */
             box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
             animation: fadeIn 0.5s ease-out;
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: #e0aaff;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+            z-index: 10;
+        }
+        .close-modal:hover {
+            color: #ffffff;
         }
         .setup-input {
             width: 100%; padding: 15px; margin: 12px 0;
@@ -307,7 +322,7 @@
         }
 
         /* Orientación Horizontal: GIF a la izquierda (más pegado) */
-        @media (max-width: 900px) and (orientation: landscape) {
+        @media (max-width: 1280px) and (orientation: landscape) and (max-height: 600px) {
             body {
                 padding: 0;
                 align-items: flex-start; /* Alinear a la izquierda para controlar márgenes manualmente */
@@ -315,12 +330,22 @@
             .content-container {
                 padding: 10px 20px;
                 margin-left: 130px; /* Espacio reservado para el GIF (110px + margen) */
-                margin-right: 5px;  /* Llegar hasta 5px del borde derecho */
-                width: calc(100% - 140px); /* Calcular ancho restante exacto */
+                margin-right: 5px;  /* Pegado al borde derecho */
+                margin-top: 5px;    /* Pegado al borde superior */
+                margin-bottom: 5px; /* Pegado al borde inferior */
+                width: calc(100% - 140px); /* Ajustado para ocupar más ancho */
                 max-width: none;
-                max-height: 100vh; /* Forzar que no supere el alto de pantalla */
-                overflow-y: auto; /* Habilitar scroll interno si el contenido excede el alto */
+                max-height: calc(100vh - 20px); /* Aumentar altura disponible */
+                overflow: visible; /* Permitir que el borde neón se vea */
+                display: flex;
+                flex-direction: column;
                 box-sizing: border-box; /* Asegurar que el padding no aumente el tamaño total */
+            }
+            .scroll-content {
+                overflow-y: auto; /* Scroll solo en el contenido interno */
+                max-height: 100%;
+                padding-right: 5px;
+                box-sizing: border-box;
             }
             h1 {
                 font-size: 1.4rem;
@@ -348,6 +373,38 @@
             .gif-sidebar img, .gif-sidebar canvas {
                 width: 110px; /* Reducir GIF para dar más espacio */
             }
+
+            /* Modal o formulario si se responde si alineado a la derecha en horizontal */
+            #setupModal {
+                justify-content: flex-end;
+                padding-right: 13px;
+                box-sizing: border-box;
+            }
+            /* Ajuste del Modal de Configuración para Horizontal */
+            .setup-content {
+                padding: 10px 20px;
+                max-height: 95vh;
+                overflow-y: auto;
+                width: 90%;
+                max-width: 550px;
+            }
+            .setup-content h3 { font-size: 1.2rem !important; margin-bottom: 5px !important; }
+            .setup-content p { font-size: 0.85rem !important; margin: 5px 0 !important; }
+            .setup-input { padding: 6px 10px !important; margin: 4px 0 !important; font-size: 0.9rem !important; }
+            .btn-save, .btn-back { padding: 8px 20px !important; margin-top: 8px !important; font-size: 0.95rem !important; }
+
+            /* Layout en Grid para poner campos lado a lado */
+            #step1, #step2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            /* Elementos que ocupan todo el ancho */
+            #step1 h3, #step1 p, #step1 #newEmail, #step1 .btn-save,
+            #step2 h3, #step2 p, #step2 #confirmEmail, #step2 #emailMismatchContainer, #step2 .btn-save, #step2 .btn-back {
+                grid-column: 1 / -1;
+            }
+            /* Los inputs de usuario y contraseña ocuparán automáticamente 1 columna cada uno (lado a lado) */
         }
     </style>
 </head>
@@ -362,22 +419,25 @@
     </div>
 
     <div class="content-container">
-        <h1>¡Bienvenida Majo!</h1>
-        <p>Hola Majo 👋 soy <b>ATH1</b> es un placer por fin conocerte y tenerte por 1<sup>ra</sup> vez en el servidor, estoy muy contento ☺️ porque gracias a tu idea, a tu emprendimiento fui creado🥹 no sabes por cuanto tiempo hemos añorado este día de que veas lo que se hizo con esmero🤗</p>
-        
-        <p>Esperamos que te guste el servidor, pues <b>fue hecho con mucho esfuerzo, mucho codigo y mucho, bueno muchisimo cariño SOLO PARA TI</b></p>
-        
-        <p class="question"><br>¿Estas lista para ayudarte a terminar de configurarte como admin?</p>
+        <div class="scroll-content">
+            <h1>¡Bienvenida Majo!</h1>
+            <p>Hola Majo 👋 soy <b>ATH1</b> es un placer por fin conocerte y tenerte por 1<sup>ra</sup> vez en el servidor, estoy muy contento ☺️ porque gracias a tu idea, a tu emprendimiento fui creado🥹 no sabes por cuanto tiempo hemos añorado este día de que veas lo que se hizo con esmero🤗</p>
+            
+            <p>Esperamos que te guste el servidor, pues <b>fue hecho con mucho esfuerzo, mucho codigo y mucho, bueno muchisimo cariño SOLO PARA TI</b></p>
+            
+            <p class="question"><br>¿Estas lista para ayudarte a terminar de configurarte como admin?</p>
 
-        <div class="buttons-container">
-            <button class="btn-neon btn-yes" onclick="mostrarSetup()" onmouseenter="showHoverGif()" onmouseleave="restoreGifSequence()">Sí</button>
-            <button class="btn-neon btn-no" onclick="window.location.href='admin_dashboard.html'" onmouseenter="showHoverGif()" onmouseleave="restoreGifSequence()">No</button>
+            <div class="buttons-container">
+                <button class="btn-neon btn-yes" onclick="mostrarSetup()" onmouseenter="showHoverGif()" onmouseleave="restoreGifSequence()">Sí</button>
+                <button class="btn-neon btn-no" onclick="window.location.href='admin_dashboard.html'" onmouseenter="showHoverGif()" onmouseleave="restoreGifSequence()">No</button>
+            </div>
         </div>
     </div>
 
     <!-- Modal para crear contraseña -->
     <div id="setupModal">
         <div class="setup-content">
+            <span class="close-modal" onclick="cerrarSetup()">&times;</span>
             <!-- Paso 1: Ingreso inicial -->
             <div id="step1">
                 <h3 style="margin-top:0; color: #e0aaff; font-size: 1.8rem;">¡Genial!</h3>
@@ -423,6 +483,10 @@
             modalContent.classList.remove('shake');
             void modalContent.offsetWidth; // Forzar reinicio de la animación
             modalContent.classList.add('shake');
+        }
+
+        function cerrarSetup() {
+            document.getElementById('setupModal').style.display = 'none';
         }
 
         function mostrarSetup() {
@@ -610,11 +674,11 @@
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_gracias.gif", duration: 5500 },
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_esperando.gif", duration: 5500 },
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_pena.gif", duration: 5500 },
-            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_presenta.gif", duration: 6000 },
-            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_regalo.gif", duration: 4000 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_presenta.gif", duration: 5300 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_regalo.gif", duration: 4500 },
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_corazon.gif", duration: 5000 },
             { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_pregunta.gif", duration: 6000 },
-            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_ohh_yeah.gif", duration: 999999999999 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_ohh_yeah.gif", duration: 2147483647 },
             // Copia y pega la línea de abajo para agregar más GIFs:
             // { src: "URL_DE_TU_OTRO_GIF.gif", duration: 3000 },
         ];
