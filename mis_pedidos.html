@@ -107,14 +107,41 @@
         .btn-green { background: linear-gradient(135deg, #55efc4, #00b894); }
 
         .feedback-form {
-            pointer-events: auto; background: white; padding: 15px; border-radius: 8px;
-            display: flex; flex-direction: column; width: 80%; max-width: 300px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            position: absolute; top: 50%; transform: translateY(-50%); /* Centrado */
+            pointer-events: auto; 
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px; 
+            border-radius: 20px;
+            display: flex; 
+            flex-direction: column; 
+            width: 90%; 
+            max-width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            position: absolute; 
+            top: 50%; 
+            right: 20px; 
+            left: auto;
+            transform: translateY(-50%);
+            z-index: 1003;
         }
         .feedback-form textarea {
-            width: 100%; height: 80px; margin-bottom: 10px; padding: 8px; box-sizing: border-box;
-            border: 1px solid #ddd; border-radius: 4px; resize: none; font-family: inherit;
+            width: 100%; 
+            height: 120px; 
+            margin-bottom: 15px; 
+            padding: 15px; 
+            box-sizing: border-box;
+            border: 2px solid #333; 
+            border-radius: 12px; 
+            resize: none; 
+            font-family: 'Poppins', sans-serif;
+            background: #2d2d2d;
+            color: white;
+            font-size: 0.95rem;
+        }
+        .feedback-form textarea:focus {
+            outline: none;
+            border-color: #9b59b6;
         }
     </style>
 </head>
@@ -149,8 +176,8 @@
         <!-- Formulario de cambio (oculto al inicio) -->
         <div id="feedbackForm" class="feedback-form" style="display: none;">
             <textarea id="cambioTexto" placeholder="Describe qué te gustaría modificar..."></textarea>
-            <button onclick="enviarSolicitudCambio()" style="background: #007bff; color: white; padding: 10px; border: none; border-radius: 5px; margin-bottom: 5px; cursor: pointer;">Enviar solicitud</button>
-            <button onclick="cancelarCambio()" style="background: #666; color: white; padding: 5px; border: none; border-radius: 5px; cursor: pointer;">Cancelar</button>
+            <button onclick="enviarSolicitudCambio()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 12px; border: none; border-radius: 50px; margin-bottom: 10px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);">Enviar solicitud</button>
+            <button onclick="cancelarCambio()" style="background: transparent; color: #b0b0b0; padding: 8px; border: 1px solid #333; border-radius: 50px; cursor: pointer;">Cancelar</button>
         </div>
 
         <div id="feedbackButtons" class="feedback-buttons">
@@ -258,10 +285,12 @@
     let renderer, scene, camera, controls, animationId;
     let feedbackTimer;
     let currentPedidoData = null;
+    let isModelShifted = false;
 
     function abrirModal(pedido) {
         // Limpiar timer previo incondicionalmente para evitar que salte en pedidos ya aceptados
         if (feedbackTimer) clearTimeout(feedbackTimer);
+        isModelShifted = false;
 
         currentPedidoData = pedido;
         const modal = document.getElementById('imageModal');
@@ -563,6 +592,7 @@
         loadModel(currentGender);
 
         const toggleBtn = document.createElement('button');
+        toggleBtn.id = 'genderToggleBtn';
         Object.assign(toggleBtn.style, {
             position: 'absolute',
             left: '20px',
@@ -636,11 +666,47 @@
         document.getElementById('feedbackButtons').style.display = 'none';
         document.getElementById('feedbackForm').style.display = 'flex';
         document.getElementById('cambioTexto').focus();
+        const genderBtn = document.getElementById('genderToggleBtn');
+        if (genderBtn) genderBtn.style.display = 'none';
+
+        // Mover modelo a la izquierda (Mover cámara a la derecha)
+        if (!isModelShifted && controls && camera) {
+            animateCameraShift(3.5); // Desplazamiento positivo en X mueve la vista a la derecha (modelo a la izquierda)
+            isModelShifted = true;
+        }
     }
 
     function cancelarCambio() {
         document.getElementById('feedbackForm').style.display = 'none';
         document.getElementById('feedbackButtons').style.display = 'flex';
+        const genderBtn = document.getElementById('genderToggleBtn');
+        if (genderBtn) genderBtn.style.display = 'flex';
+
+        // Restaurar modelo
+        if (isModelShifted && controls && camera) {
+            animateCameraShift(-3.5);
+            isModelShifted = false;
+        }
+    }
+
+    function animateCameraShift(offset) {
+        if (!controls || !camera) return;
+        const startX = controls.target.x;
+        const endX = startX + offset;
+        const camStartX = camera.position.x;
+        const camEndX = camStartX + offset;
+        const duration = 500;
+        const startTime = Date.now();
+        function update() {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            controls.target.x = startX + (endX - startX) * ease;
+            camera.position.x = camStartX + (camEndX - camStartX) * ease;
+            controls.update();
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        update();
     }
 
     async function getAdminEmail() {
