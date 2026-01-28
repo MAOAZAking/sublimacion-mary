@@ -34,7 +34,6 @@
         "estado": "Listo para sublimar",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768434621/qfls8nm931umeclvfkdo.jpg"
     },
-    
     {
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
@@ -89,7 +88,7 @@
         "telefono": "3169445092",
         "producto": "Camiseta Estampada",
         "fecha": "19/01/2026 18:04:36",
-        "estado": "Revisión del cliente",
+        "estado": "Listo para estampar",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_3/lamina_frontal_camiseta_3.png",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_3/lamina_frontal_camiseta_3.png",
