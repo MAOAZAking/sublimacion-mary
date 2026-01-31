@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Nuevo Pedido - Admin</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#121212">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        // SEGURIDAD: Verificar si el usuario inició sesión
+        if (!sessionStorage.getItem('adminLogueado')) {
+            window.location.href = 'index.html';
+        } else {
+            // Mostrar contenido solo si está logueado (evita parpadeo de contenido prohibido)
+            document.documentElement.style.display = 'block';
+        }
+    </script>
+    <style>
+        html { display: none; } /* Ocultar todo el sitio por defecto hasta verificar sesión */
+        body { 
+            font-family: 'Poppins', sans-serif; background-color: #121212; display: flex; justify-content: center; align-items: center; min-height: 100vh; min-height: 100dvh; margin: 0; color: white;
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        }
+        .container { background: #1e1e1e; padding: 2.5rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); width: 100%; max-width: 450px; border: 1px solid #333; }
+        h2 { text-align: center; color: #ffffff; margin-bottom: 25px; font-weight: 600; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.8rem; color: #b0b0b0; font-weight: 500; font-size: 0.9rem; }
+        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 12px 15px; border: 2px solid #333; border-radius: 10px; box-sizing: border-box; background: #2d2d2d; color: white; font-family: inherit; transition: all 0.3s; -webkit-appearance: none; }
+        input:focus, select:focus { border-color: #8e44ad; background: #333; outline: none; }
+        button { width: 100%; padding: 15px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(142, 68, 173, 0.3); margin-top: 10px; -webkit-appearance: none; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(142, 68, 173, 0.4); }
+        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
+        .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #aaa; text-decoration: none; font-size: 0.9rem; }
+
+        /* Loader Styles */
+        #global-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #333; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; transition: opacity 0.5s ease;
+        }
+        .loader-spinner {
+            border: 6px solid #f3f3f3; border-top: 6px solid #3498db; border-radius: 50%;
+            width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }
+        }
+        /* Background Logo */
+        #background-logo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background-image: url('https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png');
+            background-position: center; background-repeat: no-repeat;
+            opacity: 0.1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="global-loader">
+    <div class="loader-spinner"></div>
+    <h3 style="margin: 0 20px; text-align: center;">Estamos preparando ¡LA MEJOR EXPERIENCIA PARA TI!</h3>
+</div>
+
+<div class="container">
+    <h2>Crear Nuevo Pedido</h2>
+
+    <div id="mensajeAlert" class="alert"></div>
+
+    <form id="pedidoForm" action="https://formsubmit.co/378c29d9d55d65ab60b67264f0d7b6d8" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="_subject" value="Nuevo Pedido de Sublimación">
+        <input type="hidden" name="_cc" id="cc_email" value="maoaza13579@gmail.com">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_template" value="table">
+
+        <div class="form-group">
+            <label for="producto">Tipo de Producto:</label>
+            <select name="producto" id="producto" required>
+                <option value="" disabled selected>Seleccione una opción</option>
+                <option value="Mug Personalizado">Mug</option>
+                <option value="Camiseta Estampada">Camiseta</option>
+            </select>
+        </div>
+
+        <div id="dynamic-files"></div>
+
+        <div class="form-group">
+            <label for="telefono">Número Celular (Cliente):</label>
+            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+" disabled>
+        </div>
+
+        <button type="submit" id="btnSubmit" disabled>Guardar Pedido</button>
+    </form>
+    
+    <a href="admin_dashboard.html" class="back-link">← Volver al Panel de Admin</a>
+</div>
+
+<script>
+    window.addEventListener('load', function() {
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+
+        // Lógica de inactividad (5 minutos)
+        let inactivityTimeout;
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimeout);
+            inactivityTimeout = setTimeout(() => {
+                sessionStorage.removeItem('adminLogueado');
+                alert("Sesión cerrada por inactividad.");
+                window.location.href = 'index.html';
+            }, 5 * 60 * 1000); // 5 minutos
+        }
+        // Eventos que reinician el temporizador
+        ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => 
+            document.addEventListener(evt, resetInactivityTimer, false)
+        );
+        resetInactivityTimer(); // Iniciar al cargar
+
+        // Lógica del Logo de Fondo
+        const bg = document.createElement('div');
+        bg.id = 'background-logo';
+        document.body.prepend(bg);
+
+        function updateBg() {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+            if (isMobile) {
+                if (window.innerHeight > window.innerWidth) {
+                    bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
+                } else {
+                    bg.style.backgroundSize = "auto 60vh"; // Horizontal: 60% del alto
+                }
+            } else {
+                bg.style.backgroundSize = "auto 85vh"; // Escritorio: 85% del alto
+            }
+        }
+        updateBg();
+
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
+            setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
+        } else {
+            window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
+        }
+    });
+
+    // Lógica dinámica del formulario
+    const productoSelect = document.getElementById('producto');
+    const dynamicFiles = document.getElementById('dynamic-files');
+    const telefonoInput = document.getElementById('telefono');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    productoSelect.addEventListener('change', function() {
+        const tipo = this.value;
+        dynamicFiles.innerHTML = '';
+        
+        if (tipo) {
+            telefonoInput.disabled = false;
+            btnSubmit.disabled = false;
+
+            if (tipo === 'Mug Personalizado') {
+                dynamicFiles.innerHTML = `
+                    <div class="form-group">
+                        <label for="imagen">Subir Lámina (Imagen del diseño):</label>
+                        <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="plantilla">Subir Plantilla (.ai, .psd, .pdf, etc):</label>
+                        <input type="file" name="plantilla" id="plantilla" accept=".ai, .psd, .psb, .psdc, .eps, .pdf, .svg, .tiff, .ait" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="foto_diseno">Foto usada en el diseño (Opcional):</label>
+                        <input type="file" name="foto_diseno" id="foto_diseno" accept=".jpg, .jpeg, .png, .webp">
+                    </div>
+                `;
+            } else if (tipo === 'Camiseta Estampada') {
+                dynamicFiles.innerHTML = `
+                    <div class="form-group">
+                        <label for="lamina_frontal">Subir Lámina Frontal (Imagen del diseño):</label>
+                        <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png">
+                    </div>
+                    <div class="form-group">
+                        <label for="lamina_espaldar">Subir Lámina espaldar (Imagen del diseño):</label>
+                        <input type="file" name="lamina_espaldar" id="lamina_espaldar" accept=".jpg, .jpeg, .png">
+                    </div>
+                    <div class="form-group">
+                        <label for="plantilla">Subir Plantilla (.ai, .psd, .pdf, etc):</label>
+                        <input type="file" name="plantilla" id="plantilla" accept=".ai, .psd, .psb, .psdc, .eps, .pdf, .svg, .tiff, .ait" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="foto_diseno">Foto usada en el diseño (Opcional):</label>
+                        <input type="file" name="foto_diseno" id="foto_diseno" accept=".jpg, .jpeg, .png, .webp">
+                    </div>
+                    <p style="font-size: 0.85rem; color: #666; margin-top: -10px; margin-bottom: 20px;">* Es obligatorio subir al menos una de las dos láminas y la plantilla.</p>
+                `;
+            }
+        } else {
+            telefonoInput.disabled = true;
+            btnSubmit.disabled = true;
+        }
+    });
+
+    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
+        e.preventDefault(); 
+
+        const producto = document.getElementById('producto').value;
+        const telefono = document.getElementById('telefono').value;
+        const alertBox = document.getElementById('mensajeAlert');
+
+        // Validaciones específicas
+        let valid = false;
+        if (producto === 'Mug Personalizado') {
+            const img = document.getElementById('imagen');
+            const plant = document.getElementById('plantilla');
+            if (img && img.files.length > 0 && plant && plant.files.length > 0) valid = true;
+        } else if (producto === 'Camiseta Estampada') {
+            const frontal = document.getElementById('lamina_frontal');
+            const espaldar = document.getElementById('lamina_espaldar');
+            const plantilla = document.getElementById('plantilla');
+            
+            if (((frontal && frontal.files.length > 0) || (espaldar && espaldar.files.length > 0)) && (plantilla && plantilla.files.length > 0)) valid = true;
+            else {
+                alert("Debe subir al menos una lámina para la camiseta ya sea Frontal o espaldar.");
+                return;
+            }
+        }
+
+        if (producto && telefono && valid) {
+            
+            alertBox.textContent = "Subiendo archivos a GitHub y actualizando base de datos... Por favor espere.";
+            alertBox.className = 'alert';
+            alertBox.style.display = 'block';
+            alertBox.style.backgroundColor = '#fff3cd';
+            alertBox.style.color = '#856404';
+            
+            // 1. Generar datos básicos
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const anio = now.getFullYear();
+            const hora = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const seg = String(now.getSeconds()).padStart(2, '0');
+            const fechaCompleta = `${dia}/${mes}/${anio} ${hora}:${min}:${seg}`;
+            const estadoInicial = "Revisión del cliente";
+
+            // 2. Preparar FormData para enviar al servidor local
+            const formData = new FormData();
+            formData.append('producto', producto);
+            formData.append('telefono', telefono);
+            formData.append('fecha', fechaCompleta);
+            formData.append('estado', estadoInicial);
+            
+            // Sanitizar nombres de archivo (reemplazar espacios por guiones) antes de enviar
+            if (producto === 'Mug Personalizado') {
+                const imgFile = document.getElementById('imagen').files[0];
+                const plantFile = document.getElementById('plantilla').files[0];
+                const fotoDiseno = document.getElementById('foto_diseno').files[0];
+                formData.append('imagen', imgFile, imgFile.name.replace(/\s+/g, '-'));
+                formData.append('plantilla', plantFile, plantFile.name.replace(/\s+/g, '-'));
+                if (fotoDiseno) formData.append('foto_diseno', fotoDiseno, fotoDiseno.name.replace(/\s+/g, '-'));
+            } else if (producto === 'Camiseta Estampada') {
+                const frontalInput = document.getElementById('lamina_frontal');
+                const espaldarInput = document.getElementById('lamina_espaldar');
+                const plantillaInput = document.getElementById('plantilla');
+                const fotoDisenoInput = document.getElementById('foto_diseno');
+                if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
+                if (espaldarInput.files.length > 0) formData.append('lamina_espaldar', espaldarInput.files[0], espaldarInput.files[0].name.replace(/\s+/g, '-'));
+                if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
+                if (fotoDisenoInput.files.length > 0) formData.append('foto_diseno', fotoDisenoInput.files[0], fotoDisenoInput.files[0].name.replace(/\s+/g, '-'));
+            }
+
+            // 3. Enviar al Backend (Detectar si estamos en GitHub Pages o Local/Render)
+            // Si estamos en github.io, usamos la URL de Render. Si no, usamos la ruta relativa.
+            const BACKEND_URL = window.location.hostname.includes('github.io') 
+                ? 'https://sublimacion-mary.onrender.com' 
+                : '';
+
+            fetch(`${BACKEND_URL}/api/pedidos`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || "Error desconocido en el servidor.");
+                return data;
+            })
+            .then(data => {
+                // El backend nos devuelve el objeto del pedido creado
+                const nuevoPedido = data.pedido;
+
+                // 4. Enviar correo de notificación
+                const formDataEmail = new FormData();
+                formDataEmail.append('_subject', 'Nuevo Pedido JSON');
+                const adminEmail = sessionStorage.getItem('adminEmail') || 'maoaza13579@gmail.com';
+                formDataEmail.append('_cc', adminEmail);
+                formDataEmail.append('_captcha', 'false');
+                formDataEmail.append('_template', 'table');
+                formDataEmail.append('datos_pedido', JSON.stringify(nuevoPedido, null, 4));
+
+                return fetch("https://formsubmit.co/ajax/378c29d9d55d65ab60b67264f0d7b6d8", { method: "POST", body: formDataEmail });
+            })
+            .then(() => {
+                alertBox.textContent = `¡Pedido creado con éxito!`;
+                alertBox.className = 'alert success';
+                alertBox.style.display = 'block';
+                document.getElementById('pedidoForm').reset();
+            })
+            .catch(error => {
+                alertBox.textContent = "Error: " + error.message;
+                alertBox.className = 'alert error';
+                alertBox.style.display = 'block';
+            });
+        }
+    });
+</script>
+</body>
+</html>

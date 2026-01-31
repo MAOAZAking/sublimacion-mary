@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Panel Administrador</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#121212">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./js/three.module.js"
+            }
+        }
+    </script>
+    <script>
+        // SEGURIDAD: Verificar si el usuario inició sesión
+        if (!sessionStorage.getItem('adminLogueado')) {
+            window.location.href = 'index.html';
+        } else {
+            // Mostrar contenido solo si está logueado
+            document.documentElement.style.display = 'block';
+        }
+    </script>
+    <style>
+        html { display: none; } /* Ocultar todo el sitio por defecto hasta verificar sesión */
+        body { 
+            font-family: 'Poppins', sans-serif; background-color: #121212; margin: 0; color: #ffffff;
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        }
+        .header { text-align: center; margin-bottom: 40px; background: #1e1e1e; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid #333; }
+        .header h2 { margin-top: 0; color: #ffffff; }
+        .controls { text-align: center; margin-bottom: 30px; }
+        
+        button { padding: 10px 25px; margin: 5px; cursor: pointer; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: 500; transition: all 0.3s; font-family: 'Poppins', sans-serif; -webkit-appearance: none; }
+        .btn-create { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3); }
+        .btn-create:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(142, 68, 173, 0.4); }
+        .btn-filter { background-color: #2d2d2d; color: #b0b0b0; border: 1px solid #333; }
+        .btn-filter:hover { background-color: #333; color: white; }
+        .btn-filter.active { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3); border: none; }
+        
+        /* Botón Modo Edición */
+        .btn-edit-mode { background: linear-gradient(135deg, #6c5ce7, #5f47de); color: white; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3); }
+        .btn-edit-mode:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(68, 110, 173, 0.575); }
+        .btn-edit-mode.active { background: linear-gradient(135deg, #7c73d1a5, #6f63c89e); box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); transform: none; border: 1px solid #555; }
+
+        /* Barra de Búsqueda */
+        .search-container { text-align: center; margin-bottom: 25px; }
+        .search-input { 
+            padding: 12px 25px; width: 100%; max-width: 500px; 
+            border: 2px solid #333; border-radius: 50px; 
+            font-size: 1rem; outline: none; transition: all 0.3s; color: white;
+            font-family: 'Poppins', sans-serif; background: #2d2d2d;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .search-input:focus { border-color: #9b59b6; box-shadow: 0 4px 15px rgba(155, 89, 182, 0.2); background: #333; }
+
+        /* Controles de Ordenamiento */
+        .sort-controls {
+            display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 25px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .sort-btn {
+            background: #2d2d2d; border: 1px solid #333; border-radius: 50%; width: 40px; height: 40px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            color: #b0b0b0; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            position: relative; z-index: 5;
+            padding: 0;
+        }
+        .sort-btn:hover { background-color: #333; color: white; transform: scale(1.05); }
+        .hidden { display: none; }
+        
+        .sort-dropdown-container { position: relative; display: inline-block; }
+        .sort-label {
+            font-weight: 600; color: #ffffff; cursor: pointer; padding: 8px 15px;
+            border-radius: 20px; background: #2d2d2d; border: 1px solid #333;
+            transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .sort-label:hover { background-color: #333; border-color: #555; }
+        .sort-dropdown {
+            display: none; position: absolute; top: 110%; left: 50%; transform: translateX(-50%);
+            background: #2d2d2d; min-width: 180px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 12px; padding: 8px 0; z-index: 100; overflow: hidden; border: 1px solid #333;
+        }
+        .sort-dropdown.show { display: block; animation: fadeIn 0.2s; }
+        .sort-option {
+            padding: 10px 20px; cursor: pointer; color: #b0b0b0; font-size: 0.95rem; text-align: left;
+            transition: background 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .sort-option:hover { background-color: #333; color: #9b59b6; }
+
+        /* Overlay de Edición */
+        .edit-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            opacity: 0; transition: opacity 0.3s;
+            background: rgba(255, 255, 255, 0.25); /* Filtro transparentoso */
+            backdrop-filter: blur(3px); z-index: 10;
+        }
+        .gallery-item:hover .edit-overlay { opacity: 1; }
+        .gallery-item.mobile-active .edit-overlay { opacity: 1; }
+        
+        .edit-half {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.2s;
+            color: white; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 5px rgba(0,0,0,0.5);
+            font-weight: 600; font-size: 1.2rem; letter-spacing: 0.5px;
+        }
+        .edit-half:hover { background: rgba(0, 0, 0, 0.4); }
+        .edit-half-top { border-bottom: 1px solid rgba(255,255,255,0.4); }
+        .edit-icon { width: 32px; height: 32px; margin-bottom: 5px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+        
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; max-width: 1100px; margin: 0 auto; }
+        .gallery-item { border: 4px solid transparent; border-radius: 16px; overflow: hidden; cursor: pointer; background: #1e1e1e; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; }
+        .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .gallery-img { width: 100%; height: 200px; object-fit: cover; display: block; }
+        .gallery-info { padding: 15px; text-align: center; font-size: 0.9rem; color: #ffffff; background: #1e1e1e; border-top: 1px solid #333; transition: background-color 0.3s; }
+
+        /* Neon Status Borders & Info Background */
+        .status-green {
+            border-color: #2ecc71;
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.8), 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .status-green .gallery-info { background-color: rgba(46, 204, 113, 0.1); }
+        .status-orange {
+            border-color: #f39c12;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.8), 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .status-orange .gallery-info { background-color: rgba(243, 156, 18, 0.1); }
+        .status-red {
+            border-color: #e74c3c;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.8), 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .status-red .gallery-info { background-color: rgba(231, 76, 60, 0.1); }
+        .gallery-item:hover.status-green { box-shadow: 0 0 35px rgba(46, 204, 113, 1), 0 15px 30px rgba(0,0,0,0.1); }
+        .gallery-item:hover.status-orange { box-shadow: 0 0 35px rgba(243, 156, 18, 1), 0 15px 30px rgba(0,0,0,0.1); }
+        .gallery-item:hover.status-red { box-shadow: 0 0 35px rgba(231, 76, 60, 1), 0 15px 30px rgba(0,0,0,0.1); }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center; flex-direction: column; }
+        .modal-content { max-width: 80%; max-height: 70%; border-radius: 5px; position: relative; z-index: 2; }
+        .modal-text { color: white; font-size: 1.3rem; font-weight: bold; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 5px; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 2; pointer-events: none; text-align: center; }
+        .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; z-index: 1003; }
+        #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; z-index: 1; touch-action: none; }
+        
+        /* Botón para ocultar/mostrar info */
+        .toggle-info-btn { position: absolute; bottom: 30px; right: 30px; background: rgba(255, 255, 255, 0.2); border: 2px solid white; color: white; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; z-index: 1005; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; padding: 0; }
+        .toggle-info-btn:hover { background: rgba(255, 255, 255, 0.4); transform: scale(1.1); }
+        .toggle-info-btn svg { width: 24px; height: 24px; }
+
+        /* Botón Descargar ZIP */
+        .btn-download { position: absolute; bottom: 30px; left: 30px; z-index: 1005; background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 12px 25px; border: none; border-radius: 50px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4); transition: transform 0.2s; display: none; font-family: 'Poppins', sans-serif; align-items: center; gap: 8px; }
+        .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(142, 68, 173, 0.6); }
+
+        /* Loader Styles */
+        #global-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #333; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; transition: opacity 0.5s ease;
+        }
+        .loader-spinner {
+            border: 6px solid #f3f3f3; border-top: 6px solid #3498db; border-radius: 50%;
+            width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }
+        }
+        /* Background Logo */
+        #background-logo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background-image: url('https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png');
+            background-position: center; background-repeat: no-repeat;
+            opacity: 0.1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="global-loader">
+    <div class="loader-spinner"></div>
+    <h3 style="margin: 0 20px; text-align: center;">Estamos preparando ¡LA MEJOR EXPERIENCIA PARA TI!</h3>
+</div>
+
+<div class="header">
+    <h2>Panel de Administración</h2>
+    <button class="btn-create" onclick="window.location.href='nuevo_pedido.html'">+ Crear Nuevo Pedido</button>
+    <button id="btnEditMode" class="btn-edit-mode" onclick="toggleEditMode()">✎ Editar Pedido</button>
+    <button style="background-color: #666; color: white;" onclick="cerrarSesion()">Cerrar Sesión</button>
+</div>
+
+<div class="search-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="Buscar por teléfono, fecha (ej: 20/01 o enero) o estado..." oninput="filtrarBusqueda()">
+</div>
+
+<div class="sort-controls">
+    <button class="sort-btn" id="sortDirectionBtn" onclick="toggleSortDirection()" title="Invertir orden">
+        <!-- Icono por defecto (Ascendente) -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7"/>
+        </svg>
+    </button>
+    
+    <div class="sort-dropdown-container">
+        <div class="sort-label" onclick="toggleSortDropdown()"> 
+            <span id="currentSortText">Estado</span> <!-- Cambiado de "Recientes" a "Estado" -->
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div id="sortDropdown" class="sort-dropdown"></div>
+    </div>
+</div>
+
+<div class="controls">
+    <h3>Ver Pedidos</h3>
+    <button class="btn-filter active" onclick="filtrar('todos', this)">Todos</button>
+    <button class="btn-filter" onclick="filtrar('mug', this)">Mugs</button>
+    <button class="btn-filter" onclick="filtrar('camiseta', this)">Camisetas</button>
+</div>
+
+<div id="gallery" class="gallery"></div>
+
+<!-- Modal Admin -->
+<div id="imageModal" class="modal" onclick="cerrarModal()">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="imgGrande">
+    <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camiseta, porque tu pedido tiene el estampado en la parte espaldar</div>
+    <div id="container3D" onclick="event.stopPropagation()"></div>
+    <div class="modal-text" id="modalInfo"></div>
+    <button id="toggleInfoBtn" class="toggle-info-btn" onclick="event.stopPropagation(); toggleInfo()"></button>
+    <button id="btnDescargar" class="btn-download" onclick="event.stopPropagation(); descargarCarpeta()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Descargar Pack
+    </button>
+</div>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from './js/OrbitControls.js';
+    import { GLTFLoader } from './js/GLTFLoader.js';
+
+    let todosLosPedidos = []; 
+    let pedidosFiltrados = []; 
+    let isEditMode = false; 
+    let currentSortField = 'estado'; // Valor inicial cambiado a 'estado'
+    let isSortAscending = true; // Valor inicial cambiado a true (ascendente por prioridad/fecha)
+    let currentDownloadUrl = '';
+    let renderer, scene, camera, controls, animationId;
+
+    window.addEventListener('load', function() {
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+
+        // Lógica de inactividad (5 minutos)
+        let inactivityTimeout;
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimeout);
+            inactivityTimeout = setTimeout(() => {
+                sessionStorage.removeItem('adminLogueado');
+                alert("Sesión cerrada por inactividad.");
+                window.location.href = 'index.html';
+            }, 5 * 60 * 1000); // 5 minutos
+        }
+        // Eventos que reinician el temporizador
+        ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => 
+            document.addEventListener(evt, resetInactivityTimer, false)
+        );
+        resetInactivityTimer(); // Iniciar al cargar
+
+        // Lógica del Logo de Fondo
+        const bg = document.createElement('div');
+        bg.id = 'background-logo';
+        document.body.prepend(bg);
+
+        function updateBg() {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+            if (isMobile) {
+                if (window.innerHeight > window.innerWidth) {
+                    bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
+                } else {
+                    bg.style.backgroundSize = "auto 60vh"; // Horizontal: 60% del alto
+                }
+            } else {
+                bg.style.backgroundSize = "auto 85vh"; // Escritorio: 85% del alto
+            }
+        }
+        updateBg();
+
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
+            setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
+        } else {
+            window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
+        }
+    });
+
+    // Cargar pedidos al inicio
+    fetch('pedidos.json')
+        .then(res => res.json())
+        .then(data => {
+            todosLosPedidos = data;
+            pedidosFiltrados = data;
+            updateSortIcon(); // Llamada inicial para establecer el icono correcto
+            aplicarOrdenamiento(); // Ordenar inicialmente
+            renderGallery(pedidosFiltrados);
+        })
+        .catch(err => console.error("Error cargando pedidos:", err));
+
+    function renderGallery(pedidos) {
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = '';
+
+        pedidos.forEach(pedido => {
+            if (!pedido.imagen_url) return;
+
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+            
+            // Lógica para asignar color según el estado
+            const estado = (pedido.estado || '').toLowerCase();
+            if (estado.includes('listo para')) { // Verde: Aprobado
+                item.classList.add('status-green');
+            } else if (estado.includes('revisión') || estado.includes('revision')) { // Naranja: Pendiente
+                item.classList.add('status-orange');
+            } else if (estado.includes('creando') || estado.includes('cambio')) { // Rojo: Cambios/Diseño
+                item.classList.add('status-red');
+            }
+
+            const contentHTML = `
+                <img src="${pedido.imagen_url}" class="gallery-img" loading="lazy">
+                <div class="gallery-info">
+                    <strong>${pedido.producto}</strong><br>
+                    ${pedido.telefono || pedido.teléfono || 'Sin datos'}
+                </div>
+            `;
+
+            if (isEditMode) {
+                // Estructura para Modo Edición (Overlay dividido)
+                item.innerHTML = contentHTML + `
+                    <div class="edit-overlay">
+                        <div class="edit-half edit-half-top">
+                            <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            Previsualizar
+                        </div>
+                        <div class="edit-half edit-half-bottom">
+                            <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            Editar
+                        </div>
+                    </div>
+                `;
+                // Asignar eventos a las mitades
+                const topHalf = item.querySelector('.edit-half-top');
+                const botHalf = item.querySelector('.edit-half-bottom');
+                
+                // Función unificada para manejar clicks (Móvil: 1er toque activa, 2do ejecuta)
+                const handleEditClick = (e, action) => {
+                    e.stopPropagation();
+                    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+                    
+                    if (isMobile) {
+                        if (item.classList.contains('mobile-active')) {
+                            action(); // Ya estaba activo, ejecutar
+                        } else {
+                            // Activar este y desactivar otros
+                            document.querySelectorAll('.gallery-item.mobile-active').forEach(el => el.classList.remove('mobile-active'));
+                            item.classList.add('mobile-active');
+                        }
+                    } else {
+                        action(); // Desktop: ejecutar directo
+                    }
+                };
+
+                topHalf.onclick = (e) => handleEditClick(e, () => abrirModal(pedido));
+                botHalf.onclick = (e) => handleEditClick(e, () => editarPedido(pedido));
+            } else {
+                // Modo Normal
+                item.innerHTML = contentHTML;
+                item.onclick = () => abrirModal(pedido);
+            }
+
+            gallery.appendChild(item);
+        });
+    }
+
+    // --- LÓGICA DE ORDENAMIENTO ---
+    
+    function toggleSortDirection() {
+        isSortAscending = !isSortAscending;
+        updateSortIcon();
+        aplicarOrdenamiento();
+        renderGallery(pedidosFiltrados);
+    }
+
+    function updateSortIcon() {
+        const btn = document.getElementById('sortDirectionBtn');
+        if (isSortAscending) {
+            // Ascendente: Flecha hacia ARRIBA
+            btn.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                </svg>`;
+        } else {
+            // Descendente: Flecha hacia ABAJO
+            btn.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
+                </svg>`;
+        }
+    }
+
+    function toggleSortDropdown() {
+        const dropdown = document.getElementById('sortDropdown');
+        if (dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        } else {
+            renderSortOptions();
+            dropdown.classList.add('show');
+        }
+    }
+
+    // Cerrar dropdown al hacer clic fuera
+    window.onclick = function(event) {
+        if (!event.target.closest('.sort-dropdown-container')) {
+            document.getElementById('sortDropdown').classList.remove('show');
+        }
+    }
+
+    function renderSortOptions() {
+        const dropdown = document.getElementById('sortDropdown');
+        const options = [
+            { id: 'fecha', label: 'Fecha' }, // Se mostrará como "Fecha" en opciones, pero "Recientes" en label principal si es default
+            { id: 'estado', label: 'Estado' },
+            { id: 'telefono', label: 'Núm. cliente' }
+        ];
+
+        dropdown.innerHTML = options
+            .filter(opt => opt.id !== currentSortField)
+            .map(opt => `<div class="sort-option" onclick="changeSortField('${opt.id}')">${opt.label}</div>`)
+            .join('');
+    }
+
+    function changeSortField(field) {
+        currentSortField = field;
+        
+        // Actualizar etiqueta principal
+        const labelMap = {
+            'fecha': 'Recientes',
+            'estado': 'Estado', 
+            'telefono': 'Núm. cliente'
+        };
+        document.getElementById('currentSortText').innerText = labelMap[field];
+        
+        // Resetear dirección por defecto según el tipo
+        // Fecha: Descendente (Recientes)
+        // Estado: Ascendente (Prioridad)
+        // Telefono: Ascendente
+        isSortAscending = field !== 'fecha'; 
+        updateSortIcon();
+
+        document.getElementById('sortDropdown').classList.remove('show');
+        aplicarOrdenamiento();
+        renderGallery(pedidosFiltrados);
+    }
+
+    function aplicarOrdenamiento() {
+        // Convertir "DD/MM/YYYY HH:mm:ss" a Date object
+        const parseDate = (str) => {
+            if (!str) return 0;
+            const [date, time] = str.split(' ');
+            if (!date || !time) return 0; // Evitar errores si el formato es inesperado
+            // Asegurar el formato YYYY-MM-DD para una correcta interpretación de la fecha
+            const [d, m, y] = date.split('/'); 
+            if (!d || !m || !y) return 0; // Evitar errores
+            return new Date(`${y}-${m}-${d}T${time}`);
+        };
+
+        pedidosFiltrados.sort((a, b) => {
+            let valA, valB;
+            
+            if (currentSortField === 'fecha') {
+                valA = parseDate(a.fecha).getTime();
+                valB = parseDate(b.fecha).getTime();
+            } else if (currentSortField === 'estado') {
+                // Mapa de prioridades
+                const priorities = {
+                    "creando diseño": 1,
+                    "revisión del cliente": 2,
+                    "listo para entregar": 3, "listo para sublimar": 3, "listo para estampar": 3,
+                    "desconocido": 4 // Añadir un valor por defecto para estados no mapeados
+                };
+                const getPriority = (status) => priorities[(status || 'desconocido').toLowerCase()];
+                
+                const priorityA = getPriority(a.estado);
+                const priorityB = getPriority(b.estado);
+
+                if (priorityA !== priorityB) {
+                    return isSortAscending ? (priorityA - priorityB) : (priorityB - priorityA);
+                }
+                // Si los estados son iguales, ordenar por fecha (más antiguo al más reciente)
+                const dateA = parseDate(a.fecha).getTime();
+                const dateB = parseDate(b.fecha).getTime();
+                return dateA - dateB; // Siempre ascendente para la fecha secundaria
+            } else if (currentSortField === 'telefono') {
+                valA = parseInt(a.telefono || a.teléfono || 0);
+                valB = parseInt(b.telefono || b.teléfono || 0);
+            }
+
+            if (valA < valB) return isSortAscending ? -1 : 1;
+            if (valA > valB) return isSortAscending ? 1 : -1;
+            return 0; 
+        });
+    }
+
+    function filtrar(categoria, btn) {
+        // Actualizar botones activos
+        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (categoria === 'todos') {
+            pedidosFiltrados = todosLosPedidos;
+        } else {
+            pedidosFiltrados = todosLosPedidos.filter(p => 
+                p.producto.toLowerCase().includes(categoria)
+            );
+        }
+        // Re-aplicar búsqueda si hay texto
+        filtrarBusqueda();
+        // El ordenamiento se mantiene porque filtrarBusqueda llama a renderGallery con la lista filtrada, pero debemos asegurar que se ordene
+    }
+
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        const btn = document.getElementById('btnEditMode');
+        if (isEditMode) {
+            btn.classList.add('active');
+            btn.innerHTML = "❌ Salir de Edición";
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = "✎ Editar Pedido";
+        }
+        // Renderizar de nuevo con el estado actual de filtros
+        renderGallery(pedidosFiltrados);
+    }
+
+    function editarPedido(pedido) {
+        // Redirigir a la página de edición, pasando la URL de la imagen como identificador único
+        window.location.href = `editar_pedido.html?pedido=${encodeURIComponent(pedido.imagen_url)}`;
+    }
+
+    function filtrarBusqueda() {
+        const query = document.getElementById('searchInput').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        // Usamos la lista filtrada por categoría (Mug/Camisa) como base, o todos si no hay filtro
+        // Pero para que la búsqueda sea global sobre la categoría seleccionada, mejor filtramos sobre 'pedidosFiltrados' que ya tiene la categoría.
+        // Sin embargo, si el usuario borra la búsqueda, debemos restaurar la categoría.
+        // Estrategia: Filtrar siempre desde 'todosLosPedidos' aplicando Categoría + Búsqueda.
+        
+        const activeCategoryBtn = document.querySelector('.btn-filter.active');
+        const categoria = activeCategoryBtn ? activeCategoryBtn.innerText.toLowerCase() : 'todos';
+        
+        let baseList = todosLosPedidos;
+        if (categoria !== 'todos') {
+            baseList = todosLosPedidos.filter(p => p.producto.toLowerCase().includes(categoria.includes('mug') ? 'mug' : 'camiseta'));
+        }
+
+        const resultados = baseList.filter(p => {
+            const tel = (p.telefono || p.teléfono || '').toString();
+            const estado = (p.estado || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            // Lógica de fecha flexible (Convierte "20/01/2026" a texto buscable con meses)
+            const fechaOriginal = (p.fecha || '').toLowerCase();
+            let fechaTexto = fechaOriginal;
+            const parts = fechaOriginal.split(' ')[0].split('/'); // [DD, MM, YYYY]
+            if (parts.length >= 2) {
+                const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+                const mesIdx = parseInt(parts[1]) - 1;
+                if (mesIdx >= 0) fechaTexto += ` ${meses[mesIdx]}`; // Agrega nombre del mes para buscar
+            }
+
+            return tel.includes(query) || estado.includes(query) || fechaTexto.includes(query);
+        });
+        
+        // Actualizamos la variable global para que toggleEditMode funcione sobre estos resultados
+        pedidosFiltrados = resultados;
+        aplicarOrdenamiento(); // Re-ordenar los resultados filtrados
+        renderGallery(resultados);
+    }
+
+    function abrirModal(pedido) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('imgGrande');
+        const modalInfo = document.getElementById('modalInfo');
+        const container3D = document.getElementById('container3D');
+        const btnDescargar = document.getElementById('btnDescargar');
+        const rotationMsg = document.getElementById('rotationMsg');
+
+        // Resetear estado de información (visible por defecto)
+        modalInfo.style.display = 'block';
+        updateToggleIcon(true);
+
+        modal.style.display = "flex";
+        
+        // Limpiar vista anterior
+        modalImg.style.display = 'none';
+        container3D.style.display = 'none';
+        container3D.innerHTML = '';
+        rotationMsg.style.display = 'none';
+
+        // Verificar si es un Mug para mostrar en 3D
+        if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
+            container3D.style.display = 'block';
+            init3DMug(pedido.imagen_url, container3D);
+        } else if (pedido.producto && pedido.producto.toLowerCase().includes('camiseta')) {
+            container3D.style.display = 'block';
+            
+            // Determinar URLs de frontal y espaldar
+            let urls = { frontal: null, espaldar: null };
+            if (pedido.imagenes) {
+                urls = {
+                    frontal: pedido.imagenes.frontal ? pedido.imagenes.frontal.trim() : null,
+                    espaldar: (pedido.imagenes.espaldar || pedido.imagenes.trasera) ? (pedido.imagenes.espaldar || pedido.imagenes.trasera).trim() : null
+                };
+            } else {
+                // Fallback para pedidos antiguos
+                if (pedido.imagen_url.includes('frontal')) urls.frontal = pedido.imagen_url;
+                else if (pedido.imagen_url.includes('espaldar') || pedido.imagen_url.includes('trasera')) urls.espaldar = pedido.imagen_url;
+                else urls.frontal = pedido.imagen_url; // Asumir frontal por defecto
+            }
+
+            init3DCamiseta(urls, container3D);
+        } else {
+            modalImg.style.display = 'block';
+            modalImg.src = pedido.imagen_url;
+        }
+
+        // Texto grande abajo
+        modalInfo.innerHTML = `
+            Cliente: ${pedido.telefono || pedido.teléfono || 'Sin datos'}<br>
+            <span style="font-size: 1rem; font-weight: normal;">${pedido.producto} - ${pedido.fecha}</span><br>
+            <span style="font-size: 1rem; font-weight: normal; color: #ffd700;">Estado: ${pedido.estado || 'Desconocido'}</span>
+        `;
+
+        // Lógica para el botón de descarga
+        if (pedido.imagen_url && pedido.imagen_url.includes('/img/')) {
+            // Manejar URLs relativas (/img/...) y absolutas (https://.../img/...)
+            const urlParts = pedido.imagen_url.split('/img/');
+            
+            if (urlParts.length > 1) {
+                const pathParts = urlParts[1].split('/'); // [type, folder, file]
+                if (pathParts.length >= 2) {
+                    const type = pathParts[0];
+                    const folder = pathParts[1];
+                    
+                    const BACKEND_URL = window.location.hostname.includes('github.io') 
+                        ? 'https://sublimacion-mary.onrender.com' 
+                        : '';
+                    currentDownloadUrl = `${BACKEND_URL}/api/download-folder/${type}/${folder}`;
+                    btnDescargar.style.display = 'flex';
+                } else {
+                    btnDescargar.style.display = 'none';
+                }
+            } else {
+                btnDescargar.style.display = 'none';
+            }
+        } else {
+            btnDescargar.style.display = 'none';
+        }
+    }
+
+    function toggleInfo() {
+        const modalInfo = document.getElementById('modalInfo');
+        const isVisible = modalInfo.style.display !== 'none';
+        
+        if (isVisible) {
+            modalInfo.style.display = 'none';
+            updateToggleIcon(false);
+        } else {
+            modalInfo.style.display = 'block';
+            updateToggleIcon(true);
+        }
+    }
+
+    function updateToggleIcon(isVisible) {
+        const btn = document.getElementById('toggleInfoBtn');
+        if (isVisible) {
+            // Icono de ojo tachado (para ocultar)
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+        } else {
+            // Icono de ojo abierto (para mostrar)
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        }
+    }
+
+    function descargarCarpeta() {
+        if (currentDownloadUrl) {
+            window.location.href = currentDownloadUrl;
+        }
+    }
+
+    function init3DMug(imageUrl, container) {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xb3b3b3);
+
+        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 0, 11); // Alejar cámara para que ocupe aprox 70% del alto
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
+        container.appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        // Crear Mug
+        const geometry = new THREE.CylinderGeometry(2.5, 2.5, 6, 64);
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+        
+        loader.load(imageUrl, (texture) => {
+            const img = texture.image;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const widthCoverage = 0.75289575289;
+            const heightCoverage = 0.79797979798;
+
+            const canvasWidth = img.width / widthCoverage;
+            const canvasHeight = img.height / heightCoverage;
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            const offsetX = (canvasWidth - img.width) / 2;
+            const offsetY = (canvasHeight - img.height) / 2;
+            ctx.drawImage(img, offsetX, offsetY, img.width, img.height);
+
+            const newTexture = new THREE.CanvasTexture(canvas);
+
+            const materials = [
+                new THREE.MeshStandardMaterial({ map: newTexture }), 
+                new THREE.MeshStandardMaterial({ color: 0xffffff }), 
+                new THREE.MeshStandardMaterial({ color: 0xffffff })  
+            ];
+            const cylinder = new THREE.Mesh(geometry, materials);
+            
+            cylinder.rotation.y = Math.PI / 2;
+            
+            scene.add(cylinder);
+        });
+
+        const handleGeom = new THREE.TorusGeometry(1.5, 0.3, 16, 100);
+        const handleMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const handle = new THREE.Mesh(handleGeom, handleMat);
+        handle.position.set(2.8, 0, 0); 
+        scene.add(handle);
+
+        const animate = function () {
+            animationId = requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        };
+        animate();
+    }
+
+    async function init3DCamiseta(urls, container) {
+        const loaderElement = document.getElementById('global-loader');
+        if (loaderElement) {
+            loaderElement.style.display = 'flex';
+            setTimeout(() => { loaderElement.style.opacity = '1'; }, 10);
+        }
+
+        container.innerHTML = '';
+
+        if (!urls.frontal && urls.espaldar) {
+            document.getElementById('rotationMsg').style.display = 'block';
+        }
+
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xb3b3b3);
+
+        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 1, 3);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        container.appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.target.set(0, 1, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        const animate = function () {
+            animationId = requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        };
+        animate();
+
+        const loadImage = (src) => new Promise((resolve) => {
+            if (!src) return resolve(null);
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = src.startsWith('data:') ? src : (src + (src.includes('?') ? '&' : '?') + 't=' + new Date().getTime());
+            img.onload = () => resolve(img);
+            img.onerror = () => { console.error("Error cargando imagen:", src); resolve(null); };
+        });
+
+        const [frontImg, backImg] = await Promise.all([
+            loadImage(urls.frontal),
+            loadImage(urls.espaldar)
+        ]);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = 1024;
+        canvas.width = size;
+        canvas.height = size;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+
+        const drawImageOnCanvas = (img, offsetX, offsetY) => {
+            const maxAllowedWidth = 307;
+            const maxAllowedHeight = 307;
+
+            const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
+            const drawWidth = img.width * scale;
+            const drawHeight = img.height * scale;
+
+            const x = ((size - drawWidth) / 2) + offsetX;
+            const y = ((size * 0.4) - (drawHeight / 2)) + offsetY;
+
+            ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        };
+
+        if (frontImg) {
+            drawImageOnCanvas(frontImg, -240, 250);
+        }
+        if (backImg) {
+            drawImageOnCanvas(backImg, 272, 250);
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.flipY = false;
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const gltfLoader = new GLTFLoader();
+        let currentModel;
+
+        const loadModel = (gender) => {
+            if (loaderElement) { loaderElement.style.display = 'flex'; loaderElement.style.opacity = '1'; }
+
+            const productType = 'camiseta';
+            const modelPath = `modelo_3d/${gender}/modelo_3d_${gender}_${productType}.glb`;
+
+            gltfLoader.load(modelPath, (gltf) => {
+                if (currentModel) {
+                    scene.remove(currentModel);
+                }
+                currentModel = gltf.scene;
+
+                let targetMesh = currentModel;
+
+                currentModel.traverse((child) => {
+                    if (child.isMesh && child.material && child.material.name === 'Wolf3D_Outfit_Top') {
+                        const material = child.material;
+                        material.map = texture;
+                        material.metalness = 0;
+                        material.roughness = 1;
+                        material.needsUpdate = true;
+                        targetMesh = child;
+                    }
+                });
+
+                scene.add(currentModel);
+
+                // Usar el modelo completo para calcular la caja delimitadora correcta
+                const box = new THREE.Box3().setFromObject(currentModel);
+                const size = new THREE.Vector3();
+                box.getSize(size);
+                const center = box.getCenter(new THREE.Vector3());
+                
+                // Calcular posición del pecho (aprox 75% de la altura total)
+                const chestY = box.min.y + (size.y * 0.75);
+
+                controls.target.set(center.x, chestY, center.z);
+                // Ajustar cámara: Distancia proporcional a la altura del modelo
+                camera.position.set(center.x, chestY, box.max.z + (size.y * 0.6));
+                controls.update();
+
+                //////////////////////// CAMARA EN TODO EL MODELO 3D ////////////////////////
+                // Ajustar foco: Usar centro de la camiseta y bajar ligeramente (10% de su altura) para encuadrar mejor
+                //center.y -= size.y * -3.5;
+
+                //controls.target.copy(center);
+                // Distancia dinámica: Se adapta si el modelo es grande (cm) o pequeño (m) para llenar la pantalla
+                //camera.position.set(center.x, center.y, center.z + (size.y * 10.5));
+                //controls.update();
+
+                if (loaderElement) {
+                    loaderElement.style.opacity = '0';
+                    setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+                }
+            }, undefined, (error) => {
+                console.error('Error loading 3D model:', error);
+                container.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>No se pudo cargar el archivo: ${modelPath}</div>`;
+                if (loaderElement) { loaderElement.style.opacity = '0'; setTimeout(() => { loaderElement.style.display = 'none'; }, 500); }
+            });
+        };
+
+        let currentGender = 'hombre';
+        loadModel(currentGender);
+
+        const toggleBtn = document.createElement('button');
+        Object.assign(toggleBtn.style, {
+            position: 'absolute',
+            left: '20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: '1005',
+            padding: '10px 15px',
+            borderRadius: '50px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: '600',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.3s',
+            fontSize: '0.9rem'
+        });
+
+        const updateButton = () => {
+            if (currentGender === 'hombre') {
+                toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
+                toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
+                toggleBtn.style.border = '2px solid #d500f9';
+                toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
+            } else {
+                toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
+                toggleBtn.style.background = 'rgba(0, 0, 255, 0.3)';
+                toggleBtn.style.border = '2px solid #0000ff';
+                toggleBtn.style.boxShadow = '0 0 15px rgba(0, 0, 255, 0.5)';
+            }
+        };
+        updateButton();
+
+        toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            currentGender = currentGender === 'hombre' ? 'mujer' : 'hombre';
+            loadModel(currentGender);
+            updateButton();
+        };
+        
+        toggleBtn.onmouseover = () => { toggleBtn.style.filter = 'brightness(1.2)'; };
+        toggleBtn.onmouseout = () => { toggleBtn.style.filter = 'brightness(1)'; };
+
+        container.appendChild(toggleBtn);
+    }
+
+    function cerrarModal() {
+        document.getElementById('imageModal').style.display = "none";
+        if (animationId) cancelAnimationFrame(animationId);
+        if (renderer) {
+            renderer.dispose();
+            renderer = null;
+        }
+    }
+
+    function cerrarSesion() {
+        sessionStorage.removeItem('adminLogueado');
+        window.location.href = 'index.html';
+    }
+
+    // Exponer funciones al scope global
+    window.filtrar = filtrar;
+    window.toggleEditMode = toggleEditMode;
+    window.filtrarBusqueda = filtrarBusqueda;
+    window.toggleSortDirection = toggleSortDirection;
+    window.toggleSortDropdown = toggleSortDropdown;
+    window.changeSortField = changeSortField;
+    window.cerrarSesion = cerrarSesion;
+    window.cerrarModal = cerrarModal;
+    window.toggleInfo = toggleInfo;
+    window.descargarCarpeta = descargarCarpeta;
+</script>
+
+</body>
+</html>

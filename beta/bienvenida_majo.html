@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Bienvenida Majo</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#1a1a1a">
+    <script>
+        // SEGURIDAD: Verificar si el usuario inició sesión
+        if (!sessionStorage.getItem('adminLogueado')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a1a1a;
+            margin: 0;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Background Logo (Mismas especificaciones que admin_dashboard) */
+        #background-logo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background-image: url('https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png');
+            background-position: center; background-repeat: no-repeat;
+            opacity: 0.1;
+        }
+
+        /* Definición para animar el ángulo del gradiente cónico */
+        @property --angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+
+        .content-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 600px;
+            width: 100%;
+            animation: fadeIn 1.5s ease-out;
+            position: relative;
+            border: 2px solid transparent; /* Reserva espacio */
+        }
+
+        /* Borde Neón en Movimiento */
+        .content-container::before {
+            content: '';
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            z-index: -1;
+            border-radius: 24px;
+            
+            /* Gradiente Cónico para efecto de reloj */
+            background: conic-gradient(from var(--angle), #d500f9, #0000ff, #ffffff, #d500f9, #0000ff, #ffffff,#d500f9, #0000ff, #ffffff);
+            
+            /* Animación de rotación del ángulo */
+            animation: neonBorderRotate 6s linear infinite;
+
+            /* Máscara para dejar solo el borde visible (evita que se vea en el centro transparente) */
+            padding: 4px; /* Grosor del borde */
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        @keyframes neonBorderRotate {
+            to { --angle: 360deg; }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #d500f9, #0000ff); /* Morado Neón a Azul Oscuro Neón */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(213, 0, 249, 0.3);
+            animation: pulseZoom 2s infinite ease-in-out;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #e0e0e0;
+            visibility: hidden; /* Ocultar inicialmente para efecto de escritura */
+        }
+
+        .question {
+            margin-top: 30px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            opacity: 0; /* Oculto inicialmente para el efecto */
+            transition: opacity 1s;
+        }
+
+        .btn-neon {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            border: 2px solid;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+            position: relative;
+            font-family: 'Poppins', sans-serif;
+            text-decoration: none;
+        }
+
+        .btn-yes {
+            color: #00ff00;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px #00ff00, inset 0 0 10px #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .btn-yes:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+        }
+
+        .btn-no {
+            color: #ff00de;
+            border-color: #ff00de;
+            box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de;
+            text-shadow: 0 0 5px #ff00de;
+        }
+
+        .btn-no:hover {
+            background: #ff00de;
+            color: #000;
+            box-shadow: 0 0 20px #ff00de, 0 0 40px #ff00de;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Modal de Contraseña */
+        #setupModal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .setup-content {
+            background: #1e1b29; /* Fondo oscuro con tinte morado */
+            padding: 40px; 
+            border-radius: 25px;
+            text-align: center; width: 90%; max-width: 400px;
+            border: 2px solid #9b59b6; /* Borde morado creativo */
+            box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
+            animation: fadeIn 0.5s ease-out;
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: #e0aaff;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+            z-index: 10;
+        }
+        .close-modal:hover {
+            color: #ffffff;
+        }
+        .setup-input {
+            width: 100%; padding: 15px; margin: 12px 0;
+            border-radius: 15px; 
+            border: 2px solid #3c304a;
+            background: #2d2438;
+            color: #fff;
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+        .setup-input:focus {
+            border-color: #9b59b6;
+            background: #362b45;
+            outline: none;
+            box-shadow: 0 0 15px rgba(155, 89, 182, 0.3);
+        }
+        .btn-save {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad); /* Gradiente morado */
+            color: white; border: none; padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: bold;
+            font-size: 1.1rem; width: 100%; margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-save:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(142, 68, 173, 0.6);
+        }
+        .btn-back {
+            background: transparent;
+            border: 2px solid #9b59b6;
+            color: #e0aaff;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            width: 100%;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: rgba(155, 89, 182, 0.2);
+            color: white;
+        }
+
+        /* Estilos del Confeti Neón */
+        .confetti-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5; /* Por encima del fondo pero debajo de modales */
+            overflow: hidden;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px; height: 15px;
+            opacity: 0.9;
+            transform-origin: center;
+            animation: fall linear infinite;
+            border-radius: 2px;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-20px) rotate(0deg) translateX(0); opacity: 1; }
+            100% { transform: translateY(105vh) rotate(720deg) translateX(20px); opacity: 0; }
+        }
+
+        /* Animación de rechazo (shake) */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-12px); }
+            40%, 80% { transform: translateX(12px); }
+        }
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        /* Animación de aumento y encogida */
+        @keyframes pulseZoom {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Contenedor del GIF lateral */
+        .gif-sidebar {
+            position: fixed;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            pointer-events: none; /* Para no bloquear clicks si es transparente */
+        }
+        .gif-sidebar img {
+            width: 250px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(0, 0, 255, 0.6)); /* Resplandor neón sutil */
+        }
+        .gif-sidebar canvas {
+            width: 250px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(0, 0, 255, 0.6));
+        }
+
+        /* --- Ajustes Responsivos para Móviles --- */
+        
+        /* Orientación Vertical: GIF abajo a la izquierda */
+        @media (max-width: 768px) and (orientation: portrait) {
+            body {
+                justify-content: flex-start;
+                padding-top: 5px;
+            }
+            .gif-sidebar {
+                left: 10px;
+                bottom: 10px;
+                top: auto;
+                transform: none;
+            }
+            .gif-sidebar img, .gif-sidebar canvas {
+                width: 180px;
+            }
+        }
+
+        /* Orientación Horizontal: GIF a la izquierda (más pegado) */
+        @media (max-width: 1280px) and (orientation: landscape) and (max-height: 600px) {
+            body {
+                padding: 0;
+                align-items: flex-start; /* Alinear a la izquierda para controlar márgenes manualmente */
+            }
+            .content-container {
+                padding: 10px 20px;
+                margin-left: 130px; /* Espacio reservado para el GIF (110px + margen) */
+                margin-right: 5px;  /* Pegado al borde derecho */
+                margin-top: 5px;    /* Pegado al borde superior */
+                margin-bottom: 5px; /* Pegado al borde inferior */
+                width: calc(100% - 140px); /* Ajustado para ocupar más ancho */
+                max-width: none;
+                max-height: calc(100vh - 20px); /* Aumentar altura disponible */
+                overflow: visible; /* Permitir que el borde neón se vea */
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box; /* Asegurar que el padding no aumente el tamaño total */
+            }
+            .scroll-content {
+                overflow-y: auto; /* Scroll solo en el contenido interno */
+                max-height: 100%;
+                padding-right: 5px;
+                box-sizing: border-box;
+            }
+            h1 {
+                font-size: 1.4rem;
+                margin-bottom: 5px;
+            }
+            p {
+                font-size: 0.85rem;
+                line-height: 1.2;
+                margin-bottom: 5px;
+            }
+            .question {
+                margin-top: 5px;
+                font-size: 0.95rem;
+            }
+            .buttons-container {
+                margin-top: 8px;
+            }
+            .btn-neon {
+                padding: 5px 20px;
+                font-size: 0.9rem;
+            }
+            .gif-sidebar {
+                left: 10px;
+            }
+            .gif-sidebar img, .gif-sidebar canvas {
+                width: 110px; /* Reducir GIF para dar más espacio */
+            }
+
+            /* Modal o formulario si se responde si alineado a la derecha en horizontal */
+            #setupModal {
+                justify-content: flex-end;
+                padding-right: 13px;
+                box-sizing: border-box;
+            }
+            /* Ajuste del Modal de Configuración para Horizontal */
+            .setup-content {
+                padding: 10px 20px;
+                max-height: 95vh;
+                overflow-y: auto;
+                width: 90%;
+                max-width: 550px;
+            }
+            .setup-content h3 { font-size: 1.2rem !important; margin-bottom: 5px !important; }
+            .setup-content p { font-size: 0.85rem !important; margin: 5px 0 !important; }
+            .setup-input { padding: 6px 10px !important; margin: 4px 0 !important; font-size: 0.9rem !important; }
+            .btn-save, .btn-back { padding: 8px 20px !important; margin-top: 8px !important; font-size: 0.95rem !important; }
+
+            /* Layout en Grid para poner campos lado a lado */
+            #step1, #step2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            /* Elementos que ocupan todo el ancho */
+            #step1 h3, #step1 p, #step1 #newEmail, #step1 .btn-save,
+            #step2 h3, #step2 p, #step2 #confirmEmail, #step2 #emailMismatchContainer, #step2 .btn-save, #step2 .btn-back {
+                grid-column: 1 / -1;
+            }
+            /* Los inputs de usuario y contraseña ocuparán automáticamente 1 columna cada uno (lado a lado) */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="background-logo"></div>
+    <div class="confetti-container" id="confetti"></div>
+
+    <div class="gif-sidebar">
+        <img src="" id="ath1Gif" alt="ATH1" style="display: none;">
+        <canvas id="gifCanvas" style="display: none;"></canvas>
+    </div>
+
+    <div class="content-container">
+        <div class="scroll-content">
+            <h1>¡Bienvenida Majo!</h1>
+            <p>Hola Majo 👋 soy <b>ATH1</b> es un placer por fin conocerte y tenerte por 1<sup>ra</sup> vez en el servidor, estoy muy contento ☺️ porque gracias a tu idea, a tu emprendimiento fui creado🥹 no sabes por cuanto tiempo hemos añorado este día de que veas lo que se hizo con esmero🤗</p>
+            
+            <p>Esperamos que te guste el servidor, pues <b>fue hecho con mucho esfuerzo, mucho codigo y mucho, bueno muchisimo cariño SOLO PARA TI</b></p>
+            
+            <p class="question"><br>¿Estas lista para ayudarte a terminar de configurarte como admin?</p>
+
+            <div class="buttons-container">
+                <button class="btn-neon btn-yes" onclick="mostrarSetup()" onmouseenter="showHoverGif()" onmouseleave="restoreGifSequence()">Sí</button>
+                <button class="btn-neon btn-no" onclick="window.location.href='admin_dashboard.html'" onmouseenter="showHoverGif()" onmouseleave="restoreGifSequence()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear contraseña -->
+    <div id="setupModal">
+        <div class="setup-content">
+            <span class="close-modal" onclick="cerrarSetup()">&times;</span>
+            <!-- Paso 1: Ingreso inicial -->
+            <div id="step1">
+                <h3 style="margin-top:0; color: #e0aaff; font-size: 1.8rem;">¡Genial!</h3>
+                <p style="color: #d1c4e9;">Para proteger tu acceso, establece tu usuario, contraseña y correo para notificaciones:</p>
+                
+                <input type="text" id="newUsername" class="setup-input" placeholder="Nuevo Usuario (Ej: Majo)">
+                <input type="password" id="newPassword" class="setup-input" placeholder="Nueva Contraseña">
+                <input type="email" id="newEmail" class="setup-input" placeholder="Tu Correo Electrónico">
+                
+                <button class="btn-save" onclick="irPaso2()">Continuar</button>
+            </div>
+
+            <!-- Paso 2: Confirmación -->
+            <div id="step2" style="display: none;">
+                <h3 style="margin-top:0; color: #e0aaff; font-size: 1.8rem;">Confirmación</h3>
+                <p style="color: #d1c4e9;">Majo, para rectificar tus nuevas credenciales, por favor repite tu usuario y contraseña que estableciste anteriormente:</p>
+                <input type="text" id="confirmUsername" class="setup-input" placeholder="Repite tu Usuario">
+                <input type="password" id="confirmPassword" class="setup-input" placeholder="Repite tu Contraseña">
+                
+                <p style="color: #d1c4e9; margin-top: 15px; margin-bottom: 5px; font-weight: 600;">Tu correo es:</p>
+                <input type="email" id="confirmEmail" class="setup-input" placeholder="Correo electrónico">
+                
+                <div id="emailMismatchContainer" style="display:none;">
+                    <p style="color: #ff7675; font-size: 0.9rem; margin: 5px 0;">Cambiaste el correo, confírmalo:</p>
+                    <input type="email" id="reConfirmEmail" class="setup-input" placeholder="Repite tu nuevo correo">
+                </div>
+
+                <button class="btn-save" onclick="guardarConfiguracionFinal()">Crear perfil admin. y entrar</button>
+                <button class="btn-back" onclick="volverPaso1()">Corregir datos anteriores</button>
+            </div>
+
+            <div id="errorMsg" style="color: #ff7675; margin-top: 10px; display: none;">Error al guardar</div>
+        </div>
+    </div>
+
+    <script>
+        let tempUser = '';
+        let tempPass = '';
+        let tempEmail = '';
+
+        function shakeModal() {
+            const modalContent = document.querySelector('.setup-content');
+            modalContent.classList.remove('shake');
+            void modalContent.offsetWidth; // Forzar reinicio de la animación
+            modalContent.classList.add('shake');
+        }
+
+        function cerrarSetup() {
+            document.getElementById('setupModal').style.display = 'none';
+        }
+
+        function mostrarSetup() {
+            document.getElementById('setupModal').style.display = 'flex';
+            document.getElementById('newUsername').focus();
+        }
+
+        function irPaso2() {
+            const user = document.getElementById('newUsername').value.trim();
+            const pass = document.getElementById('newPassword').value;
+            const email = document.getElementById('newEmail').value.trim();
+            const errorDiv = document.getElementById('errorMsg');
+
+            if (!user) {
+                errorDiv.textContent = 'No puedes dejar el usuario vacío.';
+                errorDiv.style.display = 'block';
+                shakeModal();
+                return;
+            }
+
+            if (!pass) {
+                errorDiv.textContent = 'No puedes dejar la contraseña vacía.';
+                errorDiv.style.display = 'block';
+                shakeModal();
+                return;
+            }
+
+            if (!email || !email.includes('@.')) {
+                errorDiv.textContent = 'Por favor ingresa un correo válido.';
+                errorDiv.style.display = 'block';
+                shakeModal();
+                return;
+            }
+
+            tempUser = user;
+            tempPass = pass;
+            tempEmail = email;
+
+            // Pre-llenar el correo en el paso 2
+            document.getElementById('confirmEmail').value = tempEmail;
+            document.getElementById('emailMismatchContainer').style.display = 'none';
+
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'block';
+            document.getElementById('confirmUsername').focus();
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        function volverPaso1() {
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('step1').style.display = 'block';
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        async function guardarConfiguracionFinal() {
+            const confUser = document.getElementById('confirmUsername').value.trim();
+            const confPass = document.getElementById('confirmPassword').value;
+            const confEmail = document.getElementById('confirmEmail').value.trim();
+            const errorDiv = document.getElementById('errorMsg');
+
+            // Validar Correo
+            let finalEmail = tempEmail;
+            if (confEmail !== tempEmail) {
+                const reConfEmail = document.getElementById('reConfirmEmail').value.trim();
+                if (!confEmail.includes('@')) {
+                    errorDiv.textContent = 'El correo modificado no es válido.';
+                    errorDiv.style.display = 'block';
+                    shakeModal();
+                    return;
+                }
+                if (confEmail !== reConfEmail) {
+                    errorDiv.textContent = 'La confirmación del nuevo correo no coincide.';
+                    errorDiv.style.display = 'block';
+                    shakeModal();
+                    return;
+                }
+                finalEmail = confEmail;
+            }
+
+            const userMatch = confUser === tempUser;
+            const passMatch = confPass === tempPass;
+
+            if (!userMatch || !passMatch) {
+                if (!userMatch && !passMatch) {
+                    errorDiv.textContent = 'El usuario y la contraseña no coinciden.';
+                } else if (!userMatch) {
+                    errorDiv.textContent = 'El nombre de usuario no coincide. Inténtalo de nuevo.';
+                } else { // !passMatch
+                    errorDiv.textContent = 'La contraseña no coincide. Inténtalo de nuevo.';
+                }
+                errorDiv.style.display = 'block';
+                shakeModal();
+                return;
+            }
+
+            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+            
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/complete-setup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        currentUsername: '3209287029', 
+                        newUsername: tempUser, 
+                        newPassword: tempPass,
+                        newEmail: finalEmail
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    sessionStorage.setItem('adminEmail', finalEmail);
+                    window.location.href = 'admin_dashboard.html';
+                } else {
+                    const errorDiv = document.getElementById('errorMsg');
+                    errorDiv.textContent = data.error || 'Error al guardar';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // Lógica de Confeti Neón
+        function createConfettiPiece() {
+            const container = document.getElementById("confetti");
+            if (!container) return;
+
+            const confetti = document.createElement("div");
+            confetti.classList.add("confetti-piece");
+            
+            // Colores Neón Vibrantes
+            const colors = ["#ff00ff", "#00ffff", "#00ff00", "#ffff00", "#ff0000", "#9D00FF", "#ff3399"];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            confetti.style.backgroundColor = color;
+            confetti.style.boxShadow = `0 0 6px ${color}, 0 0 10px ${color}`; // Efecto Glow/Neón
+            
+            confetti.style.left = Math.random() * 100 + "vw";
+            confetti.style.animationDuration = (Math.random() * 3 + 2) + "s"; // Entre 2 y 5 segundos
+            confetti.style.width = Math.random() * 8 + 5 + "px";
+            confetti.style.height = Math.random() * 12 + 8 + "px";
+            
+            container.appendChild(confetti);
+            
+            setTimeout(() => { confetti.remove(); }, 5000);
+        }
+        
+        // Iniciar lluvia de confeti
+        setInterval(createConfettiPiece, 100);
+
+        // Eventos de teclado para el formulario
+        document.getElementById('newUsername').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') document.getElementById('newPassword').focus();
+        });
+        document.getElementById('newPassword').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') document.getElementById('newEmail').focus();
+        });
+        document.getElementById('newEmail').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') irPaso2();
+        });
+        document.getElementById('confirmUsername').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') document.getElementById('confirmPassword').focus();
+        });
+        document.getElementById('confirmPassword').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') guardarConfiguracionFinal();
+        });
+
+        // Listener para detectar cambios en el correo del paso 2
+        document.getElementById('confirmEmail').addEventListener('input', function() {
+            const currentVal = this.value.trim();
+            const mismatchDiv = document.getElementById('emailMismatchContainer');
+            if (currentVal !== tempEmail) {
+                mismatchDiv.style.display = 'block';
+            } else {
+                mismatchDiv.style.display = 'none';
+                document.getElementById('reConfirmEmail').value = '';
+            }
+        });
+
+        // --- CONFIGURACIÓN DE LA SECUENCIA DE GIFs ---
+        // Aquí puedes agregar o quitar GIFs y definir cuánto dura cada uno (en milisegundos)
+        const gifSequence = [
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_like.gif", duration: 4000 }, //5000
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_baile_1.gif", duration: 4000 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_tira_confetti.gif", duration: 4000 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_baile_2.gif", duration: 3000 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_gracias.gif", duration: 5500 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_esperando.gif", duration: 5500 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_pena.gif", duration: 5500 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_presenta.gif", duration: 5300 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_regalo.gif", duration: 4500 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_corazon.gif", duration: 5000 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_pregunta.gif", duration: 6000 },
+            { src: "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_ohh_yeah.gif", duration: 2147483647 },
+            // Copia y pega la línea de abajo para agregar más GIFs:
+            // { src: "URL_DE_TU_OTRO_GIF.gif", duration: 3000 },
+        ];
+
+        // Variables globales para control de GIFs
+        let gifTimer = null;
+        let gifCurrentIndex = 0;
+        let gifStartTime = 0;
+        let gifRemainingTime = 0;
+        let isGifPlaying = false;
+
+        function startGifSequence() {
+            const gifElement = document.getElementById('ath1Gif');
+            if (!gifElement || gifSequence.length === 0) return;
+
+            isGifPlaying = true;
+            gifCurrentIndex = 0;
+            gifElement.style.display = 'block';
+            runGifLoop();
+        }
+
+        function runGifLoop() {
+            if (!isGifPlaying) return;
+
+            const item = gifSequence[gifCurrentIndex];
+            const gifElement = document.getElementById('ath1Gif');
+            gifElement.src = item.src;
+
+            gifRemainingTime = item.duration;
+            gifStartTime = Date.now();
+
+            clearTimeout(gifTimer);
+            gifTimer = setTimeout(() => {
+                gifCurrentIndex = (gifCurrentIndex + 1) % gifSequence.length;
+                runGifLoop();
+            }, gifRemainingTime);
+        }
+
+        function pauseGif() {
+            if (isGifPlaying && gifTimer) {
+                clearTimeout(gifTimer);
+                const elapsed = Date.now() - gifStartTime;
+                gifRemainingTime -= elapsed;
+                isGifPlaying = false;
+
+                // Congelar visualmente el GIF usando Canvas
+                const gifElement = document.getElementById('ath1Gif');
+                const canvas = document.getElementById('gifCanvas');
+                if (gifElement && canvas && gifElement.complete && gifElement.naturalWidth > 0) {
+                    canvas.width = gifElement.naturalWidth;
+                    canvas.height = gifElement.naturalHeight;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(gifElement, 0, 0);
+                    
+                    gifElement.style.display = 'none';
+                    canvas.style.display = 'block';
+                }
+            }
+        }
+
+        function resumeGif() {
+            if (!isGifPlaying && gifRemainingTime > 0) {
+                // Reanudar visualmente (Ocultar canvas estático, mostrar GIF)
+                const gifElement = document.getElementById('ath1Gif');
+                const canvas = document.getElementById('gifCanvas');
+                if (gifElement && canvas) {
+                    canvas.style.display = 'none';
+                    gifElement.style.display = 'block';
+                }
+
+                isGifPlaying = true;
+                gifStartTime = Date.now();
+                gifTimer = setTimeout(() => {
+                    gifCurrentIndex = (gifCurrentIndex + 1) % gifSequence.length;
+                    runGifLoop();
+                }, gifRemainingTime);
+            }
+        }
+
+        // Funciones para el hover de los botones (Patineta)
+        let hoverTimeout = null;
+
+        function showHoverGif() {
+            if (hoverTimeout) clearTimeout(hoverTimeout);
+            if (gifTimer) clearTimeout(gifTimer);
+            isGifPlaying = false;
+
+            const gifElement = document.getElementById('ath1Gif');
+            const canvas = document.getElementById('gifCanvas');
+            const hoverSrc = "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_en_patineta.gif";
+            
+            if (gifElement) {
+                if (canvas) canvas.style.display = 'none';
+                gifElement.style.display = 'block';
+
+                // Evitar recargar si ya es el GIF actual
+                if (gifElement.src === hoverSrc) return;
+                gifElement.src = hoverSrc;
+            }
+        }
+
+        function restoreGifSequence() {
+            hoverTimeout = setTimeout(() => {
+                isGifPlaying = true;
+                runGifLoop();
+            }, 100);
+        }
+
+        // Helper para pausar escritura si la pestaña no está visible
+        async function checkVisibility() {
+            if (document.hidden) {
+                await new Promise(resolve => {
+                    const onVisible = () => {
+                        if (!document.hidden) {
+                            document.removeEventListener('visibilitychange', onVisible);
+                            resolve();
+                        }
+                    };
+                    document.addEventListener('visibilitychange', onVisible);
+                });
+            }
+        }
+
+        // Listener global de visibilidad
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pauseGif();
+            } else {
+                resumeGif();
+            }
+        });
+
+        // Efecto de Máquina de Escribir
+        async function typeWriterEffect() {
+            const container = document.querySelector('.content-container');
+            const paragraphs = Array.from(container.querySelectorAll('p'));
+            const buttons = container.querySelector('.buttons-container');
+            
+            // Guardar contenido original y limpiar
+            const contents = paragraphs.map(p => p.innerHTML);
+            paragraphs.forEach(p => p.innerHTML = '');
+            paragraphs.forEach(p => p.style.visibility = 'visible'); // Hacer visible el contenedor vacío
+            
+            const delay = ms => new Promise(res => setTimeout(res, ms));
+
+            // Iniciar GIFs sincronizados con el texto
+            startGifSequence();
+
+            // Pausas específicas
+            const pauses = {
+                "<b>ATH1</b>": 800,
+                "por fin conocerte": 800,
+                "vez en el servidor,": 800,
+                "estoy muy contento ☺️": 800,
+                "emprendimiento fui creado🥹": 800,
+                "hemos añorado este día": 800,
+                "se hizo con esmero🤗": 800,
+                "cariño SOLO PARA TI</b>": 2500 // Pausa larga antes de la pregunta
+            };
+
+            for (let i = 0; i < paragraphs.length; i++) {
+                const p = paragraphs[i];
+                const html = contents[i];
+                let buffer = '';
+                let isTag = false;
+                let currentText = '';
+
+                for (const char of html) {
+                    currentText += char;
+
+                    if (char === '<') {
+                        isTag = true;
+                        buffer += char;
+                    } else if (char === '>') {
+                        isTag = false;
+                        buffer += char;
+                        p.innerHTML += buffer;
+                        buffer = '';
+                        
+                        // Verificar pausas después de cerrar etiqueta
+                        for (const [phrase, time] of Object.entries(pauses)) {
+                            if (currentText.endsWith(phrase)) await delay(time);
+                        }
+                    } else if (isTag) {
+                        buffer += char;
+                    } else {
+                        await checkVisibility(); // Pausar si está oculto
+                        p.innerHTML += char;
+                        await delay(90); // Velocidad de escritura reducida
+                        
+                        // Verificar pausas después de carácter
+                        for (const [phrase, time] of Object.entries(pauses)) {
+                            if (currentText.endsWith(phrase)) await delay(time);
+                        }
+                    }
+                }
+                if (!currentText.endsWith("cariño SOLO PARA TI</b>")) {
+                    await delay(300); // Pausa estándar entre párrafos si no hubo pausa especial
+                }
+            }
+            
+            // Mostrar botones al finalizar
+            buttons.style.opacity = '1';
+        }
+
+        window.addEventListener('load', async () => {
+            const loader = document.getElementById('global-loader');
+            
+            // Asegurar que el loader esté visible mientras cargamos los GIFs
+            if (loader) { loader.style.display = 'flex'; loader.style.opacity = '1'; }
+
+            // Precargar GIFs para sincronización perfecta
+            const preloadImage = (src) => new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = src; });
+            const gifsToLoad = [...gifSequence.map(g => g.src), "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/ATH1/ATH1_en_patineta.gif"];
+            
+            await Promise.all(gifsToLoad.map(preloadImage));
+
+            // Ocultar loader y comenzar experiencia
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { 
+                    loader.style.display = 'none'; 
+                    typeWriterEffect();
+                }, 500);
+            } else {
+                typeWriterEffect();
+            }
+        });
+    </script>
+</body>
+</html>

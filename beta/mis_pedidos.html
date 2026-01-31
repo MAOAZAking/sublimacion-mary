@@ -10,9 +10,13 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "../js/three.module.js"
+            }
+        }
+    </script>
     <script>
         // SEGURIDAD: Verificar si el cliente inició sesión (pasó por el index)
         if (!sessionStorage.getItem('clienteLogueado')) {
@@ -103,14 +107,41 @@
         .btn-green { background: linear-gradient(135deg, #55efc4, #00b894); }
 
         .feedback-form {
-            pointer-events: auto; background: white; padding: 15px; border-radius: 8px;
-            display: flex; flex-direction: column; width: 80%; max-width: 300px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            position: absolute; top: 50%; transform: translateY(-50%); /* Centrado */
+            pointer-events: auto; 
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px; 
+            border-radius: 20px;
+            display: flex; 
+            flex-direction: column; 
+            width: 90%; 
+            max-width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            position: absolute; 
+            top: 50%; 
+            right: 20px; 
+            left: auto;
+            transform: translateY(-50%);
+            z-index: 1003;
         }
         .feedback-form textarea {
-            width: 100%; height: 80px; margin-bottom: 10px; padding: 8px; box-sizing: border-box;
-            border: 1px solid #ddd; border-radius: 4px; resize: none; font-family: inherit;
+            width: 100%; 
+            height: 120px; 
+            margin-bottom: 15px; 
+            padding: 15px; 
+            box-sizing: border-box;
+            border: 2px solid #333; 
+            border-radius: 12px; 
+            resize: none; 
+            font-family: 'Poppins', sans-serif;
+            background: #2d2d2d;
+            color: white;
+            font-size: 0.95rem;
+        }
+        .feedback-form textarea:focus {
+            outline: none;
+            border-color: #9b59b6;
         }
     </style>
 </head>
@@ -145,8 +176,8 @@
         <!-- Formulario de cambio (oculto al inicio) -->
         <div id="feedbackForm" class="feedback-form" style="display: none;">
             <textarea id="cambioTexto" placeholder="Describe qué te gustaría modificar..."></textarea>
-            <button onclick="enviarSolicitudCambio()" style="background: #007bff; color: white; padding: 10px; border: none; border-radius: 5px; margin-bottom: 5px; cursor: pointer;">Enviar solicitud</button>
-            <button onclick="cancelarCambio()" style="background: #666; color: white; padding: 5px; border: none; border-radius: 5px; cursor: pointer;">Cancelar</button>
+            <button onclick="enviarSolicitudCambio()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 12px; border: none; border-radius: 50px; margin-bottom: 10px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);">Enviar solicitud</button>
+            <button onclick="cancelarCambio()" style="background: transparent; color: #b0b0b0; padding: 8px; border: 1px solid #333; border-radius: 50px; cursor: pointer;">Cancelar</button>
         </div>
 
         <div id="feedbackButtons" class="feedback-buttons">
@@ -162,7 +193,12 @@
     </div>
 </div>
 
-<script>
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from '../js/OrbitControls.js';
+    import { GLTFLoader } from '../js/GLTFLoader.js';
+
+
     window.addEventListener('load', function() {
         const loader = document.getElementById('global-loader');
         if (loader) {
@@ -249,10 +285,12 @@
     let renderer, scene, camera, controls, animationId;
     let feedbackTimer;
     let currentPedidoData = null;
+    let isModelShifted = false;
 
     function abrirModal(pedido) {
         // Limpiar timer previo incondicionalmente para evitar que salte en pedidos ya aceptados
         if (feedbackTimer) clearTimeout(feedbackTimer);
+        isModelShifted = false;
 
         currentPedidoData = pedido;
         const modal = document.getElementById('imageModal');
@@ -278,10 +316,13 @@
             // Determinar URLs
             let urls = { frontal: null, espaldar: null };
             if (pedido.imagenes) {
-                urls = pedido.imagenes;
+                urls = {
+                    frontal: pedido.imagenes.frontal ? pedido.imagenes.frontal.trim() : null,
+                    espaldar: (pedido.imagenes.espaldar || pedido.imagenes.trasera) ? (pedido.imagenes.espaldar || pedido.imagenes.trasera).trim() : null
+                };
             } else {
                 if (pedido.imagen_url.includes('frontal')) urls.frontal = pedido.imagen_url;
-                else if (pedido.imagen_url.includes('espaldar')) urls.espaldar = pedido.imagen_url;
+                else if (pedido.imagen_url.includes('espaldar') || pedido.imagen_url.includes('trasera')) urls.espaldar = pedido.imagen_url;
                 else urls.frontal = pedido.imagen_url;
             }
             init3DCamiseta(urls, container3D);
@@ -321,7 +362,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
         container.appendChild(renderer.domElement);
 
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -390,292 +431,43 @@
         animate();
     }
 
-    function init3DCamiseta(urls, container) {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+     async function init3DCamiseta(urls, container) {
+        const loaderElement = document.getElementById('global-loader');
+        if (loaderElement) {
+            loaderElement.style.display = 'flex';
+            setTimeout(() => { loaderElement.style.opacity = '1'; }, 10);
+        }
 
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x333333);
+        container.innerHTML = '';
 
-        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-        camera.position.set(0, 0, 14);
-
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(width, height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
-        container.appendChild(renderer.domElement);
-
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-        dirLight.position.set(5, 10, 7);
-        scene.add(dirLight);
-
-        // Mostrar mensaje si solo hay espaldar
         if (!urls.frontal && urls.espaldar) {
             document.getElementById('rotationMsg').style.display = 'block';
         }
 
-        const loader = new THREE.TextureLoader();
-        loader.setCrossOrigin('anonymous');
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-        const loadTexture = (url) => {
-            return new Promise((resolve) => {
-                if (!url) resolve(null);
-                else loader.load(url, resolve, undefined, () => resolve(null));
-            });
-        };
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xb3b3b3);
 
-        Promise.all([
-            loadTexture(urls.frontal),
-            loadTexture(urls.espaldar)
-        ]).then(([texFront, texBack]) => {
+        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 1, 3);
 
-            const createMat = (tex) => {
-                if (!tex) return null;
-                tex.wrapS = THREE.ClampToEdgeWrapping;
-                tex.wrapT = THREE.ClampToEdgeWrapping;
-                return new THREE.MeshStandardMaterial({ 
-                    map: tex, 
-                    side: THREE.FrontSide,
-                    roughness: 0.5,
-                    transparent: true,
-                    polygonOffset: true,
-                    polygonOffsetFactor: -4,
-                    polygonOffsetUnits: -4
-                });
-            };
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        container.appendChild(renderer.domElement);
 
-            const whiteMat = new THREE.MeshStandardMaterial({ 
-                color: 0xffffff, 
-                roughness: 0.5 
-            });
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.target.set(0, 1, 0);
 
-            // 1. Cuerpo (Torso Humanoide)
-            // Rotamos la costura hacia atrás (3*PI/2) para que el centro de la textura (U=0.5) quede al FRENTE (+Z)
-            const bodyGeo = new THREE.CylinderGeometry(2.3, 2.3, 7.2, 64, 64, false, 3 * Math.PI / 2, 2 * Math.PI);
-            
-            // Función de deformación compartida
-            function applyDeformation(geometry) {
-                const pos = geometry.attributes.position;
-                const v = new THREE.Vector3();
-                
-                for (let i = 0; i < pos.count; i++) {
-                    v.fromBufferAttribute(pos, i);
-                const y = v.y; // -3.25 a +3.25
-
-                // Simular elevación de perfil (montaña vista de lado)
-                if (y > 1.5) {
-                    const zNorm = Math.abs(v.z) / 2.3; // Usar Z para vista de perfil
-                    const rise = (1.0 - zNorm * zNorm) * (y - 1.5) * 0.086;
-                    v.y += rise;
-                }
-
-                // Simular elevación de hombros desde el borde externo (Trapecios continuos)
-                if (y > 1.5) {
-                    const xAbs = Math.abs(v.x);
-                    const peakX = 0.6; // Donde termina el hombro y empieza el cuello
-                    const edgeX = 2.3; // Borde exterior del cuerpo
-                    
-                    // Curva que va desde 0 en el borde hasta 1 en el cuello
-                    const t = Math.max(0, (edgeX - xAbs) / (edgeX - peakX));
-                    const smoothT = 1 - Math.pow(1 - t, 2); // Suavizar la transición para evitar puntas
-                    const factor = (xAbs > peakX) ? (0.85 + 0.15 * smoothT) : 1.0;
-                    
-                    const riseX = factor * (y - 1.5) * 0.25;
-                    v.y += riseX;
-                }
-
-                // A. Silueta (Cintura vs Hombros)
-                let widthFactor = 1.0;
-                if (y > 1.0) {
-                    // Forma de hombros redondeada (sin punta)
-                    if (y < 3.15) {
-                        // Curva suave (parábola) en lugar de línea recta para un acabado más limpio
-                        const t = (y - 1.0) / 2.15;
-                        widthFactor = 1.0 + (t * (2 - t)) * 0.1;
-                    } else {
-                        // Reducir ancho para unirse a la dona (cuello)
-                        const baseW = 1.0 + 0.10;
-                        const t = (y - 3.15) / 0.5;
-                        // Cierre suave sin forzar puntos de referencia
-                        widthFactor = baseW * (1.0 - t * t * 0.5);
-                    }
-                } else if (y > 0.5) {
-                    // Suavizar transición de pecho (1.0) a cintura (0.95) para evitar corte en la imagen
-                    const t = (1.0 - y) / 0.5;
-                    widthFactor = 1.0 - (t * 0.05);
-                } else {
-                    widthFactor = 0.95;
-                }
-
-                // B. Volumen Pecho y Corrección Tórax
-                let zOffset = 0;
-                if (v.z > 0) {
-                    // Escalar profundidad (Z)
-                    let zScale = 0.75; // Base para el pecho (se mantiene igual)
-                    v.z *= zScale;
-
-                    // Volumen Pectoral
-                    if (y > 0.0 && y < 3.0) {
-                        // Curva única suave centrada en el pecho alto (y=2.0)
-                        // Cae gradualmente hasta el abdomen (y=0) sin bultos intermedios
-                        const peakY = 2.0;
-                        const dist = Math.abs(y - peakY);
-                        const range = (y < peakY) ? 2.0 : 1.0; // Caída larga y suave hacia abajo
-                        
-                        if (dist < range) {
-                            const t = dist / range;
-                            // Curva coseno suave: 1 en el pico, 0 en los extremos (liso)
-                            const shape = (1 + Math.cos(t * Math.PI)) * 0.5;
-                            zOffset += 0.35 * shape;
-                        }
-                    }
-                } else {
-                    // Espalda plana
-                    v.z *= 0.5;
-                }
-
-                // Cierre del cuello en Z (Profundidad)
-                if (y > 3.0) {
-                    const t = (y - 3.0) / 0.6;
-                    // Cierre suave en Z sin puntos fijos
-                    v.z *= (1.0 - t * 0.2);
-                }
-
-                v.x *= widthFactor;
-                v.z += zOffset;
-                
-                    pos.setXYZ(i, v.x, v.y, v.z);
-                }
-                geometry.computeVertexNormals();
-            }
-
-            // Aplicar deformación al cuerpo base
-            applyDeformation(bodyGeo);
-
-            // --- CREAR RECUBRIMIENTOS (Parches limpios) ---
-            // Parámetros del parche: Radio 2.3, Altura 4.6 (60% aprox), Segmento de cilindro (70% ancho)
-            const patchHeight = 4.6;
-            const patchArc = 1.8; // Radianes (aprox 100 grados) para cubrir el frente
-            
-            // Frente: Centrado en +Z (Angulo 0)
-            const frontGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, -patchArc/2, patchArc);
-            frontGeo.translate(0, 0.5, 0); // Centrar verticalmente en el pecho (y=0.5)
-            applyDeformation(frontGeo); // Deformar igual que el cuerpo
-            remapUVs(frontGeo);
-
-            // Espalda: Centrado en -Z (Angulo PI)
-            const backGeo = new THREE.CylinderGeometry(2.3, 2.3, patchHeight, 64, 16, true, Math.PI - patchArc/2, patchArc);
-            backGeo.translate(0, 0.5, 0);
-            applyDeformation(backGeo);
-            remapUVs(backGeo);
-
-            // Función para remapear UVs
-            function remapUVs(geometry) {
-                const uv = geometry.attributes.uv;
-                let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
-                for (let i = 0; i < uv.count; i++) {
-                    minU = Math.min(minU, uv.getX(i)); maxU = Math.max(maxU, uv.getX(i));
-                    minV = Math.min(minV, uv.getY(i)); maxV = Math.max(maxV, uv.getY(i));
-                }
-                for (let i = 0; i < uv.count; i++) {
-                    uv.setXY(i, (uv.getX(i) - minU) / (maxU - minU), (uv.getY(i) - minV) / (maxV - minV));
-                }
-                uv.needsUpdate = true;
-            }
-
-            // Inflar los recubrimientos para que no se oculten (Offset)
-            function inflateGeometry(geo, offset) {
-                const pos = geo.attributes.position;
-                const norm = geo.attributes.normal;
-                const v = new THREE.Vector3();
-                const n = new THREE.Vector3();
-                for (let i = 0; i < pos.count; i++) {
-                    v.fromBufferAttribute(pos, i);
-                    n.fromBufferAttribute(norm, i);
-                    v.addScaledVector(n, offset);
-                    pos.setXYZ(i, v.x, v.y, v.z);
-                }
-            }
-            inflateGeometry(frontGeo, 0.01); // Pegado al cuerpo (mínima separación)
-            inflateGeometry(backGeo, 0.01);
-            
-            bodyGeo.translate(0, -0.5, 0);
-            frontGeo.translate(0, -0.5, 0);
-            backGeo.translate(0, -0.5, 0);
-
-            // 3. Mangas (Cilindros rotados)
-            // Geometría cónica y segmentada para deformación
-            const sleeveGeoL = new THREE.CylinderGeometry(0.6, 1.15, 2.7, 32, 10);
-            const posL = sleeveGeoL.attributes.position;
-            const vL = new THREE.Vector3();
-            for (let i = 0; i < posL.count; i++) {
-                vL.fromBufferAttribute(posL, i);
-                // Curvar la parte superior hacia adentro para conectar con el hombro
-                if (vL.y > 0) {
-                    const t = vL.y / 1.35; 
-                    vL.x -= t * 0.4; // Curva hacia el cuerpo
-                    vL.z *= 1.0 + (t * 0.3); // Más volumen en el deltoides
-                }
-                posL.setXYZ(i, vL.x, vL.y, vL.z);
-            }
-            sleeveGeoL.scale(1, 1, 0.7);
-            sleeveGeoL.translate(0, -1.35, 0); // Pivote arriba
-            sleeveGeoL.rotateZ(Math.PI / 4.5);
-            sleeveGeoL.translate(2.2, 3.25, 0); // Posición alta en el hombro
-
-            const sleeveGeoR = new THREE.CylinderGeometry(0.6, 1.15, 2.7, 32, 10);
-            const posR = sleeveGeoR.attributes.position;
-            const vR = new THREE.Vector3();
-            for (let i = 0; i < posR.count; i++) {
-                vR.fromBufferAttribute(posR, i);
-                // Espejo para el otro lado
-                if (vR.y > 0) {
-                    const t = vR.y / 1.35;
-                    vR.x += t * 0.4; // Curva hacia el cuerpo (lado opuesto)
-                    vR.z *= 1.0 + (t * 0.3);
-                }
-                posR.setXYZ(i, vR.x, vR.y, vR.z);
-            }
-            sleeveGeoR.scale(1, 1, 0.7);
-            sleeveGeoR.translate(0, -1.35, 0);
-            sleeveGeoR.rotateZ(-Math.PI / 4.5);
-            sleeveGeoR.translate(-2.2, 3.25, 0);
-
-            // 4. Cuello (Dona)
-            const neckGeo = new THREE.TorusGeometry(1.6, 0.12, 12, 48);
-            neckGeo.rotateX(Math.PI / 2);
-            neckGeo.scale(0.85, 1, 0.65);
-            neckGeo.translate(0, 3.5, 0.3);
-
-            // 5. Unir todo en un solo modelo
-            // Unimos primero las partes blancas (Mangas + Cuello)
-            const extrasGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([sleeveGeoL, sleeveGeoR, neckGeo]);
-            extrasGeo.clearGroups();
-            extrasGeo.addGroup(0, extrasGeo.index.count, 1); // Mat 1: Blanco
-            
-            // Verificar si BufferGeometryUtils cargó correctamente
-            if (THREE.BufferGeometryUtils) {
-                // Unir Cuerpo (Grupo 0) con Extras (Grupo 1)
-                const finalGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([bodyGeo, extrasGeo], true);
-                
-                // 1. Camisa Base (Blanca completa)
-                const shirtBase = new THREE.Mesh(finalGeo, whiteMat);
-                scene.add(shirtBase);
-
-                // 2. Recubrimiento Frontal
-                const matFront = createMat(texFront) || whiteMat;
-                if (texFront) scene.add(new THREE.Mesh(frontGeo, matFront));
-
-                // 3. Recubrimiento Trasero
-                const matBack = createMat(texBack) || whiteMat;
-                if (texBack) scene.add(new THREE.Mesh(backGeo, matBack));
-            }
-        });
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
 
         const animate = function () {
             animationId = requestAnimationFrame(animate);
@@ -683,6 +475,169 @@
             renderer.render(scene, camera);
         };
         animate();
+
+        const loadImage = (src) => new Promise((resolve) => {
+            if (!src) return resolve(null);
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = src.startsWith('data:') ? src : (src + (src.includes('?') ? '&' : '?') + 't=' + new Date().getTime());
+            img.onload = () => resolve(img);
+            img.onerror = () => { console.error("Error cargando imagen:", src); resolve(null); };
+        });
+
+        const [frontImg, backImg] = await Promise.all([
+            loadImage(urls.frontal),
+            loadImage(urls.espaldar)
+        ]);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = 1024;
+        canvas.width = size;
+        canvas.height = size;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+
+        const drawImageOnCanvas = (img, offsetX, offsetY) => {
+            const maxAllowedWidth = 307;
+            const maxAllowedHeight = 307;
+
+            const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
+            const drawWidth = img.width * scale;
+            const drawHeight = img.height * scale;
+
+            const x = ((size - drawWidth) / 2) + offsetX;
+            const y = ((size * 0.4) - (drawHeight / 2)) + offsetY;
+
+            ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        };
+
+        if (frontImg) {
+            drawImageOnCanvas(frontImg, -240, 250);
+        }
+        if (backImg) {
+            drawImageOnCanvas(backImg, 272, 250);
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.flipY = false;
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const gltfLoader = new GLTFLoader();
+        let currentModel;
+
+        const loadModel = (gender) => {
+            if (loaderElement) { loaderElement.style.display = 'flex'; loaderElement.style.opacity = '1'; }
+
+            const productType = 'camiseta';
+            const modelPath = `../modelo_3d/${gender}/modelo_3d_${gender}_${productType}.glb`;
+
+            gltfLoader.load(modelPath, (gltf) => {
+                if (currentModel) {
+                    scene.remove(currentModel);
+                }
+                currentModel = gltf.scene;
+
+                let targetMesh = currentModel;
+
+                currentModel.traverse((child) => {
+                    if (child.isMesh && child.material && child.material.name === 'Wolf3D_Outfit_Top') {
+                        const material = child.material;
+                        material.map = texture;
+                        material.metalness = 0;
+                        material.roughness = 1;
+                        material.needsUpdate = true;
+                        targetMesh = child;
+                    }
+                });
+
+                scene.add(currentModel);
+
+                // Usar el modelo completo para calcular la caja delimitadora correcta
+                const box = new THREE.Box3().setFromObject(currentModel);
+                const size = new THREE.Vector3();
+                box.getSize(size);
+                const center = box.getCenter(new THREE.Vector3());
+                
+                // Calcular posición del pecho (aprox 75% de la altura total)
+                const chestY = box.min.y + (size.y * 0.75);
+
+                controls.target.set(center.x, chestY, center.z);
+                // Ajustar cámara: Distancia proporcional a la altura del modelo
+                camera.position.set(center.x, chestY, box.max.z + (size.y * 0.6));
+                controls.update();
+
+                //////////////////////// CAMARA EN TODO EL MODELO 3D ////////////////////////
+                // Ajustar foco: Usar centro de la camiseta y bajar ligeramente (10% de su altura) para encuadrar mejor
+                //center.y -= size.y * -3.5;
+
+                //controls.target.copy(center);
+                // Distancia dinámica: Se adapta si el modelo es grande (cm) o pequeño (m) para llenar la pantalla
+                //camera.position.set(center.x, center.y, center.z + (size.y * 10.5));
+                //controls.update();
+
+                if (loaderElement) {
+                    loaderElement.style.opacity = '0';
+                    setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+                }
+            }, undefined, (error) => {
+                console.error('Error loading 3D model:', error);
+                container.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>No se pudo cargar el archivo: ${modelPath}</div>`;
+                if (loaderElement) { loaderElement.style.opacity = '0'; setTimeout(() => { loaderElement.style.display = 'none'; }, 500); }
+            });
+        };
+
+        let currentGender = 'hombre';
+        loadModel(currentGender);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.id = 'genderToggleBtn';
+        Object.assign(toggleBtn.style, {
+            position: 'absolute',
+            left: '20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: '1005',
+            padding: '10px 15px',
+            borderRadius: '50px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: '600',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.3s',
+            fontSize: '0.9rem'
+        });
+
+        const updateButton = () => {
+            if (currentGender === 'hombre') {
+                toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
+                toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
+                toggleBtn.style.border = '2px solid #d500f9';
+                toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
+            } else {
+                toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
+                toggleBtn.style.background = 'rgba(0, 0, 255, 0.3)';
+                toggleBtn.style.border = '2px solid #0000ff';
+                toggleBtn.style.boxShadow = '0 0 15px rgba(0, 0, 255, 0.5)';
+            }
+        };
+        updateButton();
+
+        toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            currentGender = currentGender === 'hombre' ? 'mujer' : 'hombre';
+            loadModel(currentGender);
+            updateButton();
+        };
+
+        toggleBtn.onmouseover = () => { toggleBtn.style.filter = 'brightness(1.2)'; };
+        toggleBtn.onmouseout = () => { toggleBtn.style.filter = 'brightness(1)'; };
+
+        container.appendChild(toggleBtn);
     }
 
     function cerrarModal() {
@@ -711,11 +666,47 @@
         document.getElementById('feedbackButtons').style.display = 'none';
         document.getElementById('feedbackForm').style.display = 'flex';
         document.getElementById('cambioTexto').focus();
+        const genderBtn = document.getElementById('genderToggleBtn');
+        if (genderBtn) genderBtn.style.display = 'none';
+
+        // Mover modelo a la izquierda (Mover cámara a la derecha)
+        if (!isModelShifted && controls && camera) {
+            animateCameraShift(3.5); // Desplazamiento positivo en X mueve la vista a la derecha (modelo a la izquierda)
+            isModelShifted = true;
+        }
     }
 
     function cancelarCambio() {
         document.getElementById('feedbackForm').style.display = 'none';
         document.getElementById('feedbackButtons').style.display = 'flex';
+        const genderBtn = document.getElementById('genderToggleBtn');
+        if (genderBtn) genderBtn.style.display = 'flex';
+
+        // Restaurar modelo
+        if (isModelShifted && controls && camera) {
+            animateCameraShift(-3.5);
+            isModelShifted = false;
+        }
+    }
+
+    function animateCameraShift(offset) {
+        if (!controls || !camera) return;
+        const startX = controls.target.x;
+        const endX = startX + offset;
+        const camStartX = camera.position.x;
+        const camEndX = camStartX + offset;
+        const duration = 500;
+        const startTime = Date.now();
+        function update() {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            controls.target.x = startX + (endX - startX) * ease;
+            camera.position.x = camStartX + (camEndX - camStartX) * ease;
+            controls.update();
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        update();
     }
 
     async function getAdminEmail() {
@@ -824,6 +815,15 @@
         sessionStorage.removeItem('clienteLogueado');
         window.location.href = 'index.html';
     }
+
+    // Exponer funciones al scope global para los `onclick` del HTML
+    window.cerrarSesionCliente = cerrarSesionCliente;
+    window.abrirModal = abrirModal;
+    window.cerrarModal = cerrarModal;
+    window.mostrarFormularioCambio = mostrarFormularioCambio;
+    window.cancelarCambio = cancelarCambio;
+    window.enviarMeEncanta = enviarMeEncanta;
+    window.enviarSolicitudCambio = enviarSolicitudCambio;
 </script>
 
 </body>

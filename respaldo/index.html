@@ -150,7 +150,7 @@
                     sessionStorage.setItem('adminLogueado', 'true');
                     sessionStorage.setItem('currentUser', input); // Guardar usuario para usarlo después
                     if (data.email) sessionStorage.setItem('adminEmail', data.email);
-                    window.location.href = data.redirectUrl || '../bienvenida_majo.html';
+                    window.location.href = data.redirectUrl || 'bienvenida_majo.html';
                     return;
                 }
 
