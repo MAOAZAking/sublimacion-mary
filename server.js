@@ -217,7 +217,7 @@ app.post('/api/pedidos', upload.fields([
             return res.status(400).json({ success: false, error: 'Para camisetas, es obligatorio subir la plantilla (.ai).' });
         }
 
-        const validateCamiseta = (file) => {
+        const validateCamiseta = (file, nombreArchivo) => {
             const dim = sizeOf(file.path);
             // Dimensiones máximas (Aprox A4 300dpi)
             const maxW = 2482; 
@@ -225,13 +225,13 @@ app.post('/api/pedidos', upload.fields([
             const tolerance = 20; // Pequeña tolerancia
 
             if (dim.width > (maxW + tolerance) || dim.height > (maxH + tolerance)) {
-                throw new Error(`Dimensiones excedidas. Máximo permitido aprox: ${maxW}x${maxH} px. Recibido: ${dim.width}x${dim.height} px`);
+                throw new Error(`Error en ${nombreArchivo}: Dimensiones excedidas. Máximo permitido aprox: ${maxW}x${maxH} px. Recibido: ${dim.width}x${dim.height} px`);
             }
         };
 
         try {
-            if (files.lamina_frontal) validateCamiseta(files.lamina_frontal[0]);
-            if (files.lamina_espaldar) validateCamiseta(files.lamina_espaldar[0]);
+            if (files.lamina_frontal) validateCamiseta(files.lamina_frontal[0], "Lámina Frontal");
+            if (files.lamina_espaldar) validateCamiseta(files.lamina_espaldar[0], "Lámina Espaldar");
         } catch (err) {
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
             if (files.lamina_espaldar) try { fs.unlinkSync(files.lamina_espaldar[0].path); } catch(e){}
@@ -254,12 +254,12 @@ app.post('/api/pedidos', upload.fields([
             if (Math.abs(dimensions.width - targetW) > tolerance || Math.abs(dimensions.height - targetH) > tolerance) {
                 fs.unlinkSync(files.imagen[0].path);
                 fs.unlinkSync(files.plantilla[0].path);
-                return res.status(400).json({ success: false, error: `Dimensiones incorrectas. Se espera aprox ${targetW}x${targetH} px (±${tolerance}px). Recibido: ${dimensions.width}x${dimensions.height} px` });
+                return res.status(400).json({ success: false, error: `Error en Lámina del Mug: Dimensiones incorrectas. Se espera aprox ${targetW}x${targetH} px (±${tolerance}px). Recibido: ${dimensions.width}x${dimensions.height} px` });
             }
         } catch (err) {
             try { fs.unlinkSync(files.imagen[0].path); } catch(e){}
             try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
-            return res.status(400).json({ success: false, error: 'El archivo de imagen no es válido: ' + err.message });
+            return res.status(400).json({ success: false, error: 'Error en Lámina del Mug: El archivo de imagen no es válido: ' + err.message });
         }
     }
 
