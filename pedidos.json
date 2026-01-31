@@ -94,5 +94,17 @@
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_3/lamina_frontal_camiseta_3.png",
             "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_3/lamina_espaldar_camiseta_3.png"
         }
+    },
+    {
+        "telefono": "603013748",
+        "producto": "Camiseta Estampada",
+        "fecha": "30/01/2026 17:40:07",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
+        "imagenes": {
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
+            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_espaldar_camiseta_4.jpg"
+        },
+        "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/foto_usada_en_camiseta_4.jpg"
     }
 ]
