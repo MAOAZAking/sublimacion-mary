@@ -422,7 +422,7 @@
             newTexture.needsUpdate = true;
 
             const gltfLoader = new GLTFLoader();
-            gltfLoader.load('../modelo_3d/modelo_3d_mug_separado_solo.glb', (gltf) => {
+            gltfLoader.load('../modelo_3d/modelo_3d_mug.glb', (gltf) => {
                 const model = gltf.scene;
 
                 // Configurar Cámara si el GLB la incluye
@@ -496,7 +496,7 @@
                 }
             }, undefined, (error) => {
                 console.error('Error loading mug model:', error);
-                container.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>No se pudo cargar el archivo: ../modelo_3d/modelo_3d_mug_separado_solo.glb</div>`;
+                container.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>No se pudo cargar el archivo: ../modelo_3d/modelo_3d_mug.glb</div>`;
                 if (loaderElement) { loaderElement.style.opacity = '0'; setTimeout(() => { loaderElement.style.display = 'none'; }, 500); }
             });
         });
