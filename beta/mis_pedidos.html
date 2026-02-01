@@ -348,6 +348,12 @@
     }
 
     function init3DMug(imageUrl, container) {
+        const loaderElement = document.getElementById('global-loader');
+        if (loaderElement) {
+            loaderElement.style.display = 'flex';
+            setTimeout(() => { loaderElement.style.opacity = '1'; }, 10);
+        }
+
         const width = window.innerWidth;
         const height = window.innerHeight;
 
@@ -355,73 +361,22 @@
         scene.background = new THREE.Color(0x333333);
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-        camera.position.set(0, 0, 11); // Alejar cámara para que ocupe aprox 70% del alto
+        camera.position.set(0, 0, 10); // Posición inicial más cercana
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
-
-        // Crear Mug
-        const geometry = new THREE.CylinderGeometry(2.5, 2.5, 6, 64);
-        const loader = new THREE.TextureLoader();
-        loader.setCrossOrigin('anonymous');
-        
-        loader.load(imageUrl, (texture) => {
-            // Crear canvas para añadir espacio blanco (gap) alrededor de la oreja
-            const img = texture.image;
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            // Definir porcentajes de cobertura (Ancho y Alto)
-            const widthCoverage = 0.75289575289;
-            const heightCoverage = 0.79797979798;
-
-            const canvasWidth = img.width / widthCoverage;
-            const canvasHeight = img.height / heightCoverage;
-
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-
-            // Fondo blanco
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-            // Dibujar imagen centrada
-            const offsetX = (canvasWidth - img.width) / 2;
-            const offsetY = (canvasHeight - img.height) / 2;
-            ctx.drawImage(img, offsetX, offsetY, img.width, img.height);
-
-            const newTexture = new THREE.CanvasTexture(canvas);
-
-            const materials = [
-                new THREE.MeshStandardMaterial({ map: newTexture }), // Lado (Imagen)
-                new THREE.MeshStandardMaterial({ color: 0xffffff }), // Arriba
-                new THREE.MeshStandardMaterial({ color: 0xffffff })  // Abajo
-            ];
-            const cylinder = new THREE.Mesh(geometry, materials);
-            
-            // Rotar el cilindro -90 grados para que la costura (espacio blanco) quede en +X (donde está la oreja)
-            cylinder.rotation.y = Math.PI / 2;
-            
-            scene.add(cylinder);
-        });
-
-        // Oreja del Mug
-        const handleGeom = new THREE.TorusGeometry(1.5, 0.3, 16, 100);
-        const handleMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-        const handle = new THREE.Mesh(handleGeom, handleMat);
-        handle.position.set(2.8, 0, 0); // Posicionar al lado
-        scene.add(handle);
 
         const animate = function () {
             animationId = requestAnimationFrame(animate);
@@ -429,6 +384,122 @@
             renderer.render(scene, camera);
         };
         animate();
+
+        const texLoader = new THREE.TextureLoader();
+        texLoader.setCrossOrigin('anonymous');
+
+        texLoader.load(imageUrl, (texture) => {
+            // Crear canvas para añadir márgenes y color realista
+            const img = texture.image;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Ajuste de dimensiones para centrar la lámina y dejar márgenes (oreja, bordes, interior)
+            const horizontalRatio = 0.70; // La imagen ocupa el 70% del ancho (espacio para oreja)
+            const verticalRatio = 0.85;   // La imagen ocupa el 85% del alto (espacio para bordes)
+
+            const canvasWidth = img.width / horizontalRatio;
+            const canvasHeight = img.height / verticalRatio;
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // Fondo blanco cerámica
+            ctx.fillStyle = '#F5F5F5'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar imagen centrada
+            const x = (canvasWidth - img.width) / 2;
+            // Centrar imagen verticalmente para asegurar visibilidad
+            const y = (canvasHeight - img.height) / 2;
+            ctx.drawImage(img, x, y, img.width, img.height);
+
+            const newTexture = new THREE.CanvasTexture(canvas);
+            newTexture.flipY = false;
+            newTexture.wrapS = THREE.RepeatWrapping; // Permitir rotación
+            newTexture.offset.x = 0.5; // Rotar 180° para mover el diseño al lado opuesto de la oreja
+            newTexture.colorSpace = THREE.SRGBColorSpace;
+            newTexture.needsUpdate = true;
+
+            const gltfLoader = new GLTFLoader();
+            gltfLoader.load('../modelo_3d/modelo_3d_mug_separado_solo.glb', (gltf) => {
+                const model = gltf.scene;
+
+                // Configurar Cámara si el GLB la incluye
+                if (gltf.cameras && gltf.cameras.length > 0) {
+                    const cam = gltf.cameras[0];
+                    camera.position.copy(cam.position);
+                    camera.rotation.copy(cam.rotation);
+                    camera.fov = cam.fov;
+                    camera.updateProjectionMatrix();
+                } else {
+                    // Si no hay cámara, calcular foco automático
+                    const box = new THREE.Box3().setFromObject(model);
+                    const size = box.getSize(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
+                    
+                    model.position.sub(center); // Centrar modelo
+                    
+                    // Ajustar distancia de cámara según tamaño del objeto
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const fov = camera.fov * (Math.PI / 180);
+                    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                    camera.position.set(0, 0, cameraZ * 2.5); // Factor de zoom (ajustable)
+                    camera.lookAt(0, 0, 0);
+                }
+
+                // Recolectar todos los meshes
+                let meshes = [];
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+                        meshes.push(child);
+                    }
+                });
+
+                console.log("Meshes encontrados:");
+                meshes.forEach(m => console.log(m.name));
+
+                // Estrategia 1: Buscar por nombre (contiene 'mug' y NO 'oreja')
+                let bodyMesh = meshes.find(m => {
+                    const name = (m.name || '').toLowerCase();
+                    return name.includes('mug') && !name.includes('oreja');
+                });
+
+                // Estrategia 2: Si falla el nombre, usar el mesh más grande (Volumen)
+                if (!bodyMesh && meshes.length > 0) {
+                    meshes.sort((a, b) => {
+                        const getVol = (m) => {
+                            const s = new THREE.Vector3();
+                            m.geometry.boundingBox.getSize(s);
+                            return s.x * s.y * s.z;
+                        };
+                        return getVol(b) - getVol(a);
+                    });
+                    bodyMesh = meshes[0];
+                }
+
+                // Aplicar materiales
+                meshes.forEach(m => {
+                    if (m === bodyMesh) {
+                        m.material = new THREE.MeshStandardMaterial({ map: newTexture, color: 0xffffff, roughness: 0.3, metalness: 0.1 });
+                    } else {
+                        m.material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1 });
+                    }
+                });
+
+                scene.add(model);
+
+                if (loaderElement) {
+                    loaderElement.style.opacity = '0';
+                    setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+                }
+            }, undefined, (error) => {
+                console.error('Error loading mug model:', error);
+                container.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>No se pudo cargar el archivo: ../modelo_3d/modelo_3d_mug_separado_solo.glb</div>`;
+                if (loaderElement) { loaderElement.style.opacity = '0'; setTimeout(() => { loaderElement.style.display = 'none'; }, 500); }
+            });
+        });
     }
 
      async function init3DCamiseta(urls, container) {
