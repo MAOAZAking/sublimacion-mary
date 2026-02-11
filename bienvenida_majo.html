@@ -598,7 +598,7 @@
                 return;
             }
 
-            if (!email || !email.includes('@.')) {
+            if (!email || !email.includes('@') || !email.includes('.')) {
                 errorDiv.textContent = 'Por favor ingresa un correo válido.';
                 errorDiv.style.display = 'block';
                 shakeModal();
