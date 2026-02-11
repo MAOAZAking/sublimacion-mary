@@ -805,7 +805,6 @@
         scene.add(fillLight);
 
         // Crear Mug
-        const geometry = new THREE.CylinderGeometry(2.5, 2.5, 6, 64);
         const loader = new THREE.TextureLoader();
         loader.setCrossOrigin('anonymous');
         
@@ -833,16 +832,42 @@
             const newTexture = new THREE.CanvasTexture(canvas);
             newTexture.colorSpace = THREE.SRGBColorSpace;
 
-            const materials = [
-                new THREE.MeshStandardMaterial({ map: newTexture }), 
-                new THREE.MeshStandardMaterial({ color: 0xffffff }), 
-                new THREE.MeshStandardMaterial({ color: 0xffffff })  
-            ];
-            const cylinder = new THREE.Mesh(geometry, materials);
+            const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+
+            // 1. Cilindro Exterior (Imagen)
+            const outerGeo = new THREE.CylinderGeometry(2.5, 2.5, 6, 64, 1, true);
+            const outerMat = new THREE.MeshStandardMaterial({ map: newTexture });
+            const outerCyl = new THREE.Mesh(outerGeo, outerMat);
+            outerCyl.rotation.y = Math.PI / 2;
+            scene.add(outerCyl);
+
+            // 2. Cilindro Interior (Hueco)
+            const innerGeo = new THREE.CylinderGeometry(2.3, 2.3, 5.8, 64, 1, true);
+            const innerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 0.3 });
+            const innerCyl = new THREE.Mesh(innerGeo, innerMat);
+            innerCyl.position.y = 0.1;
+            scene.add(innerCyl);
+
+            // 3. Borde Superior (Rim)
+            const rimGeo = new THREE.RingGeometry(2.3, 2.5, 64);
+            const rimMesh = new THREE.Mesh(rimGeo, whiteMat);
+            rimMesh.rotation.x = -Math.PI / 2;
+            rimMesh.position.y = 3;
+            scene.add(rimMesh);
             
-            cylinder.rotation.y = Math.PI / 2;
-            
-            scene.add(cylinder);
+            // 4. Fondo Interior
+            const innerBottomGeo = new THREE.CircleGeometry(2.3, 64);
+            const innerBottomMesh = new THREE.Mesh(innerBottomGeo, whiteMat);
+            innerBottomMesh.rotation.x = -Math.PI / 2;
+            innerBottomMesh.position.y = -2.8;
+            scene.add(innerBottomMesh);
+
+            // 5. Fondo Exterior
+            const bottomGeo = new THREE.CircleGeometry(2.5, 64);
+            const bottomMesh = new THREE.Mesh(bottomGeo, whiteMat);
+            bottomMesh.rotation.x = Math.PI / 2;
+            bottomMesh.position.y = -3;
+            scene.add(bottomMesh);
         });
 
         const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
