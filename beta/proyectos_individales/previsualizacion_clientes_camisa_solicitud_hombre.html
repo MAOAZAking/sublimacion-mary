@@ -65,7 +65,7 @@
     <!-- Interfaz de usuario -->
     <div class="controls">
         <span>Personalizar:</span>
-        <input type="color" id="color-picker" value="#ffffff" title="Color de camiseta">
+        <input type="color" id="color-picker" value="rgb(255, 255, 255)" title="Color de camiseta">
 
         <label for="file-input-front" class="btn-upload">Frente</label>
         <input type="file" id="file-input-front" accept="image/*">
@@ -121,7 +121,7 @@
             renderer.setSize(container.clientWidth, container.clientHeight);
         });
 
-        let tshirtColor = '#ffffff';
+        let tshirtColor = 'rgb(255, 255, 255)';
         let frontImage = null;
         let backImage = null;
 

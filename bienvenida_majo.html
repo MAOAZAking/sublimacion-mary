@@ -68,14 +68,14 @@
             border-radius: 24px;
             
             /* Gradiente Cónico para efecto de reloj */
-            background: conic-gradient(from var(--angle), #d500f9, #0000ff, #ffffff, #d500f9, #0000ff, #ffffff,#d500f9, #0000ff, #ffffff);
+            background: conic-gradient(from var(--angle), rgb(213, 0, 249), rgb(0, 0, 255), rgb(255, 255, 255), rgb(213, 0, 249), rgb(0, 0, 255), rgb(255, 255, 255),rgb(213, 0, 249), rgb(0, 0, 255), rgb(255, 255, 255));
             
             /* Animación de rotación del ángulo */
             animation: neonBorderRotate 6s linear infinite;
 
             /* Máscara para dejar solo el borde visible (evita que se vea en el centro transparente) */
             padding: 4px; /* Grosor del borde */
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask: linear-gradient(rgb(255, 255, 255) 0 0) content-box, linear-gradient(rgb(255, 255, 255) 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
         }
@@ -87,7 +87,7 @@
         h1 {
             font-size: 2.5rem;
             margin-bottom: 20px;
-            background: linear-gradient(to right, #d500f9, #0000ff); /* Morado Neón a Azul Oscuro Neón */
+            background: linear-gradient(to right, rgb(213, 0, 249), rgb(0, 0, 255)); /* Morado Neón a Azul Oscuro Neón */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 0 20px rgba(213, 0, 249, 0.3);
@@ -98,7 +98,7 @@
             font-size: 1.1rem;
             line-height: 1.6;
             margin-bottom: 15px;
-            color: #e0e0e0;
+            color: rgb(224, 224, 224);
             visibility: hidden; /* Ocultar inicialmente para efecto de escritura */
         }
 
@@ -106,7 +106,7 @@
             margin-top: 30px;
             font-weight: 600;
             font-size: 1.2rem;
-            color: #fff;
+            color: rgb(255, 255, 255);
         }
 
         .buttons-container {
@@ -195,14 +195,14 @@
             z-index: 10;
         }
         .close-modal:hover {
-            color: #ffffff;
+            color: rgb(255, 255, 255);
         }
         .setup-input {
             width: 100%; padding: 15px; margin: 12px 0;
             border-radius: 15px; 
-            border: 2px solid #3c304a;
-            background: #2d2438;
-            color: #fff;
+            border: 2px solid rgb(60, 48, 74);
+            background: rgb(45, 36, 56);
+            color: rgb(255, 255, 255);
             text-align: center;
             font-family: 'Poppins', sans-serif;
             font-size: 1rem;

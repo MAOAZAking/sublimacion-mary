@@ -30,7 +30,7 @@
             padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
         }
         .header { text-align: center; margin-bottom: 40px; background: #1e1e1e; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid #333; }
-        h2 { color: #ffffff; margin: 0 0 10px 0; }
+        h2 { color: rgb(255, 255, 255); margin: 0 0 10px 0; }
         #infoCliente { color: #b0b0b0; font-size: 0.9rem; }
         
         /* Grid de Imágenes */
@@ -39,7 +39,7 @@
         .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
         .gallery-img { width: 100%; height: 160px; object-fit: cover; display: block; }
         .gallery-info { padding: 12px; text-align: center; font-size: 0.85rem; color: #b0b0b0; border-top: 1px solid #333; }
-        .gallery-info strong { color: #ffffff; display: block; margin-bottom: 4px; font-size: 0.95rem; }
+        .gallery-info strong { color: rgb(255, 255, 255); display: block; margin-bottom: 4px; font-size: 0.95rem; }
 
         /* Modal (Imagen Grande) */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
@@ -47,7 +47,7 @@
         .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1001; }
         #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; touch-action: none; }
         
-        .back-btn { display: block; width: fit-content; margin: 30px auto; padding: 10px 25px; background: #2d2d2d; color: #b0b0b0; text-decoration: none; border-radius: 50px; position: relative; z-index: 1; font-weight: 500; transition: 0.3s; border: 1px solid #333; }
+        .back-btn { display: block; width: fit-content; margin: 30px auto; padding: 10px 25px; background: #2d2d2d; color: #b0b0b0; text-decoration: none; border-radius: 50px; position: relative; z-index: 1; font-weight: 500; transition: 0.3s; border: 2px solid #333; }
         .back-btn:hover { background: #333; color: white; transform: translateY(-2px); }
 
         /* Loader Styles */
@@ -201,6 +201,92 @@
             outline: none;
             border-color: #9b59b6;
         }
+
+        /* Estilos para estado vacío (Sin pedidos) */
+        .empty-state-container {
+            text-align: center;
+            padding: -50px 0px 20px;
+            border-radius: 20px;
+            margin: 0px auto;
+            max-width: 1000px;
+            animation: fadeIn 0.8s ease-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .empty-title {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+            font-family:Georgia, 'Times New Roman', Times, serif;
+        }
+        .empty-title span {
+            background:  rgb(213, 0, 249);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 7px rgba(212, 0, 249, 0.8));
+        }
+        .empty-text {
+            font-size: 1.15rem;
+            color: #d5d5d5;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .pulse-container {
+            animation: pulseZoom 2s infinite ease-in-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .highlight-question {
+            color: rgb(0, 0, 255);
+            font-weight: 600;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            -webkit-text-stroke: 0.7px white; /* borde blanco */
+            /*text-shadow: 0 2px 4px rgb(0, 0, 255);*/
+        }
+        .btn-whatsapp-empty {
+            display: inline-block;
+            background: rgb(17, 161, 70);
+            color: white;
+            padding: 15px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 0 20px rgb(37, 211, 101);
+            transition: all 0.3s ease;
+            border: 2px solid white;
+        }
+        .btn-whatsapp-empty:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 30px rgb(255, 255, 255);
+            background: white;
+            border-color: rgb(37, 211, 101);
+            color: rgb(37, 211, 101);
+        }
+        
+        @keyframes pulseZoom {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .whatsapp-link {
+            display: flex;
+            align-items: center; /* centra verticalmente */
+            gap: 8px; /* espacio entre imagen y texto */
+        }
+        .whatsapp-link a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .whatsapp-link img {
+            display: block;
+        }
+
+
     </style>
 </head>
 <body>
@@ -223,7 +309,7 @@
 </div>
 
 <div id="gallery" class="gallery"></div>
-<div id="mensajeError" style="text-align: center; color: red; margin-top: 20px;"></div>
+<div id="mensajeError"></div>
 
 <a href="#" onclick="cerrarSesionCliente()" class="back-btn">Salir</a>
 
@@ -336,12 +422,21 @@
                         }
                     });
                 } else {
-                    document.getElementById('mensajeError').innerHTML =
-                      `No tienes pedidos registrados aún.<br>
-                      Para realizar un pedido toca en el siguiente link
-                      <a href="https://wa.me/+573209287029?text=Hola,%20quiero%20un%20producto%20de%20sublimacion" target="_blank">
-                        Realizar pedido por WhatsApp
-                      </a>`;
+                    document.getElementById('mensajeError').innerHTML = `
+                        <div class="empty-state-container">
+                            <div class="empty-title"><span>¡Vaya! No hay nada por aquí</span> 🧐</div>
+                            <div class="empty-text">
+                                Parece que este número no tiene pedidos registrados aún.
+                            </div>
+                            <div class="pulse-container">
+                                <div class="highlight-question">✨¿Te gustaría personalizar algo único hoy?✨</div>
+                                <div class="whatsapp-link">
+                                    <a href="https://wa.me/+573209287029?text=Hola,%20quiero%20un%20producto%20de%20sublimacion" target="_blank" class="btn-whatsapp-empty">
+                                        🤩 Realizar pedido por WhatsApp <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/3840px-WhatsApp.svg.png" width="40" alt="WhatsApp">
+                                    </a>
+                                </div>
+                            </div>
+                        </div>`;
                 }
             })
             .catch(err => console.error(err));
@@ -417,7 +512,7 @@
         const height = window.innerHeight;
 
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x333333);
+        scene.background = new THREE.Color(0xb3b3b3);
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
         camera.position.set(0, 0, 11); // Alejar cámara para que ocupe aprox 70% del alto
@@ -425,16 +520,22 @@
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
+
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        fillLight.position.set(-5, 5, 5);
+        scene.add(fillLight);
 
         // Crear Mug
         const geometry = new THREE.CylinderGeometry(2.5, 2.5, 6, 64);
@@ -458,7 +559,7 @@
             canvas.height = canvasHeight;
 
             // Fondo blanco
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = 'rgb(255, 255, 255)';
             ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
             // Dibujar imagen centrada
@@ -467,6 +568,7 @@
             ctx.drawImage(img, offsetX, offsetY, img.width, img.height);
 
             const newTexture = new THREE.CanvasTexture(canvas);
+            newTexture.colorSpace = THREE.SRGBColorSpace;
 
             const materials = [
                 new THREE.MeshStandardMaterial({ map: newTexture }), // Lado (Imagen)
@@ -482,10 +584,11 @@
         });
 
         // Oreja del Mug
-        const handleGeom = new THREE.TorusGeometry(1.5, 0.3, 16, 100);
+        const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
         const handleMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const handle = new THREE.Mesh(handleGeom, handleMat);
-        handle.position.set(2.8, 0, 0); // Posicionar al lado
+        handle.position.set(2.4, 0, 0); // Posicionar al lado (pegado al cuerpo)
+        handle.rotation.z = -Math.PI / 2;
         scene.add(handle);
 
         const animate = function () {
@@ -561,7 +664,7 @@
         canvas.width = size;
         canvas.height = size;
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = 'rgb(255, 255, 255)';
         ctx.fillRect(0, 0, size, size);
 
         const drawImageOnCanvas = (img, offsetX, offsetY) => {
@@ -681,12 +784,12 @@
             if (currentGender === 'hombre') {
                 toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
                 toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
-                toggleBtn.style.border = '2px solid #d500f9';
+                toggleBtn.style.border = '2px solid rgb(213, 0, 249)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
             } else {
                 toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
                 toggleBtn.style.background = 'rgba(0, 0, 255, 0.3)';
-                toggleBtn.style.border = '2px solid #0000ff';
+                toggleBtn.style.border = '2px solid rgb(0, 0, 255)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(0, 0, 255, 0.5)';
             }
         };

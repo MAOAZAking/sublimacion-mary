@@ -29,12 +29,12 @@
     <style>
         html { display: none; } /* Ocultar todo el sitio por defecto hasta verificar sesión */
         body { 
-            font-family: 'Poppins', sans-serif; background-color: #121212; margin: 0; color: #ffffff;
+            font-family: 'Poppins', sans-serif; background-color: #121212; margin: 0; color: rgb(255, 255, 255);
             padding: 20px;
             padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
         }
         .header { text-align: center; margin-bottom: 40px; background: #1e1e1e; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid #333; }
-        .header h2 { margin-top: 0; color: #ffffff; }
+        .header h2 { margin-top: 0; color: rgb(255, 255, 255); }
         .controls { text-align: center; margin-bottom: 30px; }
         
         button { padding: 10px 25px; margin: 5px; cursor: pointer; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: 500; transition: all 0.3s; font-family: 'Poppins', sans-serif; -webkit-appearance: none; }
@@ -77,7 +77,7 @@
         
         .sort-dropdown-container { position: relative; display: inline-block; }
         .sort-label {
-            font-weight: 600; color: #ffffff; cursor: pointer; padding: 8px 15px;
+            font-weight: 600; color: rgb(255, 255, 255); cursor: pointer; padding: 8px 15px;
             border-radius: 20px; background: #2d2d2d; border: 1px solid #333;
             transition: all 0.2s; display: flex; align-items: center; gap: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
@@ -120,7 +120,7 @@
         .gallery-item { border: 4px solid transparent; border-radius: 16px; overflow: hidden; cursor: pointer; background: #1e1e1e; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; }
         .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
         .gallery-img { width: 100%; height: 200px; object-fit: cover; display: block; }
-        .gallery-info { padding: 15px; text-align: center; font-size: 0.9rem; color: #ffffff; background: #1e1e1e; border-top: 1px solid #333; transition: background-color 0.3s; }
+        .gallery-info { padding: 15px; text-align: center; font-size: 0.9rem; color: rgb(255, 255, 255); background: #1e1e1e; border-top: 1px solid #333; transition: background-color 0.3s; }
 
         /* Neon Status Borders & Info Background */
         .status-green {
@@ -268,7 +268,7 @@
 <div class="sort-controls">
     <button class="sort-btn" id="sortDirectionBtn" onclick="toggleSortDirection()" title="Invertir orden">
         <!-- Icono por defecto (Ascendente) -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgb(255, 255, 255)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 19V5M5 12l7-7 7 7"/>
         </svg>
     </button>
@@ -473,13 +473,13 @@
         if (isSortAscending) {
             // Ascendente: Flecha hacia ARRIBA
             btn.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgb(255, 255, 255)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 19V5M5 12l7-7 7 7"/>
                 </svg>`;
         } else {
             // Descendente: Flecha hacia ABAJO
             btn.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgb(255, 255, 255)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 5v14M5 12l7 7 7-7"/>
                 </svg>`;
         }
@@ -787,16 +787,22 @@
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimización Android
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
+
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        fillLight.position.set(-5, 5, 5);
+        scene.add(fillLight);
 
         // Crear Mug
         const geometry = new THREE.CylinderGeometry(2.5, 2.5, 6, 64);
@@ -817,7 +823,7 @@
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
 
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = 'rgb(255, 255, 255)';
             ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
             const offsetX = (canvasWidth - img.width) / 2;
@@ -825,6 +831,7 @@
             ctx.drawImage(img, offsetX, offsetY, img.width, img.height);
 
             const newTexture = new THREE.CanvasTexture(canvas);
+            newTexture.colorSpace = THREE.SRGBColorSpace;
 
             const materials = [
                 new THREE.MeshStandardMaterial({ map: newTexture }), 
@@ -838,10 +845,11 @@
             scene.add(cylinder);
         });
 
-        const handleGeom = new THREE.TorusGeometry(1.5, 0.3, 16, 100);
+        const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
         const handleMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const handle = new THREE.Mesh(handleGeom, handleMat);
-        handle.position.set(2.8, 0, 0); 
+        handle.position.set(2.4, 0, 0); 
+        handle.rotation.z = -Math.PI / 2;
         scene.add(handle);
 
         const animate = function () {
@@ -869,7 +877,7 @@
         const height = window.innerHeight;
 
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xb3b3b3);
+        scene.background = new THREE.Color(scene.background = new THREE.Color(0xb3b3b3));
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
         camera.position.set(0, 1, 3);
@@ -917,7 +925,7 @@
         canvas.width = size;
         canvas.height = size;
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = 'rgb(255, 255, 255)';
         ctx.fillRect(0, 0, size, size);
 
         const drawImageOnCanvas = (img, offsetX, offsetY) => {
@@ -1036,12 +1044,12 @@
             if (currentGender === 'hombre') {
                 toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
                 toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
-                toggleBtn.style.border = '2px solid #d500f9';
+                toggleBtn.style.border = '2px solid rgb(213, 0, 249)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
             } else {
                 toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
                 toggleBtn.style.background = 'rgba(0, 0, 255, 0.3)';
-                toggleBtn.style.border = '2px solid #0000ff';
+                toggleBtn.style.border = '2px solid rgb(0, 0, 255)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(0, 0, 255, 0.5)';
             }
         };
