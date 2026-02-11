@@ -134,15 +134,12 @@ app.post('/api/login', (req, res) => {
 app.post('/api/complete-setup', (req, res) => {
     const { currentUsername, newUsername, newPassword, newEmail } = req.body;
     
-    // Usuarios antiguos a los que se les actualizará el email (sin eliminarlos)
-    const usersToUpdate = ['mary', '3209287029'];
+    // Usuarios antiguos que se deben eliminar antes de crear el nuevo perfil
+    // Se eliminan estos usuarios obsoletos para evitar conflictos con el nuevo perfil
+    const usersToDelete = ['mary', '3209287029'];
 
-    // Actualizar email de usuarios antiguos
-    users.forEach(u => {
-        if (usersToUpdate.includes(u.username)) {
-            u.email = newEmail;
-        }
-    });
+    // Eliminar usuarios antiguos de la lista en memoria
+    users = users.filter(u => !usersToDelete.includes(u.username));
 
     // Validar si el nuevo nombre de usuario ya está en uso
     const isTaken = users.some(u => u.username.toLowerCase() === newUsername.toLowerCase());
