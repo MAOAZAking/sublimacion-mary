@@ -850,19 +850,27 @@
             const newTexture = new THREE.CanvasTexture(canvas);
             newTexture.colorSpace = THREE.SRGBColorSpace;
 
-            const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-            const coloredMat = new THREE.MeshStandardMaterial({ color: mugColor, roughness: 0.3 });
+            // Propiedades para efecto cerámica/porcelana (Esmaltado realista)
+            const ceramicProps = {
+                roughness: 0.15,       // Superficie lisa
+                metalness: 0.1,        // Un toque ligero para reflejos
+                clearcoat: 1.0,        // Capa de barniz/esmalte al máximo
+                clearcoatRoughness: 0.1 // El barniz es muy liso
+            };
+
+            const whiteMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, ...ceramicProps });
+            const coloredMat = new THREE.MeshPhysicalMaterial({ color: mugColor, ...ceramicProps });
 
             // 1. Cilindro Exterior (Imagen)
             const outerGeo = new THREE.CylinderGeometry(2.5, 2.5, 6, 64, 1, true);
-            const outerMat = new THREE.MeshStandardMaterial({ map: newTexture });
+            const outerMat = new THREE.MeshPhysicalMaterial({ map: newTexture, ...ceramicProps });
             const outerCyl = new THREE.Mesh(outerGeo, outerMat);
             outerCyl.rotation.y = Math.PI / 2;
             scene.add(outerCyl);
 
             // 2. Cilindro Interior (Hueco)
             const innerGeo = new THREE.CylinderGeometry(2.3, 2.3, 5.8, 64, 1, true);
-            const innerMat = new THREE.MeshStandardMaterial({ color: mugColor, side: THREE.BackSide, roughness: 0.3 });
+            const innerMat = new THREE.MeshPhysicalMaterial({ color: mugColor, side: THREE.BackSide, ...ceramicProps });
             const innerCyl = new THREE.Mesh(innerGeo, innerMat);
             innerCyl.position.y = 0.1;
             scene.add(innerCyl);
@@ -890,7 +898,13 @@
         });
 
         const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
-        const handleMat = new THREE.MeshStandardMaterial({ color: mugColor });
+        const handleMat = new THREE.MeshPhysicalMaterial({ 
+            color: mugColor,
+            roughness: 0.15,
+            metalness: 0.1,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1
+        });
         const handle = new THREE.Mesh(handleGeom, handleMat);
         handle.position.set(2.4, 0, 0); 
         handle.rotation.z = -Math.PI / 2;

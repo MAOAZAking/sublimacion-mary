@@ -500,6 +500,162 @@ app.post('/api/pedidos', upload.fields([
         }
 });
 
+// Endpoint para editar un pedido existente
+app.post('/api/pedidos/edit', upload.fields([
+    { name: 'imagen', maxCount: 1 }, 
+    { name: 'plantilla', maxCount: 1 },
+    { name: 'lamina_frontal', maxCount: 1 },
+    { name: 'lamina_espaldar', maxCount: 1 },
+    { name: 'foto_diseno', maxCount: 1 }
+]), async (req, res) => {
+    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug } = req.body;
+    const files = req.files || {};
+
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
+        return res.status(500).json({ success: false, error: 'Credenciales de GitHub no configuradas.' });
+    }
+
+    try {
+        console.log("Editando pedido vía GitHub API...");
+
+        // 1. Obtener pedidos.json actual
+        const { data: repoData } = await githubClient.repos.get({ owner: GITHUB_OWNER, repo: GITHUB_REPO });
+        const branch = repoData.default_branch;
+
+        const { data: jsonFile } = await githubClient.repos.getContent({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json', ref: branch
+        });
+        const currentContent = Buffer.from(jsonFile.content, 'base64').toString('utf-8');
+        let pedidos = JSON.parse(currentContent);
+
+        // 2. Encontrar el pedido
+        const index = pedidos.findIndex(p => p.imagen_url === original_imagen_url);
+        if (index === -1) {
+            return res.status(404).json({ success: false, error: 'Pedido original no encontrado.' });
+        }
+
+        let pedido = pedidos[index];
+
+        // 3. Preparar actualizaciones de archivos
+        let folderName = '';
+        let tipoProducto = '';
+        
+        if (pedido.imagen_url && pedido.imagen_url.includes('/img/')) {
+            const parts = pedido.imagen_url.split('/img/')[1].split('/');
+            if (parts.length >= 2) {
+                tipoProducto = parts[0];
+                folderName = parts[1];
+            }
+        }
+
+        if (!folderName) {
+             if (producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
+             else if (producto.toLowerCase().includes('camiseta')) tipoProducto = 'camiseta';
+             folderName = `${tipoProducto}_update_${Date.now()}`;
+        }
+
+        const uploads = [];
+        let mainImageUrl = pedido.imagen_url;
+        let urlFrontal = pedido.imagenes ? pedido.imagenes.frontal : null;
+        let urlespaldar = pedido.imagenes ? pedido.imagenes.espaldar : null;
+
+        // Procesar archivos nuevos
+        if (tipoProducto === 'camiseta') {
+             if (files.lamina_frontal) {
+                const ext = path.extname(files.lamina_frontal[0].originalname);
+                const name = `lamina_frontal_${Date.now()}${ext}`;
+                const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
+                uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_frontal[0].path) });
+                urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+                mainImageUrl = urlFrontal;
+            }
+            if (files.lamina_espaldar) {
+                const ext = path.extname(files.lamina_espaldar[0].originalname);
+                const name = `lamina_espaldar_${Date.now()}${ext}`;
+                const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
+                uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_espaldar[0].path) });
+                urlespaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+                if (!mainImageUrl) mainImageUrl = urlespaldar;
+            }
+            if (files.plantilla) {
+                const ext = path.extname(files.plantilla[0].originalname);
+                const name = `plantilla_${Date.now()}${ext}`;
+                uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
+            }
+        } else {
+            // Mug
+            if (files.imagen) {
+                const ext = path.extname(files.imagen[0].originalname);
+                const name = `lamina_${Date.now()}${ext}`;
+                const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
+                uploads.push({ path: relativePath, content: fs.readFileSync(files.imagen[0].path) });
+                mainImageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+            }
+            if (files.plantilla) {
+                const ext = path.extname(files.plantilla[0].originalname);
+                const name = `plantilla_${Date.now()}${ext}`;
+                uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
+            }
+        }
+
+        // 4. Subir archivos a GitHub
+        const treeItems = [];
+        for (const up of uploads) {
+            const { data: blobData } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: up.content.toString('base64'), encoding: 'base64'
+            });
+            treeItems.push({ path: up.path, mode: '100644', type: 'blob', sha: blobData.sha });
+        }
+
+        // 5. Actualizar objeto pedido
+        pedido.telefono = telefono;
+        pedido.fecha = fecha;
+        pedido.estado = estado;
+        pedido.imagen_url = mainImageUrl;
+        
+        if (tipoProducto === 'mug') {
+            pedido.tipo_mug = tipo_mug;
+            pedido.color_mug = color_mug;
+        } else if (tipoProducto === 'camiseta') {
+            if (!pedido.imagenes) pedido.imagenes = {};
+            pedido.imagenes.frontal = urlFrontal;
+            pedido.imagenes.espaldar = urlespaldar;
+        }
+
+        // 6. Guardar JSON actualizado
+        const { data: jsonBlob } = await githubClient.git.createBlob({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO,
+            content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'), encoding: 'base64'
+        });
+        treeItems.push({ path: 'pedidos.json', mode: '100644', type: 'blob', sha: jsonBlob.sha });
+
+        // 7. Commit
+        const { data: refData } = await githubClient.git.getRef({ owner: GITHUB_OWNER, repo: GITHUB_REPO, ref: `heads/${branch}` });
+        const latestCommitSha = refData.object.sha;
+        const { data: commitData } = await githubClient.git.getCommit({ owner: GITHUB_OWNER, repo: GITHUB_REPO, commit_sha: latestCommitSha });
+        const baseTreeSha = commitData.tree.sha;
+
+        const { data: newTree } = await githubClient.git.createTree({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, base_tree: baseTreeSha, tree: treeItems
+        });
+
+        const { data: newCommit } = await githubClient.git.createCommit({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, message: `Edit pedido: ${telefono} [skip render]`, tree: newTree.sha, parents: [latestCommitSha]
+        });
+
+        await githubClient.git.updateRef({ owner: GITHUB_OWNER, repo: GITHUB_REPO, ref: `heads/${branch}`, sha: newCommit.sha });
+
+        // Limpiar temporales
+        Object.values(files).flat().forEach(f => { try { fs.unlinkSync(f.path); } catch(e){} });
+
+        res.json({ success: true, pedido: pedido });
+
+    } catch (error) {
+        console.error("Error editando pedido:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Endpoint para actualizar el estado de un pedido
 app.post('/api/update-status', async (req, res) => {
     const { imagen_url, nuevo_estado } = req.body;

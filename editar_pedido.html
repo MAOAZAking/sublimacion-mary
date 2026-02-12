@@ -157,6 +157,12 @@
     let currentPedido = null;
 
     window.addEventListener('load', async function() {
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const pedidoImgUrl = urlParams.get('pedido');
 
@@ -183,6 +189,13 @@
             document.getElementById('subtitle').style.color = 'red';
         }
     });
+
+    function getFileNameFromUrl(url) {
+        if (!url) return 'Ninguno';
+        try {
+            return decodeURIComponent(url.split('/').pop().split('?')[0]);
+        } catch (e) { return 'Desconocido'; }
+    }
 
     function initializeForm(pedido) {
         const productoTipoCompleto = pedido.producto;
@@ -222,12 +235,12 @@
                 <div class="form-group">
                     <label for="imagen">Subir NUEVA Lámina (Opcional):</label>
                     <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png">
-                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                    <p class="file-info">Archivo actual: <strong>${getFileNameFromUrl(pedido.imagen_url)}</strong><br>Si no sube un archivo, se conservará el actual.</p>
                 </div>
                 <div class="form-group">
                     <label for="plantilla">Subir NUEVA Plantilla .ai (Opcional):</label>
                     <input type="file" name="plantilla" id="plantilla" accept=".ai">
-                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                    <p class="file-info">Plantilla actual conservada. Si cambia la lámina, debe subir la nueva plantilla.</p>
                 </div>
             `;
 
@@ -245,21 +258,31 @@
             }
 
         } else if (esCamiseta) {
+            let urlFrontal = pedido.imagenes ? pedido.imagenes.frontal : '';
+            let urlEspaldar = pedido.imagenes ? pedido.imagenes.espaldar : '';
+            
+            // Fallback si no hay estructura imagenes
+            if (!urlFrontal && !urlEspaldar) {
+                if (pedido.imagen_url.includes('frontal')) urlFrontal = pedido.imagen_url;
+                else if (pedido.imagen_url.includes('espaldar')) urlEspaldar = pedido.imagen_url;
+                else urlFrontal = pedido.imagen_url;
+            }
+
             dynamicFiles.innerHTML = `
                 <div class="form-group">
                     <label for="lamina_frontal">Subir NUEVA Lámina Frontal (Opcional):</label>
                     <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png">
-                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                    <p class="file-info">Archivo actual: <strong>${getFileNameFromUrl(urlFrontal)}</strong><br>Si no sube un archivo, se conservará el actual.</p>
                 </div>
                 <div class="form-group">
                     <label for="lamina_espaldar">Subir NUEVA Lámina espaldar (Opcional):</label>
                     <input type="file" name="lamina_espaldar" id="lamina_espaldar" accept=".jpg, .jpeg, .png">
-                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                    <p class="file-info">Archivo actual: <strong>${getFileNameFromUrl(urlEspaldar)}</strong><br>Si no sube un archivo, se conservará el actual.</p>
                 </div>
                 <div class="form-group">
                     <label for="plantilla">Subir NUEVA Plantilla .ai (Opcional):</label>
                     <input type="file" name="plantilla" id="plantilla" accept=".ai">
-                    <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
+                    <p class="file-info">Plantilla actual conservada. Si cambia alguna lámina, debe subir la nueva plantilla.</p>
                 </div>
             `;
         }
@@ -294,6 +317,24 @@
         const productoTipo = document.getElementById('producto_tipo').value;
         const originalUrl = document.getElementById('original_imagen_url').value;
 
+        // Validar regla: Si se sube imagen, plantilla es obligatoria
+        const imgInput = document.getElementById('imagen');
+        const frontalInput = document.getElementById('lamina_frontal');
+        const espaldarInput = document.getElementById('lamina_espaldar');
+        const plantInput = document.getElementById('plantilla');
+
+        let imagenCambiada = false;
+        if (imgInput && imgInput.files.length > 0) imagenCambiada = true;
+        if (frontalInput && frontalInput.files.length > 0) imagenCambiada = true;
+        if (espaldarInput && espaldarInput.files.length > 0) imagenCambiada = true;
+
+        if (imagenCambiada) {
+            if (!plantInput || plantInput.files.length === 0) {
+                alert("⚠️ ATENCIÓN: Si actualizas la imagen del diseño (Lámina), es OBLIGATORIO subir la nueva Plantilla (.ai) actualizada.");
+                return;
+            }
+        }
+
         // Validar si al menos se cambió el teléfono, se subió un archivo o se cambiaron opciones de mug
         const files = Array.from(this.querySelectorAll('input[type="file"]')).filter(input => input.files.length > 0);
         
@@ -305,7 +346,7 @@
         }
 
         if (files.length === 0 && telefono === (currentPedido.telefono || currentPedido.teléfono) && !cambiosMug) {
-            alert("No ha realizado ningún cambio. Suba al menos un archivo nuevo para actualizar.");
+            alert("No has realizado ningún cambio. Si no vas a hacer un cambio toca en '← Volver al Panel de Admin' debajo del botón de actualizar.");
             return;
         }
 
