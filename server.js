@@ -191,7 +191,7 @@ app.post('/api/pedidos', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { producto, telefono, fecha, estado } = req.body;
+    const { producto, telefono, fecha, estado, tipo_mug, color_mug } = req.body;
     const files = req.files || {};
 
     // 1. Determinar tipo de producto
@@ -439,6 +439,7 @@ app.post('/api/pedidos', upload.fields([
 
             const nuevoPedido = { 
                 telefono, producto, fecha, estado, 
+                tipo_mug, color_mug,
                 imagen_url: mainImageUrl,
                 imagenes: { frontal: urlFrontal, espaldar: urlespaldar },
                 foto_diseno_url: urlFotoDiseno

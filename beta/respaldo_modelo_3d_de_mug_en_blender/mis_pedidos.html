@@ -13,7 +13,7 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "./js/three.module.js"
+                "three": "../js/three.module.js"
             }
         }
     </script>
@@ -47,7 +47,7 @@
         .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1001; }
         #container3D { width: 100%; height: 100%; background: #333; display: none; position: absolute; top: 0; left: 0; touch-action: none; }
         
-        .back-btn { display: block; width: fit-content; margin: 30px auto; padding: 10px 25px; background: #2d2d2d; color: #b0b0b0; text-decoration: none; border-radius: 50px; position: relative; z-index: 1; font-weight: 500; transition: 0.3s; border: 2px solid #333; }
+        .back-btn { display: block; width: fit-content; margin: 30px auto; padding: 10px 25px; background: #2d2d2d; color: #b0b0b0; text-decoration: none; border-radius: 50px; position: relative; z-index: 1; font-weight: 500; transition: 0.3s; border: 1px solid #333; }
         .back-btn:hover { background: #333; color: white; transform: translateY(-2px); }
 
         /* Loader Styles */
@@ -201,92 +201,6 @@
             outline: none;
             border-color: #9b59b6;
         }
-
-        /* Estilos para estado vacío (Sin pedidos) */
-        .empty-state-container {
-            text-align: center;
-            padding: -50px 0px 20px;
-            border-radius: 20px;
-            margin: 0px auto;
-            max-width: 1000px;
-            animation: fadeIn 0.8s ease-out;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .empty-title {
-            font-size: 2.2rem;
-            margin-bottom: 15px;
-            font-weight: 700;
-            font-family:Georgia, 'Times New Roman', Times, serif;
-        }
-        .empty-title span {
-            background:  rgb(213, 0, 249);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 7px rgba(212, 0, 249, 0.8));
-        }
-        .empty-text {
-            font-size: 1.15rem;
-            color: #d5d5d5;
-            margin-bottom: 25px;
-            line-height: 1.6;
-        }
-        .pulse-container {
-            animation: pulseZoom 2s infinite ease-in-out;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-        .highlight-question {
-            color: rgb(0, 0, 255);
-            font-weight: 600;
-            font-size: 1.4rem;
-            margin-bottom: 15px;
-            -webkit-text-stroke: 0.7px white; /* borde blanco */
-            /*text-shadow: 0 2px 4px rgb(0, 0, 255);*/
-        }
-        .btn-whatsapp-empty {
-            display: inline-block;
-            background: rgb(17, 161, 70);
-            color: white;
-            padding: 15px 35px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 1.1rem;
-            box-shadow: 0 0 20px rgb(37, 211, 101);
-            transition: all 0.3s ease;
-            border: 2px solid white;
-        }
-        .btn-whatsapp-empty:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 0 30px rgb(255, 255, 255);
-            background: white;
-            border-color: rgb(37, 211, 101);
-            color: rgb(37, 211, 101);
-        }
-        
-        @keyframes pulseZoom {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        .whatsapp-link {
-            display: flex;
-            align-items: center; /* centra verticalmente */
-            gap: 8px; /* espacio entre imagen y texto */
-        }
-        .whatsapp-link a {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .whatsapp-link img {
-            display: block;
-        }
-
-
     </style>
 </head>
 <body>
@@ -309,7 +223,7 @@
 </div>
 
 <div id="gallery" class="gallery"></div>
-<div id="mensajeError"></div>
+<div id="mensajeError" style="text-align: center; color: red; margin-top: 20px;"></div>
 
 <a href="#" onclick="cerrarSesionCliente()" class="back-btn">Salir</a>
 
@@ -346,8 +260,8 @@
 
 <script type="module">
     import * as THREE from 'three';
-    import { OrbitControls } from './js/OrbitControls.js';
-    import { GLTFLoader } from './js/GLTFLoader.js';
+    import { OrbitControls } from '../js/OrbitControls.js';
+    import { GLTFLoader } from '../js/GLTFLoader.js';
 
 
     window.addEventListener('load', function() {
@@ -396,7 +310,7 @@
 
         document.getElementById('infoCliente').textContent = `Pedidos asociados al: ${telefono}`;
 
-        fetch('pedidos.json')
+        fetch('../pedidos.json')
             .then(response => {
                 if (!response.ok) throw new Error("No se pudo cargar la base de datos de pedidos.");
                 return response.json();
@@ -422,21 +336,12 @@
                         }
                     });
                 } else {
-                    document.getElementById('mensajeError').innerHTML = `
-                        <div class="empty-state-container">
-                            <div class="empty-title"><span>¡Vaya! No hay nada por aquí</span> 🧐</div>
-                            <div class="empty-text">
-                                Parece que este número no tiene pedidos registrados aún.
-                            </div>
-                            <div class="pulse-container">
-                                <div class="highlight-question">✨¿Te gustaría personalizar algo único hoy?✨</div>
-                                <div class="whatsapp-link">
-                                    <a href="https://wa.me/+573209287029?text=Hola,%20quiero%20un%20producto%20de%20sublimacion" target="_blank" class="btn-whatsapp-empty">
-                                        🤩 Realizar pedido por WhatsApp <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/3840px-WhatsApp.svg.png" width="40" alt="WhatsApp">
-                                    </a>
-                                </div>
-                            </div>
-                        </div>`;
+                    document.getElementById('mensajeError').innerHTML =
+                      `No tienes pedidos registrados aún.<br>
+                      Para realizar un pedido toca en el siguiente link
+                      <a href="https://wa.me/+573209287029?text=Hola,%20quiero%20un%20producto%20de%20sublimacion" target="_blank">
+                        Realizar pedido por WhatsApp
+                      </a>`;
                 }
             })
             .catch(err => console.error(err));
@@ -469,7 +374,7 @@
         // Verificar si es un Mug para mostrar en 3D
         if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
             container3D.style.display = 'block';
-            init3DMug(pedido, container3D);
+            init3DMug(pedido.imagen_url, container3D);
         } else if (pedido.producto && pedido.producto.toLowerCase().includes('camiseta')) {
             container3D.style.display = 'block';
             
@@ -507,16 +412,21 @@
         }
     }
 
-    function init3DMug(pedido, container) {
-        const imageUrl = pedido.imagen_url;
+    function init3DMug(imageUrl, container) {
+        const loaderElement = document.getElementById('global-loader');
+        if (loaderElement) {
+            loaderElement.style.display = 'flex';
+            setTimeout(() => { loaderElement.style.opacity = '1'; }, 10);
+        }
+
         const width = window.innerWidth;
         const height = window.innerHeight;
 
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xb3b3b3);
+        scene.background = new THREE.Color(0x333333);
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-        camera.position.set(0, 0, 11); // Alejar cámara para que ocupe aprox 70% del alto
+        camera.position.set(0, 0, 10); // Posición inicial más cercana
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
@@ -527,112 +437,11 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
-        
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
-
-        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
-        fillLight.position.set(-5, 5, 5);
-        scene.add(fillLight);
-
-        // Crear Mug
-        const loader = new THREE.TextureLoader();
-        loader.setCrossOrigin('anonymous');
-        
-        // Determinar color del Mug
-        const tipo = pedido.tipo_mug || 'clasico';
-        const colorName = (pedido.color_mug || '').toLowerCase();
-        let mugColor = 0xffffff;
-
-        if (tipo === 'color interno') {
-            const colorMap = {
-                'rosado': 0xFF69B4,   // HotPink
-                'verde': 0x00CC00,    // Green
-                'rojo': 0xFF0000,     // Red
-                'amarillo': 0xFFD700, // Gold
-                'negro': 0x1a1a1a,    // Dark Gray (not pure black for shading)
-                'naranja': 0xFF8000   // Orange
-            };
-            if (colorMap[colorName]) mugColor = colorMap[colorName];
-        }
-
-        loader.load(imageUrl, (texture) => {
-            // Crear canvas para añadir espacio blanco (gap) alrededor de la oreja
-            const img = texture.image;
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            // Definir porcentajes de cobertura (Ancho y Alto)
-            const widthCoverage = 0.75289575289;
-            const heightCoverage = 0.79797979798;
-
-            const canvasWidth = img.width / widthCoverage;
-            const canvasHeight = img.height / heightCoverage;
-
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-
-            // Fondo blanco
-            ctx.fillStyle = 'rgb(255, 255, 255)';
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-            // Dibujar imagen centrada
-            const offsetX = (canvasWidth - img.width) / 2;
-            const offsetY = (canvasHeight - img.height) / 2;
-            ctx.drawImage(img, offsetX, offsetY, img.width, img.height);
-
-            const newTexture = new THREE.CanvasTexture(canvas);
-            newTexture.colorSpace = THREE.SRGBColorSpace;
-
-            const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-            const coloredMat = new THREE.MeshStandardMaterial({ color: mugColor, roughness: 0.3 });
-
-            // 1. Cilindro Exterior (Imagen)
-            const outerGeo = new THREE.CylinderGeometry(2.5, 2.5, 6, 64, 1, true);
-            const outerMat = new THREE.MeshStandardMaterial({ map: newTexture });
-            const outerCyl = new THREE.Mesh(outerGeo, outerMat);
-            outerCyl.rotation.y = Math.PI / 2; // Alinear costura
-            scene.add(outerCyl);
-
-            // 2. Cilindro Interior (Hueco)
-            const innerGeo = new THREE.CylinderGeometry(2.3, 2.3, 5.8, 64, 1, true);
-            const innerMat = new THREE.MeshStandardMaterial({ color: mugColor, side: THREE.BackSide, roughness: 0.3 });
-            const innerCyl = new THREE.Mesh(innerGeo, innerMat);
-            innerCyl.position.y = 0.1; // Subir para alinear con el borde superior
-            scene.add(innerCyl);
-
-            // 3. Borde Superior (Rim)
-            const rimGeo = new THREE.RingGeometry(2.3, 2.5, 64);
-            const rimMesh = new THREE.Mesh(rimGeo, coloredMat);
-            rimMesh.rotation.x = -Math.PI / 2;
-            rimMesh.position.y = 3;
-            scene.add(rimMesh);
-            
-            // 4. Fondo Interior
-            const innerBottomGeo = new THREE.CircleGeometry(2.3, 64);
-            const innerBottomMesh = new THREE.Mesh(innerBottomGeo, coloredMat);
-            innerBottomMesh.rotation.x = -Math.PI / 2;
-            innerBottomMesh.position.y = -2.8;
-            scene.add(innerBottomMesh);
-
-            // 5. Fondo Exterior
-            const bottomGeo = new THREE.CircleGeometry(2.5, 64);
-            const bottomMesh = new THREE.Mesh(bottomGeo, whiteMat);
-            bottomMesh.rotation.x = Math.PI / 2;
-            bottomMesh.position.y = -3;
-            scene.add(bottomMesh);
-        });
-
-        // Oreja del Mug
-        const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
-        const handleMat = new THREE.MeshStandardMaterial({ color: mugColor });
-        const handle = new THREE.Mesh(handleGeom, handleMat);
-        handle.position.set(2.4, 0, 0); // Posicionar al lado (pegado al cuerpo)
-        handle.rotation.z = -Math.PI / 2;
-        scene.add(handle);
 
         const animate = function () {
             animationId = requestAnimationFrame(animate);
@@ -640,6 +449,122 @@
             renderer.render(scene, camera);
         };
         animate();
+
+        const texLoader = new THREE.TextureLoader();
+        texLoader.setCrossOrigin('anonymous');
+
+        texLoader.load(imageUrl, (texture) => {
+            // Crear canvas para añadir márgenes y color realista
+            const img = texture.image;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Ajuste de dimensiones para centrar la lámina y dejar márgenes (oreja, bordes, interior)
+            const horizontalRatio = 0.70; // La imagen ocupa el 70% del ancho (espacio para oreja)
+            const verticalRatio = 0.85;   // La imagen ocupa el 85% del alto (espacio para bordes)
+
+            const canvasWidth = img.width / horizontalRatio;
+            const canvasHeight = img.height / verticalRatio;
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // Fondo blanco cerámica
+            ctx.fillStyle = '#F5F5F5'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar imagen centrada
+            const x = (canvasWidth - img.width) / 2;
+            // Centrar imagen verticalmente para asegurar visibilidad
+            const y = (canvasHeight - img.height) / 2;
+            ctx.drawImage(img, x, y, img.width, img.height);
+
+            const newTexture = new THREE.CanvasTexture(canvas);
+            newTexture.flipY = false;
+            newTexture.wrapS = THREE.RepeatWrapping; // Permitir rotación
+            newTexture.offset.x = 0.5; // Rotar 180° para mover el diseño al lado opuesto de la oreja
+            newTexture.colorSpace = THREE.SRGBColorSpace;
+            newTexture.needsUpdate = true;
+
+            const gltfLoader = new GLTFLoader();
+            gltfLoader.load('../modelo_3d/modelo_3d_mug_mejorado.glb', (gltf) => {
+                const model = gltf.scene;
+
+                // Configurar Cámara si el GLB la incluye
+                if (gltf.cameras && gltf.cameras.length > 0) {
+                    const cam = gltf.cameras[0];
+                    camera.position.copy(cam.position);
+                    camera.rotation.copy(cam.rotation);
+                    camera.fov = cam.fov;
+                    camera.updateProjectionMatrix();
+                } else {
+                    // Si no hay cámara, calcular foco automático
+                    const box = new THREE.Box3().setFromObject(model);
+                    const size = box.getSize(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
+                    
+                    model.position.sub(center); // Centrar modelo
+                    
+                    // Ajustar distancia de cámara según tamaño del objeto
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const fov = camera.fov * (Math.PI / 180);
+                    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                    camera.position.set(0, 0, cameraZ * 2.5); // Factor de zoom (ajustable)
+                    camera.lookAt(0, 0, 0);
+                }
+
+                // Recolectar todos los meshes
+                let meshes = [];
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+                        meshes.push(child);
+                    }
+                });
+
+                console.log("Meshes encontrados:");
+                meshes.forEach(m => console.log(m.name));
+
+                // Estrategia 1: Buscar por nombre (contiene 'mug' y NO 'oreja')
+                let bodyMesh = meshes.find(m => {
+                    const name = (m.name || '').toLowerCase();
+                    return name.includes('exterior_cuerpo_mug') && !name.includes('oreja');
+                });
+
+                // Estrategia 2: Si falla el nombre, usar el mesh más grande (Volumen)
+                if (!bodyMesh && meshes.length > 0) {
+                    meshes.sort((a, b) => {
+                        const getVol = (m) => {
+                            const s = new THREE.Vector3();
+                            m.geometry.boundingBox.getSize(s);
+                            return s.x * s.y * s.z;
+                        };
+                        return getVol(b) - getVol(a);
+                    });
+                    bodyMesh = meshes[0];
+                }
+
+                // Aplicar materiales
+                meshes.forEach(m => {
+                    if (m === bodyMesh) {
+                        m.material = new THREE.MeshStandardMaterial({ map: newTexture, color: 0xffffff, roughness: 0.3, metalness: 0.1 });
+                    } else {
+                        m.material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1 });
+                    }
+                });
+
+                scene.add(model);
+
+                if (loaderElement) {
+                    loaderElement.style.opacity = '0';
+                    setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+                }
+            }, undefined, (error) => {
+                console.error('Error loading mug model:', error);
+                container.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ccc;text-align:center;padding:20px;">Modelo 3D no disponible.<br>No se pudo cargar el archivo: ../modelo_3d/modelo_3d_mug_mejorado.glb</div>`;
+                if (loaderElement) { loaderElement.style.opacity = '0'; setTimeout(() => { loaderElement.style.display = 'none'; }, 500); }
+            });
+        });
     }
 
      async function init3DCamiseta(urls, container) {
@@ -742,7 +667,7 @@
             if (loaderElement) { loaderElement.style.display = 'flex'; loaderElement.style.opacity = '1'; }
 
             const productType = 'camiseta';
-            const modelPath = `modelo_3d/${gender}/modelo_3d_${gender}_${productType}.glb`;
+            const modelPath = `../modelo_3d/${gender}/modelo_3d_${gender}_${productType}.glb`;
 
             gltfLoader.load(modelPath, (gltf) => {
                 if (currentModel) {

@@ -1,11 +1,13 @@
 // Este script genera el JSON para un nuevo pedido con el formato solicitado.
-// Uso en terminal: node crear_pedido.js "3001234567" "Mug Personalizado" "https://url-imagen.com"
+// Uso en terminal: node crear_pedido.js "3001234567" "Mug Personalizado" "https://url-imagen.com" "tipo_mug" "color_mug"
 
 // 1. Obtener argumentos de la línea de comandos o usar valores por defecto (###)
 const args = process.argv.slice(2);
 const telefono = args[0] || "###";
 const producto = args[1] || "###";
 const imagen_url = args[2] || "###";
+const tipo_mug = args[3] || "clasico";
+const color_mug = args[4] || "";
 
 // 2. Generar la fecha actual con hora (DD/MM/YYYY HH:mm:ss)
 const now = new Date();
@@ -27,7 +29,9 @@ const nuevoPedido = {
     "producto": producto,
     "fecha": fechaCompleta,
     "estado": estado,
-    "imagen_url": imagen_url
+    "imagen_url": imagen_url,
+    "tipo_mug": tipo_mug,
+    "color_mug": color_mug
 };
 
 // 4. Imprimir el resultado en formato JSON (con comillas y estructura correcta)

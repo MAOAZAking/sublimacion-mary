@@ -32,6 +32,13 @@
         .back-link { display: block; text-align: center; margin-top: 15px; color: #aaa; text-decoration: none; font-size: 0.9rem; }
         .file-info { font-size: 0.8rem; color: #888; margin-top: 5px; }
 
+        /* Estilos para opciones de color */
+        .color-options { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
+        .color-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 2px solid #333; border-radius: 20px; cursor: pointer; transition: all 0.3s; background: #2d2d2d; }
+        .color-option:hover { border-color: #888; }
+        .color-option.selected { border-color: #9b59b6; background: #3a2e42; box-shadow: 0 0 10px rgba(155, 89, 182, 0.3); }
+        .color-circle { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
+
         /* Loader Styles */
         #global-loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -193,6 +200,26 @@
         if (esMug) {
             dynamicFiles.innerHTML = `
                 <div class="form-group">
+                    <label for="tipo_mug">Tipo de Mug:</label>
+                    <select name="tipo_mug" id="tipo_mug" onchange="toggleColorOptions()">
+                        <option value="clasico">Clásico (Blanco)</option>
+                        <option value="color interno">Color Interno</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="color_options_container" style="display:none;">
+                    <label>Selecciona el Color Interno:</label>
+                    <div class="color-options" id="color_options">
+                        <div class="color-option" data-color="rosado" onclick="selectColor('rosado', this)"><div class="color-circle" style="background: #FF69B4;"></div>Rosado</div>
+                        <div class="color-option" data-color="verde" onclick="selectColor('verde', this)"><div class="color-circle" style="background: #00CC00;"></div>Verde</div>
+                        <div class="color-option" data-color="rojo" onclick="selectColor('rojo', this)"><div class="color-circle" style="background: #FF0000;"></div>Rojo</div>
+                        <div class="color-option" data-color="amarillo" onclick="selectColor('amarillo', this)"><div class="color-circle" style="background: #FFD700;"></div>Amarillo</div>
+                        <div class="color-option" data-color="negro" onclick="selectColor('negro', this)"><div class="color-circle" style="background: #1a1a1a;"></div>Negro</div>
+                        <div class="color-option" data-color="naranja" onclick="selectColor('naranja', this)"><div class="color-circle" style="background: #FF8000;"></div>Naranja</div>
+                    </div>
+                    <input type="hidden" name="color_mug" id="color_mug">
+                </div>
+                <div class="form-group">
                     <label for="imagen">Subir NUEVA Lámina (Opcional):</label>
                     <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png">
                     <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
@@ -203,6 +230,20 @@
                     <p class="file-info">Si no sube un archivo, se conservará el actual.</p>
                 </div>
             `;
+
+            // Pre-llenar datos del Mug
+            const tipoMugSelect = document.getElementById('tipo_mug');
+            const colorMugInput = document.getElementById('color_mug');
+            
+            tipoMugSelect.value = pedido.tipo_mug || 'clasico';
+            if (pedido.tipo_mug === 'color interno') {
+                document.getElementById('color_options_container').style.display = 'block';
+                colorMugInput.value = pedido.color_mug || '';
+                // Seleccionar visualmente
+                const option = document.querySelector(`.color-option[data-color="${pedido.color_mug}"]`);
+                if (option) option.classList.add('selected');
+            }
+
         } else if (esCamiseta) {
             dynamicFiles.innerHTML = `
                 <div class="form-group">
@@ -226,6 +267,25 @@
         document.getElementById('pedidoForm').style.display = 'block';
     }
 
+    // Funciones globales para manejar la selección de color
+    window.toggleColorOptions = function() {
+        const tipo = document.getElementById('tipo_mug').value;
+        const container = document.getElementById('color_options_container');
+        if (tipo === 'color interno') {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+            document.getElementById('color_mug').value = ''; 
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+        }
+    };
+
+    window.selectColor = function(color, element) {
+        document.getElementById('color_mug').value = color;
+        document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+    };
+
     document.getElementById('pedidoForm').addEventListener('submit', function(e) {
         e.preventDefault(); 
 
@@ -234,9 +294,17 @@
         const productoTipo = document.getElementById('producto_tipo').value;
         const originalUrl = document.getElementById('original_imagen_url').value;
 
-        // Validar si al menos se cambió el teléfono o se subió un archivo
+        // Validar si al menos se cambió el teléfono, se subió un archivo o se cambiaron opciones de mug
         const files = Array.from(this.querySelectorAll('input[type="file"]')).filter(input => input.files.length > 0);
-        if (files.length === 0 && telefono === (currentPedido.telefono || currentPedido.teléfono)) {
+        
+        let cambiosMug = false;
+        if (productoTipo.toLowerCase().includes('mug')) {
+            const nuevoTipo = document.getElementById('tipo_mug').value;
+            const nuevoColor = document.getElementById('color_mug').value;
+            if (nuevoTipo !== (currentPedido.tipo_mug || 'clasico') || nuevoColor !== (currentPedido.color_mug || '')) cambiosMug = true;
+        }
+
+        if (files.length === 0 && telefono === (currentPedido.telefono || currentPedido.teléfono) && !cambiosMug) {
             alert("No ha realizado ningún cambio. Suba al menos un archivo nuevo para actualizar.");
             return;
         }
@@ -281,6 +349,9 @@
             const plantInput = document.getElementById('plantilla');
             if (imgInput.files.length > 0) formData.append('imagen', imgInput.files[0], imgInput.files[0].name.replace(/\s+/g, '_'));
             if (plantInput.files.length > 0) formData.append('plantilla', plantInput.files[0], plantInput.files[0].name.replace(/\s+/g, '_'));
+            
+            formData.append('tipo_mug', document.getElementById('tipo_mug').value);
+            if (document.getElementById('tipo_mug').value === 'color interno') formData.append('color_mug', document.getElementById('color_mug').value);
         }
 
         // 3. Enviar al Backend

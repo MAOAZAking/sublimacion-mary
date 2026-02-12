@@ -39,6 +39,13 @@
         .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .back-link { display: block; text-align: center; margin-top: 15px; color: #aaa; text-decoration: none; font-size: 0.9rem; }
 
+        /* Estilos para opciones de color */
+        .color-options { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
+        .color-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 2px solid #333; border-radius: 20px; cursor: pointer; transition: all 0.3s; background: #2d2d2d; }
+        .color-option:hover { border-color: #888; }
+        .color-option.selected { border-color: #9b59b6; background: #3a2e42; box-shadow: 0 0 10px rgba(155, 89, 182, 0.3); }
+        .color-circle { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
+
         /* Loader Styles */
         #global-loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -235,6 +242,27 @@
             if (tipo === 'Mug Personalizado') {
                 dynamicFiles.innerHTML = `
                     <div class="form-group">
+                        <label for="tipo_mug">Tipo de Mug:</label>
+                        <select name="tipo_mug" id="tipo_mug" onchange="toggleColorOptions()">
+                            <option value="clasico" selected>Clásico (Blanco)</option>
+                            <option value="color interno">Color Interno</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="color_options_container" style="display:none;">
+                        <label>Selecciona el Color Interno:</label>
+                        <div class="color-options" id="color_options">
+                            <div class="color-option" onclick="selectColor('rosado', this)"><div class="color-circle" style="background: #FF69B4;"></div>Rosado</div>
+                            <div class="color-option" onclick="selectColor('verde', this)"><div class="color-circle" style="background: #00CC00;"></div>Verde</div>
+                            <div class="color-option" onclick="selectColor('rojo', this)"><div class="color-circle" style="background: #FF0000;"></div>Rojo</div>
+                            <div class="color-option" onclick="selectColor('amarillo', this)"><div class="color-circle" style="background: #FFD700;"></div>Amarillo</div>
+                            <div class="color-option" onclick="selectColor('negro', this)"><div class="color-circle" style="background: #1a1a1a;"></div>Negro</div>
+                            <div class="color-option" onclick="selectColor('naranja', this)"><div class="color-circle" style="background: #FF8000;"></div>Naranja</div>
+                        </div>
+                        <input type="hidden" name="color_mug" id="color_mug">
+                    </div>
+
+                    <div class="form-group">
                         <label for="imagen">Subir Lámina (Imagen del diseño):</label>
                         <input type="file" name="imagen" id="imagen" accept=".jpg, .jpeg, .png" required>
                     </div>
@@ -274,6 +302,25 @@
         }
     });
 
+    // Funciones globales para manejar la selección de color
+    window.toggleColorOptions = function() {
+        const tipo = document.getElementById('tipo_mug').value;
+        const container = document.getElementById('color_options_container');
+        if (tipo === 'color interno') {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+            document.getElementById('color_mug').value = ''; // Limpiar color si vuelve a clásico
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+        }
+    };
+
+    window.selectColor = function(color, element) {
+        document.getElementById('color_mug').value = color;
+        document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+    };
+
     document.getElementById('pedidoForm').addEventListener('submit', function(e) {
         e.preventDefault(); 
 
@@ -286,6 +333,12 @@
         if (producto === 'Mug Personalizado') {
             const img = document.getElementById('imagen');
             const plant = document.getElementById('plantilla');
+            const tipoMug = document.getElementById('tipo_mug').value;
+            const colorMug = document.getElementById('color_mug').value;
+            if (tipoMug === 'color interno' && !colorMug) {
+                alert("Por favor seleccione un color para el Mug.");
+                return;
+            }
             if (img && img.files.length > 0 && plant && plant.files.length > 0) valid = true;
         } else if (producto === 'Camiseta Estampada') {
             const frontal = document.getElementById('lamina_frontal');
@@ -327,6 +380,11 @@
             
             // Sanitizar nombres de archivo (reemplazar espacios por guiones) antes de enviar
             if (producto === 'Mug Personalizado') {
+                const tipoMug = document.getElementById('tipo_mug').value;
+                formData.append('tipo_mug', tipoMug);
+                if (tipoMug === 'color interno') {
+                    formData.append('color_mug', document.getElementById('color_mug').value);
+                }
                 const imgFile = document.getElementById('imagen').files[0];
                 const plantFile = document.getElementById('plantilla').files[0];
                 const fotoDiseno = document.getElementById('foto_diseno').files[0];

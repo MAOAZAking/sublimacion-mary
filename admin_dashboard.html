@@ -686,7 +686,7 @@
         // Verificar si es un Mug para mostrar en 3D
         if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
             container3D.style.display = 'block';
-            init3DMug(pedido.imagen_url, container3D);
+            init3DMug(pedido, container3D);
         } else if (pedido.producto && pedido.producto.toLowerCase().includes('camiseta')) {
             container3D.style.display = 'block';
             
@@ -774,7 +774,8 @@
         }
     }
 
-    function init3DMug(imageUrl, container) {
+    function init3DMug(pedido, container) {
+        const imageUrl = pedido.imagen_url;
         const width = window.innerWidth;
         const height = window.innerHeight;
 
@@ -808,6 +809,23 @@
         const loader = new THREE.TextureLoader();
         loader.setCrossOrigin('anonymous');
         
+        // Determinar color del Mug
+        const tipo = pedido.tipo_mug || 'clasico';
+        const colorName = (pedido.color_mug || '').toLowerCase();
+        let mugColor = 0xffffff;
+
+        if (tipo === 'color interno') {
+            const colorMap = {
+                'rosado': 0xFF69B4,   
+                'verde': 0x00CC00,    
+                'rojo': 0xFF0000,     
+                'amarillo': 0xFFD700, 
+                'negro': 0x1a1a1a,    
+                'naranja': 0xFF8000   
+            };
+            if (colorMap[colorName]) mugColor = colorMap[colorName];
+        }
+
         loader.load(imageUrl, (texture) => {
             const img = texture.image;
             const canvas = document.createElement('canvas');
@@ -833,6 +851,7 @@
             newTexture.colorSpace = THREE.SRGBColorSpace;
 
             const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            const coloredMat = new THREE.MeshStandardMaterial({ color: mugColor, roughness: 0.3 });
 
             // 1. Cilindro Exterior (Imagen)
             const outerGeo = new THREE.CylinderGeometry(2.5, 2.5, 6, 64, 1, true);
@@ -843,21 +862,21 @@
 
             // 2. Cilindro Interior (Hueco)
             const innerGeo = new THREE.CylinderGeometry(2.3, 2.3, 5.8, 64, 1, true);
-            const innerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 0.3 });
+            const innerMat = new THREE.MeshStandardMaterial({ color: mugColor, side: THREE.BackSide, roughness: 0.3 });
             const innerCyl = new THREE.Mesh(innerGeo, innerMat);
             innerCyl.position.y = 0.1;
             scene.add(innerCyl);
 
             // 3. Borde Superior (Rim)
             const rimGeo = new THREE.RingGeometry(2.3, 2.5, 64);
-            const rimMesh = new THREE.Mesh(rimGeo, whiteMat);
+            const rimMesh = new THREE.Mesh(rimGeo, coloredMat);
             rimMesh.rotation.x = -Math.PI / 2;
             rimMesh.position.y = 3;
             scene.add(rimMesh);
             
             // 4. Fondo Interior
             const innerBottomGeo = new THREE.CircleGeometry(2.3, 64);
-            const innerBottomMesh = new THREE.Mesh(innerBottomGeo, whiteMat);
+            const innerBottomMesh = new THREE.Mesh(innerBottomGeo, coloredMat);
             innerBottomMesh.rotation.x = -Math.PI / 2;
             innerBottomMesh.position.y = -2.8;
             scene.add(innerBottomMesh);
@@ -871,7 +890,7 @@
         });
 
         const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
-        const handleMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const handleMat = new THREE.MeshStandardMaterial({ color: mugColor });
         const handle = new THREE.Mesh(handleGeom, handleMat);
         handle.position.set(2.4, 0, 0); 
         handle.rotation.z = -Math.PI / 2;
