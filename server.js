@@ -45,6 +45,21 @@ const upload = multer({
     limits: { fileSize: Infinity }
 });
 
+// --- CACHE LOCAL PARA EFICIENCIA ---
+// Cargar pedidos en memoria al iniciar para servir cambios inmediatos sin esperar a GitHub/Render
+let localPedidos = [];
+try {
+    const pedidosPath = path.join(__dirname, 'pedidos.json');
+    if (fs.existsSync(pedidosPath)) {
+        localPedidos = JSON.parse(fs.readFileSync(pedidosPath, 'utf8'));
+    }
+} catch (err) {
+    console.error("Error cargando pedidos.json local:", err.message);
+}
+
+// Endpoint prioritario para servir pedidos desde memoria (intercepta la petición al archivo estático)
+app.get('/pedidos.json', (req, res) => res.json(localPedidos));
+
 // Servir archivos estáticos (HTML, CSS, JS, Imágenes)
 app.use(express.static(path.join(__dirname, '.')));
 
@@ -446,6 +461,13 @@ app.post('/api/pedidos', upload.fields([
             };
             pedidos.push(nuevoPedido);
 
+            // --- ACTUALIZACIÓN LOCAL INMEDIATA ---
+            localPedidos = pedidos; // Actualizar memoria
+            try {
+                fs.writeFileSync(path.join(__dirname, 'pedidos.json'), JSON.stringify(localPedidos, null, 4));
+            } catch (e) { console.error("Error actualizando cache local:", e.message); }
+            // -------------------------------------
+
             // Crear blob para pedidos.json
             const { data: jsonBlob } = await githubClient.git.createBlob({
                 owner: GITHUB_OWNER,
@@ -622,6 +644,13 @@ app.post('/api/pedidos/edit', upload.fields([
             pedido.imagenes.espaldar = urlespaldar;
         }
 
+        // --- ACTUALIZACIÓN LOCAL INMEDIATA ---
+        localPedidos = pedidos; // Actualizar memoria con la lista modificada
+        try {
+            fs.writeFileSync(path.join(__dirname, 'pedidos.json'), JSON.stringify(localPedidos, null, 4));
+        } catch (e) { console.error("Error actualizando cache local:", e.message); }
+        // -------------------------------------
+
         // 6. Guardar JSON actualizado
         const { data: jsonBlob } = await githubClient.git.createBlob({
             owner: GITHUB_OWNER, repo: GITHUB_REPO,
@@ -683,6 +712,13 @@ app.post('/api/update-status', async (req, res) => {
         });
 
         if (!modificado) return res.json({ success: false, message: 'Pedido no encontrado' });
+
+        // --- ACTUALIZACIÓN LOCAL INMEDIATA ---
+        localPedidos = pedidos; // Actualizar memoria
+        try {
+            fs.writeFileSync(path.join(__dirname, 'pedidos.json'), JSON.stringify(localPedidos, null, 4));
+        } catch (e) { console.error("Error actualizando cache local:", e.message); }
+        // -------------------------------------
 
         // 3. Guardar cambios en GitHub
         await githubClient.repos.createOrUpdateFileContents({
