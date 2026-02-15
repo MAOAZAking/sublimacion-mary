@@ -79,10 +79,11 @@
     {
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
-        "fecha": "16/01/2026 15:08:11",
+        "fecha": "15/02/2026 12:30:57",
         "estado": "Revisión del cliente",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_2/lamina_mug_2.png",
-        "tipo_mug": "clasico"
+        "tipo_mug": "color interno",
+        "color_mug": "amarillo"
     },
     {
         "telefono": "3169445092",
