@@ -11,10 +11,11 @@
     {
         "telefono": "3123456789",
         "producto": "Mug Personalizado",
-        "fecha": "14/01/2026 12:34:16",
-        "estado": "Revisión del cliente",
+        "fecha": "15/02/2026 12:34:21",
+        "estado": "Listo para sublimar",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768416606/qrrgfej0mv0iui82qctb.jpg",
-        "tipo_mug": "clasico"
+        "tipo_mug": "color interno",
+        "color_mug": "verde"
     },
     {
         "telefono": "3002052842",
@@ -79,10 +80,11 @@
     {
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
-        "fecha": "16/01/2026 15:08:11",
+        "fecha": "15/02/2026 12:30:57",
         "estado": "Revisión del cliente",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_2/lamina_mug_2.png",
-        "tipo_mug": "clasico"
+        "tipo_mug": "color interno",
+        "color_mug": "amarillo"
     },
     {
         "telefono": "3169445092",
