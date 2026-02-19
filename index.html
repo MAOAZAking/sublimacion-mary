@@ -252,6 +252,26 @@
         }
     }
 
+    // Helper para mostrar mensaje superior temporal
+    function mostrarMensajeTop(texto, duracion = 5000) {
+        let msgDiv = document.getElementById('top-msg-overlay');
+        if (!msgDiv) {
+            msgDiv = document.createElement('div');
+            msgDiv.id = 'top-msg-overlay';
+            msgDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: #ff3333; color: white; text-align: center; padding: 20px; z-index: 999999; font-weight: 600; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translateY(-100%); display: flex; align-items: center; justify-content: center;';
+            document.body.appendChild(msgDiv);
+        }
+        msgDiv.innerHTML = texto;
+        // Forzar reflow para reiniciar animación si es necesario
+        void msgDiv.offsetWidth;
+        msgDiv.style.transform = 'translateY(0)';
+        
+        if (window.topMsgTimeout) clearTimeout(window.topMsgTimeout);
+        window.topMsgTimeout = setTimeout(() => {
+            msgDiv.style.transform = 'translateY(-100%)';
+        }, duracion);
+    }
+
     async function solicitarPermisoCamara() {
         const container = document.querySelector('.container');
         try {
@@ -259,25 +279,70 @@
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             stream.getTracks().forEach(track => track.stop());
 
-            // Si el permiso se concede, mostrar el campo de contraseña.
+            // 2. Verificar estado de persistencia del permiso (API Permissions)
+            let permisoSiempre = true; // Asumimos true por defecto para navegadores que no soporten la API
+            
+            if (navigator.permissions && navigator.permissions.query) {
+                try {
+                    const status = await navigator.permissions.query({ name: 'camera' });
+                    // Si el estado no es 'granted' (es 'prompt'), significa que no está guardado como "Siempre permitir"
+                    if (status.state !== 'granted') {
+                        permisoSiempre = false;
+                    }
+                    
+                    // Escuchar cambios en tiempo real (por si el usuario lo cambia en la barra de dirección)
+                    status.onchange = () => {
+                        const btn = document.getElementById('btnAcceder');
+                        if (btn && status.state === 'granted') {
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                            btn.style.cursor = 'pointer';
+                        }
+                    };
+                } catch (e) {
+                    console.warn("API Permissions no soportada completamente:", e);
+                }
+            }
+
+            // Si el permiso no es permanente ('granted'), no se puede continuar.
+            if (!permisoSiempre) {
+                const msgAlerta = "Para continuar, debes seleccionar 'Permitir siempre' el acceso a la cámara.<br>Ve a la configuración del sitio (icono 🔒 en la barra de direcciones) y ajusta el permiso.";
+                mostrarMensajeTop(msgAlerta, 7000);
+                // Recargar la página para forzar al usuario a dar el permiso correcto.
+                setTimeout(() => window.location.reload(), 7000);
+                return; // Detiene la ejecución aquí, no muestra el campo de contraseña.
+            }
+
+            // 3. Mostrar UI de contraseña
             container.innerHTML = `
                 <h2>Bienvenido, ${usuarioIngresado}</h2>
                 <div id="step2" class="fade-in">
                     <p style="margin-bottom: 10px; color: #666;">Ingrese su contraseña</p>
                     <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="off">
-                    <button onclick="verificarAdmin()">Acceder</button>
+                    <div id="btnWrapper" style="width: 100%;">
+                        <button id="btnAcceder" onclick="verificarAdmin()">Acceder</button>
+                    </div>
                 </div>
                 <div id="errorMsg" class="error-msg">Datos incorrectos</div>
             `;
+            
+            const btnAcceder = document.getElementById('btnAcceder');
+            const btnWrapper = document.getElementById('btnWrapper');
             const adminPassInput = document.getElementById('adminPass');
+
             adminPassInput.focus();
             adminPassInput.addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') verificarAdmin();
+                if (e.key === 'Enter') {
+                    verificarAdmin();
+                }
             });
         } catch (err) {
             console.error("Error de cámara:", err);
-            // Si se niega el permiso, refrescar la página para volver a intentarlo en un bucle.
-            window.location.reload();
+            // Mensaje de denegado con salto de línea
+            mostrarMensajeTop("has denegado el uso de la camara<br>por favro ve a configuracion del navegador y da aceso a la camara permitir mientras se visita el sitio", 6000);
+            
+            // Recargar después de que el usuario lea el mensaje
+            setTimeout(() => window.location.reload(), 6000);
         }
     }
 
