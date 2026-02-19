@@ -3,18 +3,21 @@
         "username": "mary",
         "password": "ENV:ADMIN_PASS_MARY",
         "email": "",
-        "redirectUrl": "admin_dashboard.html"
+        "redirectUrl": "admin_dashboard.html",
+        "faceDataEnvVar": "MIGUELO_FACE_DATA_JSON"
     },
     {
         "username": "MAOAZAking",
         "password": "ENV:ADMIN_PASS_MAOAZAKING",
         "email": "ENV:ADMIN_EMAIL_MAOAZAKING",
-        "redirectUrl": "admin_dashboard.html"
+        "redirectUrl": "admin_dashboard.html",
+        "faceDataEnvVar": "MAOAZAKING_FACE_DATA_JSON"
     },
     {
         "username": "3209287029",
         "password": "",
         "email": "",
-        "redirectUrl": "bienvenida_majo.html"
+        "redirectUrl": "bienvenida_majo.html",
+        "faceDataEnvVar": "MIGUELO_FACE_DATA_JSON"
     }
 ]

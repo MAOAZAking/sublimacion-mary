@@ -10,6 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #121212; display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; margin: 0; color: white; }
         .container { background: #1e1e1e; padding: 3rem 2rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); width: 100%; max-width: 380px; text-align: center; transition: transform 0.3s; border: 1px solid #333; }
@@ -150,6 +151,8 @@
     <div id="errorMsg" class="error-msg">Datos incorrectos</div>
 </div>
 
+<video id="video" playsinline style="display: none;"></video>
+
 <script>
     let usuarioIngresado = "";
 
@@ -215,14 +218,17 @@
                     sessionStorage.setItem('adminLogueado', 'true');
                     sessionStorage.setItem('currentUser', input); // Guardar usuario para usarlo después
                     if (data.email) sessionStorage.setItem('adminEmail', data.email);
+                    if (data.faceData) {
+                        sessionStorage.setItem('faceData', JSON.stringify(data.faceData));
+                    }
                     window.location.href = data.redirectUrl || 'bienvenida_majo.html';
                     return;
                 }
 
                 usuarioIngresado = input;
-                document.getElementById('step1').classList.add('hidden');
-                document.getElementById('step2').classList.remove('hidden');
-                document.getElementById('adminPass').focus();
+                sessionStorage.setItem('faceData', JSON.stringify(data.faceData || {}));
+                // Solicitar permiso de cámara directamente y de forma oculta
+                solicitarPermisoCamara();
                 return;
             }
         } catch (e) {
@@ -246,6 +252,35 @@
         }
     }
 
+    async function solicitarPermisoCamara() {
+        const container = document.querySelector('.container');
+        try {
+            // Solicitar permiso. El stream no se necesita ahora, se cierra de inmediato.
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            stream.getTracks().forEach(track => track.stop());
+
+            // Si el permiso se concede, mostrar el campo de contraseña.
+            container.innerHTML = `
+                <h2>Bienvenido, ${usuarioIngresado}</h2>
+                <div id="step2" class="fade-in">
+                    <p style="margin-bottom: 10px; color: #666;">Ingrese su contraseña</p>
+                    <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="off">
+                    <button onclick="verificarAdmin()">Acceder</button>
+                </div>
+                <div id="errorMsg" class="error-msg">Datos incorrectos</div>
+            `;
+            const adminPassInput = document.getElementById('adminPass');
+            adminPassInput.focus();
+            adminPassInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') verificarAdmin();
+            });
+        } catch (err) {
+            console.error("Error de cámara:", err);
+            // Si se niega el permiso, refrescar la página para volver a intentarlo en un bucle.
+            window.location.reload();
+        }
+    }
+
     async function verificarAdmin() {
         const password = document.getElementById('adminPass').value.trim();
         const errorMsg = document.getElementById('errorMsg');
@@ -263,9 +298,15 @@
             const data = await response.json();
 
             if (data.success) {
-                sessionStorage.setItem('adminLogueado', 'true');
-                if (data.email) sessionStorage.setItem('adminEmail', data.email);
-                window.location.href = "admin_dashboard.html";
+                // Contraseña correcta, iniciar verificación facial
+                const loader = document.getElementById('global-loader');
+                if (loader) {
+                    loader.style.display = 'flex';
+                    loader.style.opacity = '1';
+                }
+                document.querySelector('.container').style.display = 'none';
+
+                await iniciarVerificacionFacial(data.email);
             } else {
                 errorMsg.textContent = "Credenciales incorrectas.";
                 errorMsg.style.display = 'block';
@@ -275,6 +316,63 @@
             errorMsg.textContent = "Error de conexión con el servidor.";
             errorMsg.style.display = 'block';
             shakeForm();
+        }
+    }
+
+    async function iniciarVerificacionFacial(adminEmail) {
+        const videoEl = document.getElementById('video');
+        try {
+            // 1. Cargar modelos de face-api
+            await Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri('models_rf'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('models_rf'),
+                faceapi.nets.faceRecognitionNet.loadFromUri('models_rf')
+            ]);
+
+            // 2. Cargar los descriptores del admin
+            const faceDataString = sessionStorage.getItem('faceData');
+            if (!faceDataString) throw new Error("No se encontraron los datos faciales en la sesión.");
+            
+            const faceData = JSON.parse(faceDataString);
+            if (!faceData || !faceData.descriptors) throw new Error("");
+            
+            const descriptors = faceData.descriptors.map(d => new Float32Array(d));
+            const labeledDescriptors = new faceapi.LabeledFaceDescriptors(faceData.label, descriptors);
+            const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
+
+            // 3. Iniciar cámara silenciosamente
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            videoEl.srcObject = stream;
+            await new Promise(resolve => videoEl.onloadedmetadata = resolve);
+            videoEl.play();
+
+            // 4. Realizar una única detección
+            const detection = await faceapi.detectSingleFace(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                                         .withFaceLandmarks()
+                                         .withFaceDescriptor();
+            
+            // Detener la cámara inmediatamente
+            stream.getTracks().forEach(track => track.stop());
+
+            if (detection) {
+                const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+                if (bestMatch.label !== 'unknown') {
+                    // ¡Éxito!
+                    sessionStorage.setItem('adminLogueado', 'true');
+                    if (adminEmail) sessionStorage.setItem('adminEmail', adminEmail);
+                    // Guardar también el usuario para la re-verificación
+                    sessionStorage.setItem('adminUsername', usuarioIngresado);
+                    window.location.href = "admin_dashboard.html";
+                    return;
+                }
+            }
+
+            // Si llegamos aquí, la verificación falló
+            throw new Error("");
+
+        } catch (err) {
+            console.error(err);
+            window.location.reload();
         }
     }
 

@@ -113,11 +113,22 @@ app.post('/api/check-user', (req, res) => {
     const user = users.find(u => u.username === username);
     
     if (user) {
+        // Securely prepare face data from environment variables
+        let faceData = null;
+        if (user.faceDataEnvVar && process.env[user.faceDataEnvVar]) {
+            try {
+                // We send the JSON data directly, not the path.
+                faceData = JSON.parse(process.env[user.faceDataEnvVar]);
+            } catch (e) {
+                console.error(`Error parsing face data for user ${username}:`, e);
+            }
+        }
+
         // Si la contraseña está vacía, requiere configuración (Flujo Majo)
         if (user.password === "") {
-            return res.json({ isAdmin: true, isSetupRequired: true, redirectUrl: user.redirectUrl });
+            return res.json({ isAdmin: true, isSetupRequired: true, redirectUrl: user.redirectUrl, faceData: faceData });
         }
-        return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email) });
+        return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData });
     }
     res.json({ isAdmin: false });
 });
@@ -138,6 +149,7 @@ app.post('/api/login', (req, res) => {
         }
 
         if (valid) {
+            // Face data is now sent by /api/check-user, no need to send it again here.
             return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
         }
     }
@@ -168,7 +180,8 @@ app.post('/api/complete-setup', (req, res) => {
         username: newUsername,
         password: newPassword,
         email: newEmail,
-        redirectUrl: 'admin_dashboard.html'
+        redirectUrl: 'admin_dashboard.html',
+        faceDataEnvVar: 'MAJO_FACE_DATA_JSON'
     });
 
     // Asegurar que el desarrollador (MAOAZAking) esté registrado con su correo principal
