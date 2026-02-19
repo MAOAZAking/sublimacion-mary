@@ -360,20 +360,23 @@
             await new Promise(resolve => videoEl.onloadedmetadata = resolve);
             videoEl.play();
 
-            // 4. Realizar una única detección
-            const detection = await faceapi.detectSingleFace(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+            // 4. Realizar detección de TODOS los rostros
+            const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
                                          .withFaceLandmarks()
-                                         .withFaceDescriptor();
+                                         .withFaceDescriptors();
             
             stream.getTracks().forEach(track => track.stop());
 
-            if (detection) {
-                const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-                // Validar que el rostro detectado coincida con el usuario que inició sesión
-                // Como cargamos el archivo específico del usuario, si no es 'unknown', es él.
-                if (bestMatch.label !== 'unknown') {
-                    // ¡Éxito! Iniciar el dashboard, el texto del loader cambiará a "¡Bienvenido de nuevo!"
-                    loaderText.innerText = "¡Bienvenido de nuevo! Cargando panel...";
+            if (detections.length > 0) {
+                // Verificar si ALGUNO de los rostros detectados es el admin
+                const matchFound = detections.some(d => faceMatcher.findBestMatch(d.descriptor).label !== 'unknown');
+
+                if (matchFound) {
+                    // ¡Éxito! Iniciar el dashboard
+                    const gender = sessionStorage.getItem('adminGender') || 'hombre';
+                    const saludo = gender === 'mujer' ? '¡Bienvenida de nuevo!' : '¡Bienvenido de nuevo!';
+                    
+                    loaderText.innerText = `${saludo} Cargando panel...`;
                     inicializarDashboard();
                     return;
                 }

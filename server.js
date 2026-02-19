@@ -126,9 +126,9 @@ app.post('/api/check-user', (req, res) => {
 
         // Si la contraseña está vacía, requiere configuración (Flujo Majo)
         if (user.password === "") {
-            return res.json({ isAdmin: true, isSetupRequired: true, redirectUrl: user.redirectUrl, faceData: faceData });
+            return res.json({ isAdmin: true, isSetupRequired: true, redirectUrl: user.redirectUrl, faceData: faceData, gender: user.gender });
         }
-        return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData });
+        return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData, gender: user.gender });
     }
     res.json({ isAdmin: false });
 });
@@ -181,7 +181,8 @@ app.post('/api/complete-setup', (req, res) => {
         password: newPassword,
         email: newEmail,
         redirectUrl: 'admin_dashboard.html',
-        faceDataEnvVar: 'MAJO_FACE_DATA_JSON'
+        faceDataEnvVar: 'MAJO_FACE_DATA_JSON',
+        gender: 'mujer'
     });
 
     // Asegurar que el desarrollador (MAOAZAking) esté registrado con su correo principal
