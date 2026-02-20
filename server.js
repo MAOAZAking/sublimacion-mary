@@ -231,6 +231,12 @@ app.post('/api/complete-setup', async (req, res) => {
             console.error("Error guardando en GitHub:", ghErr);
             return res.status(500).json({ success: false, error: 'Error guardando en la nube: ' + ghErr.message });
         }
+    } else {
+        // Si las credenciales de GitHub no están, la persistencia fallará.
+        // Es importante notificar esto como un error del servidor.
+        const errorMessage = "Error de configuración del servidor: Faltan credenciales de GitHub para guardar los cambios de usuario en la nube.";
+        console.error(errorMessage);
+        return res.status(500).json({ success: false, error: errorMessage });
     }
 
     res.json({ success: true });
