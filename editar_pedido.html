@@ -200,7 +200,8 @@
     function initializeForm(pedido) {
         const productoTipoCompleto = pedido.producto;
         const esMug = productoTipoCompleto.toLowerCase().includes('mug');
-        const esCamiseta = productoTipoCompleto.toLowerCase().includes('camiseta');
+        const esTextil = ['camiseta', 'saco'].some(t => productoTipoCompleto.toLowerCase().includes(t));
+        const esGorra = productoTipoCompleto.toLowerCase().includes('gorra');
 
         document.getElementById('subtitle').textContent = `Editando: ${productoTipoCompleto} de cliente ${pedido.telefono}`;
         document.getElementById('telefono').value = pedido.telefono || pedido.teléfono;
@@ -257,7 +258,7 @@
                 if (option) option.classList.add('selected');
             }
 
-        } else if (esCamiseta) {
+        } else if (esTextil) {
             let urlFrontal = pedido.imagenes ? pedido.imagenes.frontal : '';
             let urlEspaldar = pedido.imagenes ? pedido.imagenes.espaldar : '';
             
@@ -283,6 +284,21 @@
                     <label for="plantilla">Subir NUEVA Plantilla .ai (Opcional):</label>
                     <input type="file" name="plantilla" id="plantilla" accept=".ai">
                     <p class="file-info">Plantilla actual conservada. Si cambia alguna lámina, debe subir la nueva plantilla.</p>
+                </div>
+            `;
+        } else if (esGorra) {
+            let urlFrontal = pedido.imagenes ? pedido.imagenes.frontal : (pedido.imagen_url || '');
+            
+            dynamicFiles.innerHTML = `
+                <div class="form-group">
+                    <label for="lamina_frontal">Subir NUEVA Lámina Frontal (Opcional):</label>
+                    <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png">
+                    <p class="file-info">Archivo actual: <strong>${getFileNameFromUrl(urlFrontal)}</strong><br>Si no sube un archivo, se conservará el actual.</p>
+                </div>
+                <div class="form-group">
+                    <label for="plantilla">Subir NUEVA Plantilla .ai (Opcional):</label>
+                    <input type="file" name="plantilla" id="plantilla" accept=".ai">
+                    <p class="file-info">Plantilla actual conservada. Si cambia la lámina, debe subir la nueva plantilla.</p>
                 </div>
             `;
         }
@@ -377,13 +393,20 @@
         formData.append('estado', nuevoEstado);
         
         // Sanitizar nombres de archivo y añadir a FormData
-        const esCamiseta = productoTipo.toLowerCase().includes('camiseta');
-        if (esCamiseta) {
+        const esTextil = ['camiseta', 'saco'].some(t => productoTipo.toLowerCase().includes(t));
+        const esGorra = productoTipo.toLowerCase().includes('gorra');
+
+        if (esTextil) {
             const frontalInput = document.getElementById('lamina_frontal');
             const espaldarInput = document.getElementById('lamina_espaldar');
             const plantillaInput = document.getElementById('plantilla');
             if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '_'));
             if (espaldarInput.files.length > 0) formData.append('lamina_espaldar', espaldarInput.files[0], espaldarInput.files[0].name.replace(/\s+/g, '_'));
+            if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '_'));
+        } else if (esGorra) {
+            const frontalInput = document.getElementById('lamina_frontal');
+            const plantillaInput = document.getElementById('plantilla');
+            if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '_'));
             if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '_'));
         } else { // Es Mug
             const imgInput = document.getElementById('imagen');

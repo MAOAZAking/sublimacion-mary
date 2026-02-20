@@ -296,23 +296,25 @@ app.post('/api/pedidos', upload.fields([
     let tipoProducto = 'otros';
     if (producto && producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
     if (producto && producto.toLowerCase().includes('camiseta')) tipoProducto = 'camiseta';
+    if (producto && producto.toLowerCase().includes('saco')) tipoProducto = 'saco';
+    if (producto && producto.toLowerCase().includes('gorra')) tipoProducto = 'gorra';
 
     // 2. Validaciones por tipo de producto
-    if (tipoProducto === 'camiseta') {
-        // Validación para Camisetas
+    if (['camiseta', 'saco'].includes(tipoProducto)) {
+        // Validación para Textiles de doble cara (Camisetas, Sacos)
         if (!files.lamina_frontal && !files.lamina_espaldar) {
             // Limpiar plantilla si existe pero faltan láminas
             if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
-            return res.status(400).json({ success: false, error: 'Para camisetas, es obligatorio subir al menos una lámina (frontal o espaldar).' });
+            return res.status(400).json({ success: false, error: `Para ${tipoProducto}s, es obligatorio subir al menos una lámina (frontal o espaldar).` });
         }
         if (!files.plantilla) {
             // Limpiar láminas si existen pero falta plantilla
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
             if (files.lamina_espaldar) try { fs.unlinkSync(files.lamina_espaldar[0].path); } catch(e){}
-            return res.status(400).json({ success: false, error: 'Para camisetas, es obligatorio subir la plantilla (.ai).' });
+            return res.status(400).json({ success: false, error: `Para ${tipoProducto}s, es obligatorio subir la plantilla (.ai).` });
         }
 
-        const validateCamiseta = (file, nombreArchivo) => {
+        const validateTextil = (file, nombreArchivo) => {
             const dim = sizeOf(file.path);
             // Dimensiones máximas (Aprox A4 300dpi)
             const maxW = 2482; 
@@ -325,8 +327,8 @@ app.post('/api/pedidos', upload.fields([
         };
 
         try {
-            if (files.lamina_frontal) validateCamiseta(files.lamina_frontal[0], "Lámina Frontal");
-            if (files.lamina_espaldar) validateCamiseta(files.lamina_espaldar[0], "Lámina Espaldar");
+            if (files.lamina_frontal) validateTextil(files.lamina_frontal[0], "Lámina Frontal");
+            if (files.lamina_espaldar) validateTextil(files.lamina_espaldar[0], "Lámina Espaldar");
         } catch (err) {
             if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
             if (files.lamina_espaldar) try { fs.unlinkSync(files.lamina_espaldar[0].path); } catch(e){}
@@ -334,6 +336,33 @@ app.post('/api/pedidos', upload.fields([
             return res.status(400).json({ success: false, error: err.message });
         }
 
+    } else if (tipoProducto === 'gorra') {
+        // Validación para Gorras (Solo frontal)
+        if (!files.lamina_frontal) {
+            if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
+            if (files.lamina_espaldar) try { fs.unlinkSync(files.lamina_espaldar[0].path); } catch(e){}
+            return res.status(400).json({ success: false, error: 'Para gorras, es obligatorio subir la lámina frontal.' });
+        }
+        if (!files.plantilla) {
+            if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
+            if (files.lamina_espaldar) try { fs.unlinkSync(files.lamina_espaldar[0].path); } catch(e){}
+            return res.status(400).json({ success: false, error: 'Para gorras, es obligatorio subir la plantilla (.ai).' });
+        }
+        // Validar dimensiones (usando la misma lógica textil por ahora)
+        const validateTextil = (file, nombreArchivo) => {
+            const dim = sizeOf(file.path);
+            const maxW = 2482; const maxH = 3510; const tolerance = 20;
+            if (dim.width > (maxW + tolerance) || dim.height > (maxH + tolerance)) {
+                throw new Error(`Error en ${nombreArchivo}: Dimensiones excedidas.`);
+            }
+        };
+        try {
+            validateTextil(files.lamina_frontal[0], "Lámina Frontal");
+        } catch (err) {
+            if (files.lamina_frontal) try { fs.unlinkSync(files.lamina_frontal[0].path); } catch(e){}
+            if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
+            return res.status(400).json({ success: false, error: err.message });
+        }
     } else {
         // Validación para Mugs (o por defecto)
         if (!files.imagen || !files.plantilla) {
@@ -397,7 +426,7 @@ app.post('/api/pedidos', upload.fields([
         const uploads = [];
         let mainImageUrl = '', urlFrontal = null, urlespaldar = null, urlFotoDiseno = null;
 
-        if (tipoProducto === 'camiseta') {
+        if (['camiseta', 'saco', 'gorra'].includes(tipoProducto)) {
             if (files.lamina_frontal) {
                 const ext = path.extname(files.lamina_frontal[0].originalname);
                 const name = `lamina_frontal_${tipoProducto}_${nextNum}${ext}`;
@@ -406,7 +435,7 @@ app.post('/api/pedidos', upload.fields([
                 urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 mainImageUrl = urlFrontal;
             }
-            if (files.lamina_espaldar) {
+            if (files.lamina_espaldar && tipoProducto !== 'gorra') {
                 const ext = path.extname(files.lamina_espaldar[0].originalname);
                 const name = `lamina_espaldar_${tipoProducto}_${nextNum}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
@@ -540,6 +569,8 @@ app.post('/api/pedidos/edit', upload.fields([
         if (!folderName) {
              if (producto.toLowerCase().includes('mug')) tipoProducto = 'mug';
              else if (producto.toLowerCase().includes('camiseta')) tipoProducto = 'camiseta';
+             else if (producto.toLowerCase().includes('saco')) tipoProducto = 'saco';
+             else if (producto.toLowerCase().includes('gorra')) tipoProducto = 'gorra';
              folderName = `${tipoProducto}_update_${Date.now()}`;
         }
 
@@ -548,7 +579,7 @@ app.post('/api/pedidos/edit', upload.fields([
         let urlFrontal = pedido.imagenes ? pedido.imagenes.frontal : null;
         let urlespaldar = pedido.imagenes ? pedido.imagenes.espaldar : null;
 
-        if (tipoProducto === 'camiseta') {
+        if (['camiseta', 'saco', 'gorra'].includes(tipoProducto)) {
              if (files.lamina_frontal) {
                 const ext = path.extname(files.lamina_frontal[0].originalname);
                 const name = `lamina_frontal_${Date.now()}${ext}`;
@@ -557,7 +588,7 @@ app.post('/api/pedidos/edit', upload.fields([
                 urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 mainImageUrl = urlFrontal;
             }
-            if (files.lamina_espaldar) {
+            if (files.lamina_espaldar && tipoProducto !== 'gorra') {
                 const ext = path.extname(files.lamina_espaldar[0].originalname);
                 const name = `lamina_espaldar_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
@@ -601,7 +632,7 @@ app.post('/api/pedidos/edit', upload.fields([
         if (tipoProducto === 'mug') {
             pedido.tipo_mug = tipo_mug;
             pedido.color_mug = color_mug;
-        } else if (tipoProducto === 'camiseta') {
+        } else if (['camiseta', 'saco', 'gorra'].includes(tipoProducto)) {
             if (!pedido.imagenes) pedido.imagenes = {};
             pedido.imagenes.frontal = urlFrontal;
             pedido.imagenes.espaldar = urlespaldar;

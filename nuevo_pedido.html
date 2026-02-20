@@ -159,6 +159,8 @@
                 <option value="" disabled selected>Seleccione una opción</option>
                 <option value="Mug Personalizado">Mug</option>
                 <option value="Camiseta Estampada">Camiseta</option>
+                <option value="Saco Estampado">Saco</option>
+                <option value="Gorra Estampada">Gorra</option>
             </select>
         </div>
 
@@ -275,7 +277,7 @@
                         <input type="file" name="foto_diseno" id="foto_diseno" accept=".jpg, .jpeg, .png, .webp">
                     </div>
                 `;
-            } else if (tipo === 'Camiseta Estampada') {
+            } else if (['Camiseta Estampada', 'Saco Estampado'].includes(tipo)) {
                 dynamicFiles.innerHTML = `
                     <div class="form-group">
                         <label for="lamina_frontal">Subir Lámina Frontal (Imagen del diseño):</label>
@@ -294,6 +296,21 @@
                         <input type="file" name="foto_diseno" id="foto_diseno" accept=".jpg, .jpeg, .png, .webp">
                     </div>
                     <p style="font-size: 0.85rem; color: #666; margin-top: -10px; margin-bottom: 20px;">* Es obligatorio subir al menos una de las dos láminas y la plantilla.</p>
+                `;
+            } else if (tipo === 'Gorra Estampada') {
+                dynamicFiles.innerHTML = `
+                    <div class="form-group">
+                        <label for="lamina_frontal">Subir Lámina Frontal (Imagen del diseño):</label>
+                        <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="plantilla">Subir Plantilla (.ai, .psd, .pdf, etc):</label>
+                        <input type="file" name="plantilla" id="plantilla" accept=".ai, .psd, .psb, .psdc, .eps, .pdf, .svg, .tiff, .ait" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="foto_diseno">Foto usada en el diseño (Opcional):</label>
+                        <input type="file" name="foto_diseno" id="foto_diseno" accept=".jpg, .jpeg, .png, .webp">
+                    </div>
                 `;
             }
         } else {
@@ -340,14 +357,22 @@
                 return;
             }
             if (img && img.files.length > 0 && plant && plant.files.length > 0) valid = true;
-        } else if (producto === 'Camiseta Estampada') {
+        } else if (['Camiseta Estampada', 'Saco Estampado'].includes(producto)) {
             const frontal = document.getElementById('lamina_frontal');
             const espaldar = document.getElementById('lamina_espaldar');
             const plantilla = document.getElementById('plantilla');
             
             if (((frontal && frontal.files.length > 0) || (espaldar && espaldar.files.length > 0)) && (plantilla && plantilla.files.length > 0)) valid = true;
             else {
-                alert("Debe subir al menos una lámina para la camiseta ya sea Frontal o espaldar.");
+                alert("Debe subir al menos una lámina para el producto textil (Frontal o Espaldar) y la plantilla.");
+                return;
+            }
+        } else if (producto === 'Gorra Estampada') {
+            const frontal = document.getElementById('lamina_frontal');
+            const plantilla = document.getElementById('plantilla');
+            if (frontal && frontal.files.length > 0 && plantilla && plantilla.files.length > 0) valid = true;
+            else {
+                alert("Para la gorra es obligatorio subir la lámina frontal y la plantilla.");
                 return;
             }
         }
@@ -391,13 +416,20 @@
                 formData.append('imagen', imgFile, imgFile.name.replace(/\s+/g, '-'));
                 formData.append('plantilla', plantFile, plantFile.name.replace(/\s+/g, '-'));
                 if (fotoDiseno) formData.append('foto_diseno', fotoDiseno, fotoDiseno.name.replace(/\s+/g, '-'));
-            } else if (producto === 'Camiseta Estampada') {
+            } else if (['Camiseta Estampada', 'Saco Estampado'].includes(producto)) {
                 const frontalInput = document.getElementById('lamina_frontal');
                 const espaldarInput = document.getElementById('lamina_espaldar');
                 const plantillaInput = document.getElementById('plantilla');
                 const fotoDisenoInput = document.getElementById('foto_diseno');
                 if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
                 if (espaldarInput.files.length > 0) formData.append('lamina_espaldar', espaldarInput.files[0], espaldarInput.files[0].name.replace(/\s+/g, '-'));
+                if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
+                if (fotoDisenoInput.files.length > 0) formData.append('foto_diseno', fotoDisenoInput.files[0], fotoDisenoInput.files[0].name.replace(/\s+/g, '-'));
+            } else if (producto === 'Gorra Estampada') {
+                const frontalInput = document.getElementById('lamina_frontal');
+                const plantillaInput = document.getElementById('plantilla');
+                const fotoDisenoInput = document.getElementById('foto_diseno');
+                if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
                 if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
                 if (fotoDisenoInput.files.length > 0) formData.append('foto_diseno', fotoDisenoInput.files[0], fotoDisenoInput.files[0].name.replace(/\s+/g, '-'));
             }

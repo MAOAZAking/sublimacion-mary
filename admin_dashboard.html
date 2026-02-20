@@ -754,7 +754,7 @@
         if (pedido.producto && pedido.producto.toLowerCase().includes('mug')) {
             container3D.style.display = 'block';
             init3DMug(pedido, container3D);
-        } else if (pedido.producto && pedido.producto.toLowerCase().includes('camiseta')) {
+        } else if (pedido.producto && (pedido.producto.toLowerCase().includes('camiseta') || pedido.producto.toLowerCase().includes('saco') || pedido.producto.toLowerCase().includes('gorra'))) {
             container3D.style.display = 'block';
             
             // Determinar URLs de frontal y espaldar
@@ -771,7 +771,10 @@
                 else urls.frontal = pedido.imagen_url; // Asumir frontal por defecto
             }
 
-            init3DCamiseta(urls, container3D);
+            let tipo = 'camiseta';
+            if (pedido.producto.toLowerCase().includes('saco')) tipo = 'saco';
+            if (pedido.producto.toLowerCase().includes('gorra')) tipo = 'gorra';
+            init3DTextil(urls, container3D, tipo);
         } else {
             modalImg.style.display = 'block';
             modalImg.src = pedido.imagen_url;
@@ -985,7 +988,7 @@
         animate();
     }
 
-    async function init3DCamiseta(urls, container) {
+    async function init3DTextil(urls, container, tipoProducto) {
         const loaderElement = document.getElementById('global-loader');
         if (loaderElement) {
             loaderElement.style.display = 'flex';
@@ -1057,30 +1060,91 @@
         ctx.fillStyle = 'rgb(255, 255, 255)';
         ctx.fillRect(0, 0, size, size);
 
-        const drawImageOnCanvas = (img, offsetX, offsetY) => {
-            const maxAllowedWidth = 307;
-            const maxAllowedHeight = 307;
+        const textureSettings = {
+            camiseta: {
+                //Explicacion de dimensiones en camiseta:
+                // X -> Entre mayor sea el número se mueve la lamina hacia la derecha
+                // NOTA DE X: Su tope esta en la costura derecha en la parte frontal de la camiseta
+                // Y -> Entre mayor sea el número se mueve la lamina hacia abajo
+                // SCALE -> Entre mayor sea el número mas grande es la lamina
+                // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
+                frontal: { x: -240, y: 200, scale: 1.5, angle: 0 },
+                espaldar: { x: 270, y: 200, scale: 1.5, angle: 0 }
+            },
+            saco: {
+                //Explicacion de dimensiones en saco:
+                // X -> Entre mayor sea el número se mueve la lamina hacia la derecha
+                // NOTA DE X: Su tope esta en la costura izquierda en la parte frontal del saco
+
+                // Y -> Entre mayor sea el número se mueve la lamina hacia abajo
+                // SCALE -> Entre mayor sea el número mas grande es la lamina
+                // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
+                frontal: { x: 40, y: 260, scale: 1.0, angle: 0 },
+                espaldar: { x: -320, y: 260, scale: 1.0, angle: 0 }
+            },
+            gorra: {
+                //Explicacion de dimensiones en gorra:
+                // X -> Entre mayor sea el número se mueve la lamina hacia la derecha
+                // Y -> Entre mayor sea el número se mueve la lamina hacia abajo
+                // SCALE -> Entre mayor sea el número mas grande es la lamina
+                // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
+                frontal: { x: 230, y: 560, scale: 1.5, angle: 0, curvature: 60 },
+            }
+        };
+
+        const settings = textureSettings[tipoProducto] || textureSettings.camiseta;
+
+        const drawImageOnCanvas = (img, offsetX, offsetY, scaleFactor, rotationDeg, curvature = 0) => {
+            const maxAllowedWidth = 200 * scaleFactor;
+            const maxAllowedHeight = 200 * scaleFactor;
 
             const scale = Math.min(maxAllowedWidth / img.width, maxAllowedHeight / img.height);
             const drawWidth = img.width * scale;
             const drawHeight = img.height * scale;
 
-            const x = ((size - drawWidth) / 2) + offsetX;
-            const y = ((size * 0.4) - (drawHeight / 2)) + offsetY;
+            const cx = (size / 2) + offsetX;
+            const cy = (size * 0.4) + offsetY;
 
-            ctx.drawImage(img, x, y, drawWidth, drawHeight);
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(rotationDeg * Math.PI / 180);
+            
+            if (curvature && curvature !== 0) {
+                // Dibujar en franjas para simular curvatura (Corrección de arco)
+                const slices = 30; 
+                const sliceWidth = drawWidth / slices;
+                const imgSliceWidth = img.width / slices;
+                
+                for (let i = 0; i < slices; i++) {
+                    // Normalizar x de -1 a 1
+                    const nx = (i / (slices - 1)) * 2 - 1; 
+                    // Desplazamiento parabólico: y = k * x^2 (Sube los lados)
+                    const yShift = curvature * (nx * nx); 
+                    
+                    // Dibujar franja desplazada
+                    ctx.drawImage(img, i * imgSliceWidth, 0, imgSliceWidth, img.height, 
+                                 -drawWidth / 2 + i * sliceWidth, -drawHeight / 2 - yShift, sliceWidth + 1.5, drawHeight);
+                }
+            } else {
+                ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+            }
+
+            ctx.restore();
         };
 
         if (frontImg) {
-            drawImageOnCanvas(frontImg, -240, 250);
+            const s = settings.frontal;
+            drawImageOnCanvas(frontImg, s.x, s.y, s.scale, s.angle, s.curvature);
         }
         if (backImg) {
-            drawImageOnCanvas(backImg, 272, 250);
+            const s = settings.espaldar;
+            drawImageOnCanvas(backImg, s.x, s.y, s.scale, s.angle, s.curvature);
         }
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.flipY = false;
         texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
         const gltfLoader = new GLTFLoader();
         let currentModel;
@@ -1088,7 +1152,7 @@
         const loadModel = (gender) => {
             if (loaderElement) { loaderElement.style.display = 'flex'; loaderElement.style.opacity = '1'; }
 
-            const productType = 'camiseta';
+            const productType = tipoProducto;
             const modelPath = `modelo_3d/${gender}/modelo_3d_${gender}_${productType}.glb`;
 
             gltfLoader.load(modelPath, (gltf) => {
@@ -1100,11 +1164,26 @@
                 let targetMesh = currentModel;
 
                 currentModel.traverse((child) => {
-                    if (child.isMesh && child.material && child.material.name === 'Wolf3D_Outfit_Top') {
+                    let isTarget = false;
+                    if (tipoProducto === 'gorra') {
+                        // Para gorras, buscamos la malla del accesorio de cabeza
+                        if (child.isMesh && child.material && (child.material.name.includes('Headwear') || child.material.name.includes('Cap') || child.name.includes('Headwear'))) isTarget = true;
+                    } else {
+                        // Para camisetas y sacos
+                        if (child.isMesh && child.material && (child.material.name === 'Wolf3D_Outfit_Top' || child.material.name.includes('Fabric') || child.material.name.includes('Material'))) isTarget = true;
+                    }
+
+                    if (isTarget) {
                         const material = child.material;
                         material.map = texture;
                         material.metalness = 0;
                         material.roughness = 1;
+
+                        if (tipoProducto === 'gorra') {
+                            material.normalMap = null;
+                            material.bumpMap = null;
+                        }
+
                         material.needsUpdate = true;
                         targetMesh = child;
                     }
@@ -1118,12 +1197,15 @@
                 box.getSize(size);
                 const center = box.getCenter(new THREE.Vector3());
                 
-                // Calcular posición del pecho (aprox 75% de la altura total)
-                const chestY = box.min.y + (size.y * 0.75);
+                // Calcular posición del foco (Pecho para ropa, Cabeza para gorras)
+                let focusY = box.min.y + (size.y * 0.75); // Por defecto pecho
+                if (tipoProducto === 'gorra') {
+                    focusY = box.max.y - (size.y * 0.15); // Foco en la cabeza
+                }
 
-                controls.target.set(center.x, chestY, center.z);
+                controls.target.set(center.x, focusY, center.z);
                 // Ajustar cámara: Distancia proporcional a la altura del modelo
-                camera.position.set(center.x, chestY, box.max.z + (size.y * 0.6));
+                camera.position.set(center.x, focusY, box.max.z + (size.y * (tipoProducto === 'gorra' ? 0.4 : 0.6)));
                 controls.update();
 
                 //////////////////////// CAMARA EN TODO EL MODELO 3D ////////////////////////

@@ -119,5 +119,26 @@
             "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_espaldar_camiseta_4.jpg"
         },
         "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/foto_usada_en_camiseta_4.jpg"
+    },
+    {
+        "telefono": "3002052842",
+        "producto": "Saco Estampado",
+        "fecha": "20/02/2026 10:00:00",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
+        "imagenes": {
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
+            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_espaldar_camiseta_4.jpg"
+        }
+    },
+    {
+        "telefono": "3002052842",
+        "producto": "Gorra Estampada",
+        "fecha": "20/02/2026 10:05:00",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png",
+        "imagenes": {
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png"
+        }
     }
 ]
