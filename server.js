@@ -239,6 +239,37 @@ app.post('/api/complete-setup', async (req, res) => {
         return res.status(500).json({ success: false, error: errorMessage });
     }
 
+    // --- ENVIAR CORREO DE BIENVENIDA A LA ADMINISTRADORA (FormSubmit) ---
+    try {
+        // Construir URL pública de la imagen de bienvenida basada en el repositorio
+        // Asumimos la rama 'main' por defecto para recursos estáticos
+        const repoOwner = process.env.GITHUB_OWNER || 'MAOAZAking';
+        const repoName = process.env.GITHUB_REPO || 'sublimacion-mary';
+        const imgUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/img/logo_sin_fondo.png`;
+
+        // Enviar petición a FormSubmit
+        // NOTA: La primera vez, llegará un correo de activación en inglés a la bandeja de entrada.
+        await fetch(`https://formsubmit.co/${newEmail}`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                _subject: "🎉 ¡Bienvenida Majo! Configuración Exitosa de tu correo como ADMINISTRADOR - Sublimación Mary",
+                _template: "box", // Usa un diseño de caja más limpio y profesional
+                _captcha: "false",
+                "Hola": `Hola ${newUsername}, te damos la bienvenida desde el equipo de desarrollo y soporte de Sublimación Mary.`,
+                "Confirmación": "Tu configuración como administradora ha sido completada con éxito.",
+                "Notificaciones": "A partir de ahora, recibirás en este correo las notificaciones de los clientes (aprobaciones y solicitudes de cambios).",
+                "Regalo de Bienvenida": "Majo aquí tenemos un logo que creamos para ti, pero si gustas lo puedes cambiar", imgUrl // Se mostrará el enlace a la imagen
+            })
+        });
+        console.log(`Correo de bienvenida enviado a ${newEmail}`);
+    } catch (emailErr) {
+        console.error("Error enviando correo de bienvenida (no crítico):", emailErr);
+    }
+
     res.json({ success: true });
 });
 

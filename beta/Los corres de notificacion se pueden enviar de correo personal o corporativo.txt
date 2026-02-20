@@ -1,0 +1,1 @@
+Para lograr lo que quieres (imagen incrustada visualmente en el correo y cero inglés), tendríamos que instalar y configurar una librería llamada nodemailer en el servidor, lo cual requiere que tengas una cuenta de correo (como Gmail) configurada con "Contraseña de Aplicación" para que el servidor pueda enviar correos reales en tu nombre.
