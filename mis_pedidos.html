@@ -1111,14 +1111,8 @@
             body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: nuevoEstado })
         });
         
-        // Enviar correo silencioso
-        const adminEmail = await getAdminEmail();
-        const formData = new FormData();
-        formData.append('_subject', `Cliente SATISFECHO - ${telefono}`);
-        formData.append('_cc', adminEmail);
-        formData.append('mensaje', `El cliente ${telefono} ha aprobado el producto: ${imgUrl}`);
-        fetch("https://formsubmit.co/ajax/378c29d9d55d65ab60b67264f0d7b6d8", { method: "POST", body: formData });
-
+        // La notificación por correo ahora se envía automáticamente desde el backend (server.js)
+        // al llamar a /api/update-status. No se necesita hacer nada más aquí.
         // Redireccionar a WhatsApp
         const mensajeWA = `Hola, soy el cliente ${telefono} y el producto que tiene la imagen ${imgUrl} ME ENCANTA, POR FAVOR MANDARLO A PRODUCCIÓN`;
         const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
@@ -1151,16 +1145,11 @@
         fetch(`${BACKEND_URL}/api/update-status`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: "Creando diseño" })
+            body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: "Creando diseño", detalles: textoCambio })
         });
 
-        // Enviar correo silencioso
-        const adminEmail = await getAdminEmail();
-        const formData = new FormData();
-        formData.append('_subject', `Solicitud de CAMBIO - ${telefono}`);
-        formData.append('_cc', adminEmail);
-        formData.append('mensaje', `El cliente ${telefono} solicita cambios en: ${imgUrl}\nSolicitud: ${textoCambio}`);
-        fetch("https://formsubmit.co/ajax/378c29d9d55d65ab60b67264f0d7b6d8", { method: "POST", body: formData });
+        // La notificación por correo ahora se envía automáticamente desde el backend (server.js)
+        // al llamar a /api/update-status. No se necesita hacer nada más aquí.
 
         // Copiar al portapapeles
         navigator.clipboard.writeText(textoCambio).then(() => {

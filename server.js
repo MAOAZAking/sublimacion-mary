@@ -5,6 +5,7 @@ const multer = require('multer'); // Necesario para subir archivos
 const imageSizeLib = require('image-size'); // Para validar dimensiones
 // Fix: Asegurar que sizeOf sea una función (compatibilidad con diferentes versiones de la librería)
 const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.imageSize;
+const nodemailer = require('nodemailer'); // Para enviar correos
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 const archiver = require('archiver'); // Para crear archivos ZIP
 require('dotenv').config();
@@ -19,6 +20,84 @@ const resolveEnvValue = (val) => {
         return process.env[envKey] || '';
     }
     return val;
+};
+
+// --- Configuración de Nodemailer ---
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+// Función auxiliar para enviar notificaciones
+async function sendEmailNotification(subject, htmlContent) {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+
+    // Buscar correo del admin (Majo) o usar el por defecto
+    const admin = users.find(u => u.email && u.username !== 'MAOAZAking');
+    const toEmail = admin ? resolveEnvValue(admin.email) : (process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
+
+    try {
+        await transporter.sendMail({
+            from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
+            to: toEmail,
+            subject: subject,
+            html: htmlContent
+        });
+        console.log(`📧 Notificación enviada a ${toEmail}: ${subject}`);
+    } catch (error) {
+        console.error("❌ Error enviando correo:", error);
+    }
+}
+
+// --- Plantilla de Correo Profesional ---
+const getEmailTemplate = (title, bodyContent, imageUrl) => {
+    // URL pública de la imagen de presentación en tu repositorio
+    const footerImage = "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/presentacion_email.png";
+    const year = new Date().getFullYear();
+    
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333; }
+            .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+            .header { background-color: #121212; padding: 30px 20px; text-align: center; }
+            .header h1 { color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
+            .content { padding: 40px 30px; line-height: 1.6; font-size: 16px; color: #555; }
+            .content h2 { color: #121212; font-size: 22px; margin-top: 0; margin-bottom: 20px; font-weight: 600; }
+            .info-card { background-color: #f8f9fa; border-left: 5px solid #8e44ad; padding: 20px; margin: 25px 0; border-radius: 4px; }
+            .info-item { margin-bottom: 10px; }
+            .info-item strong { color: #333; display: inline-block; width: 120px; }
+            .btn { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #ffffff !important; text-decoration: none; border-radius: 50px; font-weight: bold; margin-top: 25px; text-align: center; box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3); }
+            .footer-image { width: 100%; display: block; border-top: 1px solid #eee; }
+            .footer { background-color: #121212; padding: 20px; text-align: center; color: #888; font-size: 13px; }
+            .footer p { margin: 5px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="header">
+                <h1>Sublimación Mary</h1>
+            </div>
+            <div class="content">
+                <h2>${title}</h2>
+                ${bodyContent}
+                ${imageUrl ? `<div style="text-align:center; margin-top:30px;"><img src="${imageUrl}" alt="Vista Previa" style="max-width:100%; border-radius:8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>` : ''}
+            </div>
+            <img src="${footerImage}" alt="Presentación" class="footer-image">
+            <div class="footer">
+                <p>&copy; ${year} Sublimación Mary. Todo personalizado.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
 };
 
 const app = express();
@@ -516,6 +595,21 @@ app.post('/api/pedidos', upload.fields([
 
         Object.values(files).flat().forEach(f => { try { fs.unlinkSync(f.path); } catch(e){} });
 
+        // --- ENVIAR CORREO: NUEVO PEDIDO ---
+        const bodyContent = `
+            <p>Se ha registrado un nuevo pedido en el sistema. A continuación los detalles:</p>
+            <div class="info-card">
+                <div class="info-item"><strong>Cliente:</strong> ${telefono}</div>
+                <div class="info-item"><strong>Producto:</strong> ${producto}</div>
+                <div class="info-item"><strong>Fecha:</strong> ${fecha}</div>
+            </div>
+            <div style="text-align: center;">
+                <a href="${mainImageUrl}" class="btn">Ver Imagen Original</a>
+            </div>
+        `;
+        const emailHtml = getEmailTemplate(`¡Nuevo Pedido Recibido! 🎉`, bodyContent, mainImageUrl);
+        sendEmailNotification(`Nuevo Pedido - ${telefono} (${producto})`, emailHtml);
+
         return res.json({ success: true, pedido: nuevoPedido });
 
     } catch (error) {
@@ -666,6 +760,17 @@ app.post('/api/pedidos/edit', upload.fields([
 
         Object.values(files).flat().forEach(f => { try { fs.unlinkSync(f.path); } catch(e){} });
 
+        // --- ENVIAR CORREO: PEDIDO EDITADO ---
+        const bodyContent = `
+            <p>El pedido del cliente <strong>${telefono}</strong> ha sido modificado exitosamente por el administrador.</p>
+            <div class="info-card" style="border-left-color: #2980b9;">
+                <div class="info-item"><strong>Producto:</strong> ${producto}</div>
+                <div class="info-item"><strong>Fecha Actualizada:</strong> ${fecha}</div>
+            </div>
+        `;
+        const emailHtml = getEmailTemplate(`Pedido Editado ✏️`, bodyContent, mainImageUrl);
+        sendEmailNotification(`Pedido Editado - ${telefono}`, emailHtml);
+
         res.json({ success: true, pedido: pedido });
 
     } catch (error) {
@@ -676,7 +781,7 @@ app.post('/api/pedidos/edit', upload.fields([
 
 // Endpoint para actualizar el estado de un pedido
 app.post('/api/update-status', async (req, res) => {
-    const { imagen_url, nuevo_estado } = req.body;
+    const { imagen_url, nuevo_estado, detalles } = req.body;
     
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
         return res.status(500).json({ success: false, error: 'Credenciales de GitHub no configuradas.' });
@@ -688,10 +793,12 @@ app.post('/api/update-status', async (req, res) => {
         });
         let pedidos = JSON.parse(Buffer.from(jsonFile.content, 'base64').toString('utf-8'));
 
+        let pedidoEncontrado = null;
         let modificado = false;
         pedidos = pedidos.map(p => {
             if (p.imagen_url === imagen_url) {
                 p.estado = nuevo_estado;
+                pedidoEncontrado = p;
                 modificado = true;
             }
             return p;
@@ -710,6 +817,36 @@ app.post('/api/update-status', async (req, res) => {
             content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'),
             sha: jsonFile.sha
         });
+
+        // --- ENVIAR CORREO: ACTUALIZACIÓN DE ESTADO (CLIENTE) ---
+        if (pedidoEncontrado) {
+            let asunto = `Actualización de Estado - ${pedidoEncontrado.telefono}`;
+            let titulo = `Estado Actualizado`;
+            let mensaje = `<p>El estado del pedido ha cambiado a: <strong>${nuevo_estado}</strong></p>`;
+            let colorBorde = "#27ae60"; // Verde por defecto
+
+            if (nuevo_estado === "Creando diseño" && detalles) {
+                asunto = `⚠️ Solicitud de CAMBIO - ${pedidoEncontrado.telefono}`;
+                titulo = `Solicitud de Cambio`;
+                mensaje = `<p>El cliente solicita los siguientes cambios:</p><div style="background: #fff0f0; padding: 15px; border-left: 4px solid #e74c3c; font-style: italic; margin: 15px 0;">"${detalles}"</div>`;
+                colorBorde = "#e74c3c"; // Rojo para cambios
+            } else if (nuevo_estado.includes("Listo")) {
+                asunto = `✅ Cliente SATISFECHO - ${pedidoEncontrado.telefono}`;
+                titulo = `¡Cliente Satisfecho!`;
+                mensaje = `<p>¡El cliente ha aprobado el diseño! El pedido está listo para la siguiente fase.</p>`;
+            }
+
+            const bodyContent = `
+                <div class="info-card" style="border-left-color: ${colorBorde};">
+                    <div class="info-item"><strong>Producto:</strong> ${pedidoEncontrado.producto}</div>
+                    <div class="info-item"><strong>Cliente:</strong> ${pedidoEncontrado.telefono}</div>
+                </div>
+                ${mensaje}
+            `;
+            
+            const emailHtml = getEmailTemplate(titulo, bodyContent, imagen_url);
+            sendEmailNotification(asunto, emailHtml);
+        }
 
         res.json({ success: true });
     } catch (error) {

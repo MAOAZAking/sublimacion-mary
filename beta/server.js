@@ -5,9 +5,25 @@ const multer = require('multer'); // Necesario para subir archivos
 const imageSizeLib = require('image-size'); // Para validar dimensiones
 // Fix: Asegurar que sizeOf sea una función (compatibilidad con diferentes versiones de la librería)
 const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.imageSize;
+const nodemailer = require('nodemailer'); // Para enviar correos
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 const archiver = require('archiver'); // Para crear archivos ZIP
 require('dotenv').config();
+
+// --- Configuración de Nodemailer (para enviar correos desde el servidor) ---
+let transporter = null;
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER, // Tu correo de Gmail
+            pass: process.env.EMAIL_PASS, // Tu "Contraseña de Aplicación" de Gmail
+        },
+    });
+    console.log("📧 Nodemailer configurado para enviar correos.");
+} else {
+    console.warn("⚠️ ADVERTENCIA: Faltan variables de entorno para Nodemailer (EMAIL_USER, EMAIL_PASS). No se enviarán notificaciones por correo.");
+}
 
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -88,6 +104,29 @@ if (!process.env.GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
     if (!process.env.GITHUB_TOKEN) console.warn(" - Falta: GITHUB_TOKEN");
     if (!GITHUB_OWNER) console.warn(" - Falta: GITHUB_OWNER");
     if (!GITHUB_REPO) console.warn(" - Falta: GITHUB_REPO");
+}
+
+// --- Función Centralizada para Enviar Correos ---
+async function sendEmailNotification({ subject, htmlBody }) {
+    if (!transporter) {
+        console.error("Error de correo: Nodemailer no está configurado. No se envió el correo.");
+        return; // No hacer nada si no está configurado
+    }
+    // Priorizar el email que NO sea del desarrollador (para que sea el de Majo)
+    const admin = users.find(u => u.email && u.username !== 'MAOAZAking');
+    const recipientEmail = admin ? resolveEnvValue(admin.email) : (process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
+
+    try {
+        await transporter.sendMail({
+            from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
+            to: recipientEmail,
+            subject: subject,
+            html: htmlBody,
+        });
+        console.log(`Correo de notificación enviado a ${recipientEmail}`);
+    } catch (error) {
+        console.error("Error enviando correo de notificación:", error);
+    }
 }
 
 // Endpoint para verificar si el usuario es administrador
@@ -487,6 +526,24 @@ app.post('/api/pedidos', upload.fields([
                 sha: newCommit.sha
             });
 
+            // --- Notificación por Correo ---
+            await sendEmailNotification({
+                subject: `Nuevo Pedido Creado - ${nuevoPedido.producto}`,
+                htmlBody: `
+                    <h1>Nuevo Pedido Registrado</h1>
+                    <p>Se ha creado un nuevo pedido en el sistema.</p>
+                    <ul>
+                        <li><b>Producto:</b> ${nuevoPedido.producto}</li>
+                        <li><b>Teléfono Cliente:</b> ${nuevoPedido.telefono}</li>
+                        <li><b>Fecha:</b> ${nuevoPedido.fecha}</li>
+                        <li><b>Estado:</b> ${nuevoPedido.estado}</li>
+                    </ul>
+                    <p>Puedes ver los detalles en el panel de administración.</p>
+                    <p><img src="${nuevoPedido.imagen_url}" alt="Imagen del pedido" width="200"></p>
+                `
+            });
+            // --- Fin Notificación ---
+
             // Limpiar temporales
             if (files.imagen) try { fs.unlinkSync(files.imagen[0].path); } catch(e){}
             if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
@@ -537,6 +594,26 @@ app.post('/api/update-status', async (req, res) => {
             content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'),
             sha: jsonFile.sha
         });
+
+        // --- Notificación por Correo ---
+        const pedido = pedidos.find(p => p.imagen_url === imagen_url);
+        if (pedido) {
+            await sendEmailNotification({
+                subject: `Estado de Pedido Actualizado - ${pedido.producto}`,
+                htmlBody: `
+                    <h1>Actualización de Estado</h1>
+                    <p>Un cliente ha actualizado el estado de un pedido:</p>
+                    <ul>
+                        <li><b>Producto:</b> ${pedido.producto}</li>
+                        <li><b>Teléfono Cliente:</b> ${pedido.telefono}</li>
+                        <li><b>Nuevo Estado:</b> ${nuevo_estado}</li>
+                    </ul>
+                    <p>Esta acción fue realizada desde la página "Mis Diseños".</p>
+                    <p><img src="${pedido.imagen_url}" alt="Imagen del pedido" width="200"></p>
+                `
+            });
+        }
+        // --- Fin Notificación ---
 
         res.json({ success: true });
     } catch (error) {
