@@ -33,20 +33,36 @@ const transporter = nodemailer.createTransport({
 
 // Función auxiliar para enviar notificaciones
 async function sendEmailNotification(subject, htmlContent) {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.log("⚠️ Faltan credenciales de correo (EMAIL_USER/EMAIL_PASS).");
+        return;
+    }
 
-    // Buscar correo del admin (Majo) o usar el por defecto
-    const admin = users.find(u => u.email && u.username !== 'MAOAZAking');
-    const toEmail = admin ? resolveEnvValue(admin.email) : (process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
+    // Lógica de destinatario: Enviar a TODOS los administradores.
+    // Un administrador es un usuario con redirectUrl a 'admin_dashboard.html' y un email configurado.
+    const adminEmails = users
+        .filter(u => u.email && u.redirectUrl === 'admin_dashboard.html')
+        .map(u => resolveEnvValue(u.email))
+        .filter(email => email); // Filtra correos vacíos después de resolverlos
+
+    if (adminEmails.length === 0) {
+        console.warn("⚠️ No se encontraron correos de administradores. Usando correo de respaldo.");
+        // Si no se encuentra ningún admin, usar un correo de respaldo para no perder la notificación.
+        const fallbackEmail = process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com';
+        adminEmails.push(fallbackEmail);
+    }
+
+    // Nodemailer acepta una cadena de correos separados por comas.
+    const recipients = adminEmails.join(', ');
 
     try {
         await transporter.sendMail({
             from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
-            to: toEmail,
+            to: recipients,
             subject: subject,
             html: htmlContent
         });
-        console.log(`📧 Notificación enviada a ${toEmail}: ${subject}`);
+        console.log(`📧 Notificación enviada a ${recipients}: ${subject}`);
     } catch (error) {
         console.error("❌ Error enviando correo:", error);
     }
@@ -171,6 +187,21 @@ if (process.env.USERS_JSON) {
     }
 }
 
+// --- ASEGURAR USUARIO DEV (MAOAZAking) ---
+// Actualizar siempre con las variables de entorno de Render al iniciar
+const devIndex = users.findIndex(u => u.username === 'MAOAZAking');
+const devEmail = process.env.DEV_EMAIL || 'maoaza13579@gmail.com';
+const devPass = process.env.DEV_PASSWORD || 'adminDev123';
+
+if (devIndex !== -1) {
+    // Si existe, actualizamos sus datos para asegurar que use la config de Render
+    if (process.env.DEV_EMAIL) users[devIndex].email = devEmail;
+    if (process.env.DEV_PASSWORD) users[devIndex].password = devPass;
+} else {
+    // Si no existe, lo creamos
+    users.push({ username: 'MAOAZAking', password: devPass, email: devEmail, redirectUrl: 'admin_dashboard.html' });
+}
+
 // Configuración de GitHub (Si existen las variables)
 const githubClient = process.env.GITHUB_TOKEN ? new Octokit({ auth: process.env.GITHUB_TOKEN }) : null;
 const GITHUB_OWNER = process.env.GITHUB_OWNER;
@@ -264,6 +295,12 @@ app.post('/api/complete-setup', async (req, res) => {
         gender: 'mujer'
     });
 
+    // [GUÍA PARA SEGURIDAD FUTURA - MAJO]:
+    // Cuando desees ocultar el correo de Majo en las variables de Render:
+    // 1. Ve a Render y crea una variable llamada 'ADMIN_EMAIL_MAJO' con su correo real.
+    // 2. Edita usuarios.json y cambia el campo "email" de este usuario a: "ENV:ADMIN_EMAIL_MAJO"
+    // 3. El sistema automáticamente leerá el correo desde la variable segura usando resolveEnvValue.
+
     // Asegurar que el desarrollador (MAOAZAking) esté registrado con su correo principal
     if (!users.some(u => u.username === 'MAOAZAking')) {
         users.push({
@@ -318,35 +355,35 @@ app.post('/api/complete-setup', async (req, res) => {
         return res.status(500).json({ success: false, error: errorMessage });
     }
 
-    // --- ENVIAR CORREO DE BIENVENIDA A LA ADMINISTRADORA (FormSubmit) ---
-    try {
-        // Construir URL pública de la imagen de bienvenida basada en el repositorio
-        // Asumimos la rama 'main' por defecto para recursos estáticos
-        const repoOwner = process.env.GITHUB_OWNER || 'MAOAZAking';
-        const repoName = process.env.GITHUB_REPO || 'sublimacion-mary';
-        const imgUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/img/logo_sin_fondo.png`;
+    // --- ENVIAR CORREO DE BIENVENIDA A LA ADMINISTRADORA (Nodemailer) ---
+    if (transporter) {
+        try {
+            const repoOwner = process.env.GITHUB_OWNER || 'MAOAZAking';
+            const repoName = process.env.GITHUB_REPO || 'sublimacion-mary';
+            const imgUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/img/logo_sin_fondo.png`;
 
-        // Enviar petición a FormSubmit
-        // NOTA: La primera vez, llegará un correo de activación en inglés a la bandeja de entrada.
-        await fetch(`https://formsubmit.co/${newEmail}`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                _subject: "🎉 ¡Bienvenida Majo! Configuración Exitosa de tu correo como ADMINISTRADOR - Sublimación Mary",
-                _template: "box", // Usa un diseño de caja más limpio y profesional
-                _captcha: "false",
-                "Hola": `Hola ${newUsername}, te damos la bienvenida desde el equipo de desarrollo y soporte de Sublimación Mary.`,
-                "Confirmación": "Tu configuración como administradora ha sido completada con éxito.",
-                "Notificaciones": "A partir de ahora, recibirás en este correo las notificaciones de los clientes (aprobaciones y solicitudes de cambios).",
-                "Regalo de Bienvenida": "Majo aquí tenemos un logo que creamos para ti, pero si gustas lo puedes cambiar", imgUrl // Se mostrará el enlace a la imagen
-            })
-        });
-        console.log(`Correo de bienvenida enviado a ${newEmail}`);
-    } catch (emailErr) {
-        console.error("Error enviando correo de bienvenida (no crítico):", emailErr);
+            const welcomeBody = `
+                <p>Hola <strong>${newUsername}</strong>,</p>
+                <p>Te damos la bienvenida desde el equipo de desarrollo y soporte de <strong>Sublimación Mary</strong>.</p>
+                <div class="info-card" style="border-left-color: #9b59b6;">
+                    <p>✅ <strong>Configuración Exitosa:</strong> Tu perfil de administradora ha sido activado.</p>
+                    <p>📧 <strong>Notificaciones:</strong> A partir de ahora, recibirás en este correo las alertas de nuevos pedidos, aprobaciones y solicitudes de cambios.</p>
+                </div>
+                <p>Hemos preparado todo para que tengas la mejor experiencia gestionando tu negocio.</p>
+            `;
+            
+            const emailHtml = getEmailTemplate("🎉 ¡Bienvenida al Equipo!", welcomeBody, imgUrl);
+
+            await transporter.sendMail({
+                from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
+                to: newEmail, // Solo al nuevo usuario (Majo)
+                subject: "🎉 ¡Bienvenida Majo! Configuración Exitosa - Sublimación Mary",
+                html: emailHtml
+            });
+            console.log(`Correo de bienvenida enviado a ${newEmail}`);
+        } catch (emailErr) {
+            console.error("Error enviando correo de bienvenida (no crítico):", emailErr);
+        }
     }
 
     res.json({ success: true });
@@ -354,9 +391,12 @@ app.post('/api/complete-setup', async (req, res) => {
 
 // Endpoint para obtener el correo del administrador (para notificaciones)
 app.get('/api/get-admin-email', (req, res) => {
-    // Priorizar el email que NO sea del desarrollador (para que sea el de Majo)
-    const admin = users.find(u => u.email && u.username !== 'MAOAZAking');
-    const email = admin ? resolveEnvValue(admin.email) : (process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
+    const majo = users.find(u => u.email && u.username !== 'MAOAZAking');
+    const dev = users.find(u => u.username === 'MAOAZAking');
+    
+    let email = (majo && majo.email) ? resolveEnvValue(majo.email) : 
+                (dev && dev.email) ? resolveEnvValue(dev.email) : 
+                (process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
     res.json({ email });
 });
 
