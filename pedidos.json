@@ -72,7 +72,7 @@
         "telefono": "3152214070",
         "producto": "Mug Personalizado",
         "fecha": "13/02/2026 15:20:24",
-        "estado": "Revisión del cliente",
+        "estado": "Creando diseño",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png",
         "tipo_mug": "color interno",
         "color_mug": "rosado"
@@ -135,7 +135,7 @@
         "telefono": "3002052842",
         "producto": "Gorra Estampada",
         "fecha": "20/02/2026 10:05:00",
-        "estado": "Revisión del cliente",
+        "estado": "Creando diseño",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png"
