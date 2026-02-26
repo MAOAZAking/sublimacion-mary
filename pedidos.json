@@ -28,7 +28,7 @@
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 14:34:16",
-        "estado": "Revisión del cliente",
+        "estado": "Listo para sublimar",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg",
         "tipo_mug": "clasico"
     },
@@ -44,7 +44,7 @@
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 16:34:16",
-        "estado": "Revisión del cliente",
+        "estado": "Listo para sublimar",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg",
         "tipo_mug": "clasico"
     },
@@ -124,7 +124,7 @@
         "telefono": "3002052842",
         "producto": "Saco Estampado",
         "fecha": "20/02/2026 10:00:00",
-        "estado": "Creando diseño",
+        "estado": "Listo para entregar",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
@@ -135,7 +135,7 @@
         "telefono": "3002052842",
         "producto": "Gorra Estampada",
         "fecha": "20/02/2026 10:05:00",
-        "estado": "Creando diseño",
+        "estado": "Listo para entregar",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png"

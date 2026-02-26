@@ -17,7 +17,7 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER, // Tu correo de Gmail
-            pass: process.env.EMAIL_PASS, // Tu "Contraseña de Aplicación" de Gmail
+            pass: process.env.EMAIL_PASS.replace(/\s+/g, ''), // Tu "Contraseña de Aplicación" de Gmail (sin espacios)
         },
     });
     console.log("📧 Nodemailer configurado para enviar correos.");

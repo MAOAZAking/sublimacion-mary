@@ -23,18 +23,24 @@ const resolveEnvValue = (val) => {
 };
 
 // --- Configuración de Nodemailer ---
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+let transporter = null;
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS.replace(/\s+/g, '') // Importante: Quita los espacios de la contraseña
+        }
+    });
+    console.log("📧 Nodemailer configurado para enviar correos.");
+} else {
+    console.warn("⚠️ ADVERTENCIA: Faltan variables de entorno para Nodemailer (EMAIL_USER, EMAIL_PASS). No se enviarán notificaciones por correo.");
+}
 
 // Función auxiliar para enviar notificaciones
 async function sendEmailNotification(subject, htmlContent) {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        console.log("⚠️ Faltan credenciales de correo (EMAIL_USER/EMAIL_PASS).");
+    if (!transporter) {
+        console.warn("⚠️ Nodemailer no configurado. No se envió el correo de notificación.");
         return;
     }
 
