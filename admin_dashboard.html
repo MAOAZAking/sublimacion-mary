@@ -300,6 +300,8 @@
     <button class="btn-filter active" onclick="filtrar('todos', this)">Todos</button>
     <button class="btn-filter" onclick="filtrar('mug', this)">Mugs</button>
     <button class="btn-filter" onclick="filtrar('camiseta', this)">Camisetas</button>
+    <button class="btn-filter" onclick="filtrar('saco', this)">Sacos</button>
+    <button class="btn-filter" onclick="filtrar('gorra', this)">Gorras</button>
 </div>
 
 <div id="gallery" class="gallery"></div>
@@ -762,17 +764,14 @@
     function filtrarBusqueda() {
         const query = document.getElementById('searchInput').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
-        // Usamos la lista filtrada por categoría (Mug/Camisa) como base, o todos si no hay filtro
-        // Pero para que la búsqueda sea global sobre la categoría seleccionada, mejor filtramos sobre 'pedidosFiltrados' que ya tiene la categoría.
-        // Sin embargo, si el usuario borra la búsqueda, debemos restaurar la categoría.
-        // Estrategia: Filtrar siempre desde 'todosLosPedidos' aplicando Categoría + Búsqueda.
-        
         const activeCategoryBtn = document.querySelector('.btn-filter.active');
-        const categoria = activeCategoryBtn ? activeCategoryBtn.innerText.toLowerCase() : 'todos';
+        const categoriaPlural = activeCategoryBtn ? activeCategoryBtn.innerText.toLowerCase() : 'todos';
         
         let baseList = todosLosPedidos;
-        if (categoria !== 'todos') {
-            baseList = todosLosPedidos.filter(p => p.producto.toLowerCase().includes(categoria.includes('mug') ? 'mug' : 'camiseta'));
+        if (categoriaPlural !== 'todos') {
+            // Convierte el texto del botón (ej: "Mugs") a la palabra clave de búsqueda (ej: "mug")
+            const categoriaSingular = categoriaPlural.endsWith('s') ? categoriaPlural.slice(0, -1) : categoriaPlural;
+            baseList = todosLosPedidos.filter(p => p.producto.toLowerCase().includes(categoriaSingular));
         }
 
         const resultados = baseList.filter(p => {
