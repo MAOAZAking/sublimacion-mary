@@ -58,12 +58,12 @@
         "id": 7,
         "telefono": "3000000000",
         "producto": "Camiseta Estampada",
-        "fecha": "14/01/2026 18:22:58",
-        "estado": "Creando diseño",
-        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_camiseta_1.png",
+        "fecha": "26/02/2026 17:59:12",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_1772146759219.png",
         "imagenes": {
-            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_camiseta_1.png",
-            "espaldar": null
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_1772146759219.png",
+            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_espaldar_1772146759219.png"
         }
     },
     {
