@@ -50,6 +50,11 @@
         .btn-edit-mode:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(68, 110, 173, 0.575); }
         .btn-edit-mode.active { background: linear-gradient(135deg, #7c73d1a5, #6f63c89e); box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); transform: none; border: 1px solid #555; }
 
+        /* Botón Producto Terminado */
+        .btn-finish-mode { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+        .btn-finish-mode:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(46, 204, 113, 0.5); }
+        .btn-finish-mode.active { background: linear-gradient(135deg, #5ad68a9e, #52c27b9e); box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); transform: none; border: 1px solid #555; }
+
         /* Barra de Búsqueda */
         .search-container { text-align: center; margin-bottom: 25px; }
         .search-input { 
@@ -124,6 +129,11 @@
         .gallery-info { padding: 15px; text-align: center; font-size: 0.9rem; color: rgb(255, 255, 255); background: #1e1e1e; border-top: 1px solid #333; transition: background-color 0.3s; }
 
         /* Neon Status Borders & Info Background */
+        .status-white {
+            border-color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.7), 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .status-white .gallery-info { background-color: rgba(255, 255, 255, 0.1); }
         .status-green {
             border-color: #2ecc71;
             box-shadow: 0 0 20px rgba(46, 204, 113, 0.8), 0 10px 20px rgba(0,0,0,0.05);
@@ -139,6 +149,7 @@
             box-shadow: 0 0 20px rgba(231, 76, 60, 0.8), 0 10px 20px rgba(0,0,0,0.05);
         }
         .status-red .gallery-info { background-color: rgba(231, 76, 60, 0.1); }
+        .gallery-item:hover.status-white { box-shadow: 0 0 35px rgba(255, 255, 255, 0.9), 0 15px 30px rgba(0,0,0,0.1); }
         .gallery-item:hover.status-green { box-shadow: 0 0 35px rgba(46, 204, 113, 1), 0 15px 30px rgba(0,0,0,0.1); }
         .gallery-item:hover.status-orange { box-shadow: 0 0 35px rgba(243, 156, 18, 1), 0 15px 30px rgba(0,0,0,0.1); }
         .gallery-item:hover.status-red { box-shadow: 0 0 35px rgba(231, 76, 60, 1), 0 15px 30px rgba(0,0,0,0.1); }
@@ -259,6 +270,7 @@
     <h2>Panel de Administración</h2>
     <button class="btn-create" onclick="window.location.href='nuevo_pedido.html'">+ Crear Nuevo Pedido</button>
     <button id="btnEditMode" class="btn-edit-mode" onclick="toggleEditMode()">✎ Editar Pedido</button>
+    <button id="btnFinishMode" class="btn-finish-mode" onclick="toggleFinishMode()">✓ Producto Terminado</button>
     <button style="background-color: #666; color: white;" onclick="cerrarSesion()">Cerrar Sesión</button>
 </div>
 
@@ -320,6 +332,7 @@
     let todosLosPedidos = []; 
     let pedidosFiltrados = []; 
     let isEditMode = false; 
+    let isFinishMode = false;
     let currentSortField = 'estado'; // Valor inicial cambiado a 'estado'
     let isSortAscending = true; // Valor inicial cambiado a true (ascendente por prioridad/fecha)
     let currentDownloadUrl = '';
@@ -462,7 +475,9 @@
             
             // Lógica para asignar color según el estado
             const estado = (pedido.estado || '').toLowerCase();
-            if (estado.includes('listo para')) { // Verde: Aprobado
+            if (estado.includes('producto terminado')) {
+                item.classList.add('status-white');
+            } else if (estado.includes('listo para')) { // Verde: Aprobado
                 item.classList.add('status-green');
             } else if (estado.includes('revisión') || estado.includes('revision')) { // Naranja: Pendiente
                 item.classList.add('status-orange');
@@ -473,7 +488,7 @@
             const contentHTML = `
                 <img src="${pedido.imagen_url}" class="gallery-img" loading="lazy">
                 <div class="gallery-info">
-                    <strong>${pedido.producto}</strong><br>
+                    <strong>#${pedido.id || 'N/A'} - ${pedido.producto}</strong><br>
                     ${pedido.telefono || pedido.teléfono || 'Sin datos'}
                 </div>
             `;
@@ -516,6 +531,36 @@
 
                 topHalf.onclick = (e) => handleEditClick(e, () => abrirModal(pedido));
                 botHalf.onclick = (e) => handleEditClick(e, () => editarPedido(pedido));
+            } else if (isFinishMode) {
+                // Estructura para Modo Terminado
+                item.innerHTML = contentHTML + `
+                    <div class="edit-overlay">
+                        <div class="edit-half edit-half-top">
+                            <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            Previsualizar
+                        </div>
+                        <div class="edit-half edit-half-bottom">
+                            <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            Terminado
+                        </div>
+                    </div>
+                `;
+                const topHalf = item.querySelector('.edit-half-top');
+                const botHalf = item.querySelector('.edit-half-bottom');
+
+                const handleFinishClick = (e, action) => {
+                    e.stopPropagation();
+                    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+                    if (isMobile) {
+                        if (item.classList.contains('mobile-active')) action();
+                        else {
+                            document.querySelectorAll('.gallery-item.mobile-active').forEach(el => el.classList.remove('mobile-active'));
+                            item.classList.add('mobile-active');
+                        }
+                    } else action();
+                };
+                topHalf.onclick = (e) => handleFinishClick(e, () => abrirModal(pedido));
+                botHalf.onclick = (e) => handleFinishClick(e, () => marcarComoTerminado(pedido));
             } else {
                 // Modo Normal
                 item.innerHTML = contentHTML;
@@ -628,9 +673,10 @@
                 // Mapa de prioridades
                 const priorities = {
                     "creando diseño": 1,
-                    "revisión del cliente": 2,
-                    "listo para entregar": 3, "listo para sublimar": 3, "listo para estampar": 3,
-                    "desconocido": 4 // Añadir un valor por defecto para estados no mapeados
+                    "revisión del cliente": 2, "revision del cliente": 2,
+                    "listo para sublimar": 3, "listo para estampar": 3,
+                    "producto terminado": 4,
+                    "desconocido": 5 // Añadir un valor por defecto para estados no mapeados
                 };
                 const getPriority = (status) => priorities[(status || 'desconocido').toLowerCase()];
                 
@@ -678,12 +724,34 @@
         if (isEditMode) {
             btn.classList.add('active');
             btn.innerHTML = "❌ Salir de Edición";
+            if (isFinishMode) toggleFinishMode(); // Desactivar modo terminado si está activo
         } else {
             btn.classList.remove('active');
             btn.innerHTML = "✎ Editar Pedido";
         }
         // Renderizar de nuevo con el estado actual de filtros
         renderGallery(pedidosFiltrados);
+    }
+
+    function toggleFinishMode() {
+        isFinishMode = !isFinishMode;
+        const btn = document.getElementById('btnFinishMode');
+
+        if (isEditMode) toggleEditMode(); // Desactivar modo edición si está activo
+
+        if (isFinishMode) {
+            btn.classList.add('active');
+            btn.innerHTML = "❌ Salir de modo Terminado";
+            // Filtrar para mostrar solo los listos para producir
+            pedidosFiltrados = todosLosPedidos.filter(p => (p.estado || '').toLowerCase().startsWith('listo para'));
+            aplicarOrdenamiento();
+            renderGallery(pedidosFiltrados);
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = "✓ Producto Terminado";
+            // Volver a la vista normal (respetando filtros y búsqueda)
+            filtrarBusqueda(); 
+        }
     }
 
     function editarPedido(pedido) {
@@ -708,6 +776,7 @@
         }
 
         const resultados = baseList.filter(p => {
+            const id = (p.id || '').toString();
             const tel = (p.telefono || p.teléfono || '').toString();
             const estado = (p.estado || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             
@@ -721,13 +790,52 @@
                 if (mesIdx >= 0) fechaTexto += ` ${meses[mesIdx]}`; // Agrega nombre del mes para buscar
             }
 
-            return tel.includes(query) || estado.includes(query) || fechaTexto.includes(query);
+            return id.includes(query) || tel.includes(query) || estado.includes(query) || fechaTexto.includes(query);
         });
         
         // Actualizamos la variable global para que toggleEditMode funcione sobre estos resultados
         pedidosFiltrados = resultados;
         aplicarOrdenamiento(); // Re-ordenar los resultados filtrados
         renderGallery(resultados);
+    }
+
+    async function marcarComoTerminado(pedido) {
+        const loader = document.getElementById('global-loader');
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+
+        const BACKEND_URL = window.location.hostname.includes('github.io') 
+            ? 'https://sublimacion-mary.onrender.com' 
+            : '';
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/update-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    imagen_url: pedido.imagen_url, 
+                    nuevo_estado: 'Producto terminado' 
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const indexGlobal = todosLosPedidos.findIndex(p => p.id === pedido.id);
+                if (indexGlobal > -1) todosLosPedidos[indexGlobal].estado = 'Producto terminado';
+                
+                // Re-filtrar y re-renderizar para que el item desaparezca de la vista actual
+                pedidosFiltrados = todosLosPedidos.filter(p => (p.estado || '').toLowerCase().startsWith('listo para'));
+                aplicarOrdenamiento();
+                renderGallery(pedidosFiltrados);
+            } else {
+                alert('Error al actualizar el estado: ' + (data.message || 'Error desconocido'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión al actualizar el estado.');
+        } finally {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
     }
 
     function abrirModal(pedido) {
@@ -782,7 +890,7 @@
 
         // Texto grande abajo
         modalInfo.innerHTML = `
-            Cliente: ${pedido.telefono || pedido.teléfono || 'Sin datos'}<br>
+            Cliente: ${pedido.telefono || pedido.teléfono || 'Sin datos'} (#${pedido.id || 'N/A'})<br>
             <span style="font-size: 1rem; font-weight: normal;">${pedido.producto} - ${pedido.fecha}</span><br>
             <span style="font-size: 1rem; font-weight: normal; color: #ffd700;">Estado: ${pedido.estado || 'Desconocido'}</span>
         `;
@@ -1301,6 +1409,7 @@
     // Exponer funciones al scope global
     window.filtrar = filtrar;
     window.toggleEditMode = toggleEditMode;
+    window.toggleFinishMode = toggleFinishMode;
     window.filtrarBusqueda = filtrarBusqueda;
     window.toggleSortDirection = toggleSortDirection;
     window.toggleSortDropdown = toggleSortDropdown;

@@ -116,7 +116,7 @@
             margin-top: 30px;
             flex-wrap: wrap;
             opacity: 0; /* Oculto inicialmente para el efecto */
-            pointer-events: none; /* <-- Con esta línea se soluciona */
+            /*pointer-events: none; /* <-- Con esta línea se soluciona */
             transition: opacity 1s;
         }
 
@@ -674,7 +674,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        currentUsername: '3209287029', 
+                        currentUsername: sessionStorage.getItem('currentUser') || '3209287029',
                         newUsername: tempUser, 
                         newPassword: tempPass,
                         newEmail: finalEmail

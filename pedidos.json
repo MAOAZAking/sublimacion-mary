@@ -1,5 +1,6 @@
 [
     {
+        "id": 1,
         "telefono": "3000000000",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 11:34:16",
@@ -9,6 +10,7 @@
         "color_mug": "naranja"
     },
     {
+        "id": 2,
         "telefono": "3123456789",
         "producto": "Mug Personalizado",
         "fecha": "15/02/2026 12:34:21",
@@ -18,6 +20,7 @@
         "color_mug": "verde"
     },
     {
+        "id": 3,
         "telefono": "3002052842",
         "producto": "Camiseta Estampada",
         "fecha": "14/01/2026 13:34:16",
@@ -25,6 +28,7 @@
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768420878/mwd7jjcyeyvxorsteybw.png"
     },
     {
+        "id": 4,
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 14:34:16",
@@ -33,6 +37,7 @@
         "tipo_mug": "clasico"
     },
     {
+        "id": 5,
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 15:34:16",
@@ -41,6 +46,7 @@
         "tipo_mug": "clasico"
     },
     {
+        "id": 6,
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 16:34:16",
@@ -49,6 +55,7 @@
         "tipo_mug": "clasico"
     },
     {
+        "id": 7,
         "telefono": "3000000000",
         "producto": "Camiseta Estampada",
         "fecha": "14/01/2026 18:22:58",
@@ -60,6 +67,7 @@
         }
     },
     {
+        "id": 8,
         "telefono": "3002052842",
         "producto": "Mug Personalizado",
         "fecha": "12/02/2026 09:23:18",
@@ -69,24 +77,27 @@
         "color_mug": "rojo"
     },
     {
+        "id": 9,
         "telefono": "3152214070",
         "producto": "Mug Personalizado",
         "fecha": "13/02/2026 15:20:24",
-        "estado": "Listo para entregar",
+        "estado": "Producto terminado",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png",
         "tipo_mug": "color interno",
         "color_mug": "rosado"
     },
     {
+        "id": 10,
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
         "fecha": "15/02/2026 12:30:57",
-        "estado": "Revisión del cliente",
+        "estado": "Listo para sublimar",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_2/lamina_mug_2.png",
         "tipo_mug": "color interno",
         "color_mug": "amarillo"
     },
     {
+        "id": 11,
         "telefono": "3169445092",
         "producto": "Camiseta Estampada",
         "fecha": "19/01/2026 16:52:18",
@@ -98,6 +109,7 @@
         }
     },
     {
+        "id": 12,
         "telefono": "3169445092",
         "producto": "Camiseta Estampada",
         "fecha": "19/01/2026 18:04:36",
@@ -109,10 +121,11 @@
         }
     },
     {
+        "id": 13,
         "telefono": "603013748",
         "producto": "Camiseta Estampada",
         "fecha": "30/01/2026 17:40:07",
-        "estado": "Listo para entregar",
+        "estado": "Producto terminado",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
@@ -121,10 +134,11 @@
         "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/foto_usada_en_camiseta_4.jpg"
     },
     {
+        "id": 14,
         "telefono": "3002052842",
         "producto": "Saco Estampado",
         "fecha": "20/02/2026 10:00:00",
-        "estado": "Listo para entregar",
+        "estado": "Producto terminado",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
@@ -132,10 +146,11 @@
         }
     },
     {
+        "id": 15,
         "telefono": "3002052842",
         "producto": "Gorra Estampada",
         "fecha": "20/02/2026 10:05:00",
-        "estado": "Listo para entregar",
+        "estado": "Producto terminado",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png"

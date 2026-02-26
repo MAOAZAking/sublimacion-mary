@@ -105,7 +105,7 @@ const getEmailTemplate = (title, bodyContent, imageUrl) => {
     <body>
         <div class="email-container">
             <div class="header">
-                <h1>Sublimación Mary</h1>
+                <h1>Equipo de soporte Sublimación Mary</h1>
             </div>
             <div class="content">
                 <h2>${title}</h2>
@@ -277,9 +277,8 @@ app.post('/api/login', (req, res) => {
 app.post('/api/complete-setup', async (req, res) => {
     const { currentUsername, newUsername, newPassword, newEmail } = req.body;
     
-    // Usuarios antiguos que se deben eliminar antes de crear el nuevo perfil
-    // Se eliminan estos usuarios obsoletos para evitar conflictos con el nuevo perfil
-    const usersToDelete = ['mary', '3209287029'];
+    // Se eliminan el usuario placeholder actual y otros obsoletos para evitar conflictos.
+    const usersToDelete = [...new Set(['mary', '3209287029', currentUsername].filter(Boolean))];
 
     // Eliminar usuarios antiguos de la lista en memoria
     users = users.filter(u => !usersToDelete.includes(u.username));
@@ -376,14 +375,16 @@ app.post('/api/complete-setup', async (req, res) => {
                     <p>📧 <strong>Notificaciones:</strong> A partir de ahora, recibirás en este correo las alertas de nuevos pedidos, aprobaciones y solicitudes de cambios.</p>
                 </div>
                 <p>Hemos preparado todo para que tengas la mejor experiencia gestionando tu negocio.</p>
+                <br>
+                <p>Hemos creado este logo para tu emprendimiento, esperamos te guste, aunque si tienes otro en mente podemos cambiarlo</p>
             `;
             
-            const emailHtml = getEmailTemplate("🎉 ¡Bienvenida al Equipo!", welcomeBody, imgUrl);
+            const emailHtml = getEmailTemplate("🫂 ¡Bienvenida al Equipo! 🎉 ", welcomeBody, imgUrl);
 
             await transporter.sendMail({
                 from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
                 to: newEmail, // Solo al nuevo usuario (Majo)
-                subject: "🎉 ¡Bienvenida Majo! Configuración Exitosa - Sublimación Mary",
+                subject: "🎉 ¡Bienvenida Majo! 🤗 Configuración Exitosa - Support Team Sublimación Mary",
                 html: emailHtml
             });
             console.log(`Correo de bienvenida enviado a ${newEmail}`);
@@ -615,7 +616,11 @@ app.post('/api/pedidos', upload.fields([
             if (error.status !== 404) console.warn("pedidos.json no encontrado, creando nuevo.");
         }
 
+        // Generar nuevo ID único
+        const nextId = pedidos.length > 0 ? Math.max(...pedidos.map(p => p.id || 0)) + 1 : 1;
+
         const nuevoPedido = { 
+            id: nextId,
             telefono, producto, fecha, estado, tipo_mug, color_mug,
             imagen_url: mainImageUrl,
             imagenes: { frontal: urlFrontal, espaldar: urlespaldar },
@@ -866,24 +871,26 @@ app.post('/api/update-status', async (req, res) => {
 
         // --- ENVIAR CORREO: ACTUALIZACIÓN DE ESTADO (CLIENTE) ---
         if (pedidoEncontrado) {
-            let asunto = `Actualización de Estado - ${pedidoEncontrado.telefono}`;
+            const pedidoId = pedidoEncontrado.id || 'N/A';
+            let asunto = `Actualización de Estado - Pedido #${pedidoId}`;
             let titulo = `Estado Actualizado`;
             let mensaje = `<p>El estado del pedido ha cambiado a: <strong>${nuevo_estado}</strong></p>`;
             let colorBorde = "#27ae60"; // Verde por defecto
 
             if (nuevo_estado === "Creando diseño" && detalles) {
-                asunto = `⚠️ Solicitud de CAMBIO - ${pedidoEncontrado.telefono}`;
+                asunto = `⚠️ Solicitud de CAMBIO - Pedido #${pedidoId}`;
                 titulo = `Solicitud de Cambio`;
-                mensaje = `<p>El cliente solicita los siguientes cambios:</p><div style="background: #fff0f0; padding: 15px; border-left: 4px solid #e74c3c; font-style: italic; margin: 15px 0;">"${detalles}"</div>`;
+                mensaje = `<p>El cliente solicita los siguientes cambios para el <strong>Pedido #${pedidoId}</strong>:</p><div style="background: #fff0f0; padding: 15px; border-left: 4px solid #e74c3c; font-style: italic; margin: 15px 0;">"${detalles}"</div>`;
                 colorBorde = "#e74c3c"; // Rojo para cambios
             } else if (nuevo_estado.includes("Listo")) {
-                asunto = `✅ Cliente SATISFECHO - ${pedidoEncontrado.telefono}`;
+                asunto = `✅ Cliente SATISFECHO - Pedido #${pedidoId}`;
                 titulo = `¡Cliente Satisfecho!`;
-                mensaje = `<p>¡El cliente ha aprobado el diseño! El pedido está listo para la siguiente fase.</p>`;
+                mensaje = `<p>¡El cliente ha aprobado el diseño del <strong>Pedido #${pedidoId}</strong>! El pedido está listo para la siguiente fase.</p>`;
             }
 
             const bodyContent = `
                 <div class="info-card" style="border-left-color: ${colorBorde};">
+                    <div class="info-item"><strong>Pedido:</strong> #${pedidoId}</div>
                     <div class="info-item"><strong>Producto:</strong> ${pedidoEncontrado.producto}</div>
                     <div class="info-item"><strong>Cliente:</strong> ${pedidoEncontrado.telefono}</div>
                 </div>
