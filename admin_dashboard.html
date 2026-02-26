@@ -496,43 +496,54 @@
             `;
 
             if (isEditMode) {
-                // Estructura para Modo Edición (Overlay dividido)
-                item.innerHTML = contentHTML + `
-                    <div class="edit-overlay">
-                        <div class="edit-half edit-half-top">
-                            <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                            Previsualizar
+                if (estado.includes('producto terminado')) {
+                    item.innerHTML = contentHTML;
+                    item.style.opacity = '0.4';
+                    item.style.cursor = 'not-allowed';
+                    item.title = "No se puede editar un producto terminado";
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        alert("No se puede editar un producto que ya está terminado.");
+                    };
+                } else {
+                    // Estructura para Modo Edición (Overlay dividido)
+                    item.innerHTML = contentHTML + `
+                        <div class="edit-overlay">
+                            <div class="edit-half edit-half-top">
+                                <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                Previsualizar
+                            </div>
+                            <div class="edit-half edit-half-bottom">
+                                <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                Editar
+                            </div>
                         </div>
-                        <div class="edit-half edit-half-bottom">
-                            <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                            Editar
-                        </div>
-                    </div>
-                `;
-                // Asignar eventos a las mitades
-                const topHalf = item.querySelector('.edit-half-top');
-                const botHalf = item.querySelector('.edit-half-bottom');
-                
-                // Función unificada para manejar clicks (Móvil: 1er toque activa, 2do ejecuta)
-                const handleEditClick = (e, action) => {
-                    e.stopPropagation();
-                    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+                    `;
+                    // Asignar eventos a las mitades
+                    const topHalf = item.querySelector('.edit-half-top');
+                    const botHalf = item.querySelector('.edit-half-bottom');
                     
-                    if (isMobile) {
-                        if (item.classList.contains('mobile-active')) {
-                            action(); // Ya estaba activo, ejecutar
+                    // Función unificada para manejar clicks (Móvil: 1er toque activa, 2do ejecuta)
+                    const handleEditClick = (e, action) => {
+                        e.stopPropagation();
+                        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+                        
+                        if (isMobile) {
+                            if (item.classList.contains('mobile-active')) {
+                                action(); // Ya estaba activo, ejecutar
+                            } else {
+                                // Activar este y desactivar otros
+                                document.querySelectorAll('.gallery-item.mobile-active').forEach(el => el.classList.remove('mobile-active'));
+                                item.classList.add('mobile-active');
+                            }
                         } else {
-                            // Activar este y desactivar otros
-                            document.querySelectorAll('.gallery-item.mobile-active').forEach(el => el.classList.remove('mobile-active'));
-                            item.classList.add('mobile-active');
+                            action(); // Desktop: ejecutar directo
                         }
-                    } else {
-                        action(); // Desktop: ejecutar directo
-                    }
-                };
+                    };
 
-                topHalf.onclick = (e) => handleEditClick(e, () => abrirModal(pedido));
-                botHalf.onclick = (e) => handleEditClick(e, () => editarPedido(pedido));
+                    topHalf.onclick = (e) => handleEditClick(e, () => abrirModal(pedido));
+                    botHalf.onclick = (e) => handleEditClick(e, () => editarPedido(pedido));
+                }
             } else if (isFinishMode) {
                 // Estructura para Modo Terminado
                 item.innerHTML = contentHTML + `

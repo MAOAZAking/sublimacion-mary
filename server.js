@@ -26,13 +26,15 @@ const resolveEnvValue = (val) => {
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true, // true para puerto 465, false para otros
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS.replace(/\s+/g, '') // Importante: Quita los espacios de la contraseña
         }
     });
-    console.log("📧 Nodemailer configurado para enviar correos.");
+    console.log(`📧 Nodemailer configurado correctamente para: ${process.env.EMAIL_USER}`);
 } else {
     console.warn("⚠️ ADVERTENCIA: Faltan variables de entorno para Nodemailer (EMAIL_USER, EMAIL_PASS). No se enviarán notificaciones por correo.");
 }
@@ -105,7 +107,7 @@ const getEmailTemplate = (title, bodyContent, imageUrl) => {
     <body>
         <div class="email-container">
             <div class="header">
-                <h1>Equipo de soporte Sublimación Mary</h1>
+                <h1>Support Sublimación Mary</h1>
             </div>
             <div class="content">
                 <h2>${title}</h2>
