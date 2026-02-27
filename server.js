@@ -28,13 +28,15 @@ let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
-        port: 465, // CAMBIO: Usaremos el puerto SSL directo.
-        secure: true, // 'true' es requerido para el puerto 465.
+        port: 587, // Usamos 587 que es el estándar para envíos desde servidores
+        secure: false, // false para puerto 587 (se actualiza a TLS automáticamente)
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS.replace(/\s+/g, '')
         },
-        // SOLUCIÓN CLAVE: Forzar IPv4. Render a veces falla conectando a Gmail por IPv6 (causa del ETIMEDOUT)
+        // Aumentamos los tiempos de espera para evitar que corte la conexión si la red es lenta
+        connectionTimeout: 20000, // 20 segundos (antes era default ~2s)
+        greetingTimeout: 20000,
         family: 4
     });
     console.log(`📧 Nodemailer configurado correctamente para: ${process.env.EMAIL_USER}`);

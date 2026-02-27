@@ -772,14 +772,14 @@
                         // bl=Abajo-Izq,  bm=Abajo-Medio,  br=Abajo-Der
                         // Para bajar el lado derecho, aumentamos Y en: tr, rm, br
                         points: {
-                            tl: { x: 362, y: 530 },  // Esquina Superior Izquierda
-                            tm: { x: 512, y: 490 },  // Mitad Superior (Curva hacia arriba)
-                            tr: { x: 662, y: 560 },  // Esquina Superior Derecha (BAJADO +30px)
-                            rm: { x: 682, y: 710 },  // Mitad Derecha (BAJADO +30px)
-                            br: { x: 662, y: 860 },  // Esquina Inferior Derecha (BAJADO +30px)
-                            bm: { x: 512, y: 850 },  // Mitad Inferior
-                            bl: { x: 362, y: 830 },  // Esquina Inferior Izquierda
-                            lm: { x: 342, y: 680 }   // Mitad Izquierda
+                            tl: { x: 592, y: 530 },  // Esquina Superior Izquierda (MOVIDO DERECHA +230px)
+                            tm: { x: 742, y: 490 },  // Mitad Superior
+                            tr: { x: 892, y: 560 },  // Esquina Superior Derecha
+                            rm: { x: 912, y: 710 },  // Mitad Derecha
+                            br: { x: 892, y: 860 },  // Esquina Inferior Derecha
+                            bm: { x: 742, y: 850 },  // Mitad Inferior
+                            bl: { x: 592, y: 830 },  // Esquina Inferior Izquierda
+                            lm: { x: 572, y: 680 }   // Mitad Izquierda
                         }
                     }
                 }
@@ -820,10 +820,10 @@
                         warp: true,
                         // Ajuste idéntico para mujer: Lado derecho más bajo
                         points: {
-                            tl: { x: 362, y: 530 }, tm: { x: 512, y: 490 }, tr: { x: 662, y: 560 },
-                            rm: { x: 682, y: 710 },
-                            br: { x: 662, y: 860 }, bm: { x: 512, y: 850 }, bl: { x: 362, y: 830 },
-                            lm: { x: 342, y: 680 }
+                            tl: { x: 592, y: 530 }, tm: { x: 742, y: 490 }, tr: { x: 892, y: 560 },
+                            rm: { x: 912, y: 710 },
+                            br: { x: 892, y: 860 }, bm: { x: 742, y: 850 }, bl: { x: 592, y: 830 },
+                            lm: { x: 572, y: 680 }
                         }
                     }
                 }
@@ -1186,7 +1186,7 @@
         // al llamar a /api/update-status. No se necesita hacer nada más aquí.
         // Redireccionar a WhatsApp
         const idPedido = currentPedidoData.id || 'N/A';
-        const mensajeWA = `Hola, soy el cliente ${telefono}. El pedido #${idPedido} ME ENCANTA, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${imgUrl})`;
+        const mensajeWA = `Hola, soy el cliente ${telefono}. Mi pedido es el #${idPedido} ME ENCANTA EL DISEÑO, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${imgUrl})`;
         const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         
         window.location.href = urlWA;
