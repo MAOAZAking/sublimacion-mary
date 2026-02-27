@@ -27,17 +27,20 @@ const resolveEnvValue = (val) => {
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
-        host: "smtp.googlemail.com", // Usamos el alias de Google que a veces tiene mejor enrutamiento
-        port: 465, // Puerto seguro SSL directo
-        secure: true, // true para puerto 465
+        host: "smtp.gmail.com", // Volvemos al host estándar
+        port: 587, // Puerto 587 (STARTTLS) es el más compatible en la nube
+        secure: false, // false para 587
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS.replace(/\s+/g, '')
         },
+        tls: {
+            rejectUnauthorized: false // Ayuda a evitar bloqueos por certificados estrictos en la red interna
+        },
         // Tiempos de espera extendidos y forzado de IPv4
-        connectionTimeout: 30000, // 30 segundos
-        greetingTimeout: 30000,
-        socketTimeout: 30000,
+        connectionTimeout: 20000, 
+        greetingTimeout: 20000,
+        socketTimeout: 20000,
         family: 4,
         debug: true, // Habilitar logs detallados para ver el handshake
         logger: true // Mostrar logs en la consola de Render
