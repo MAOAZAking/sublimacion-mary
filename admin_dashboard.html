@@ -1399,11 +1399,14 @@
         loadModel(currentGender);
 
         const toggleBtn = document.createElement('button');
+        const isMobileBtn = window.innerWidth < 768;
+
         Object.assign(toggleBtn.style, {
             position: 'absolute',
-            left: '20px',
-            top: '50%',
-            transform: 'translateY(-50%)',
+            left: isMobileBtn ? '50%' : '20px',
+            top: isMobileBtn ? 'auto' : '50%',
+            bottom: isMobileBtn ? '10px' : 'auto',
+            transform: isMobileBtn ? 'translateX(-50%)' : 'translateY(-50%)',
             zIndex: '1005',
             padding: '10px 15px',
             borderRadius: '50px',

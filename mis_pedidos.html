@@ -202,6 +202,19 @@
             border-color: #9b59b6;
         }
 
+        /* ESTILO PARA MÓVIL VERTICAL: Formulario abajo */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .feedback-form {
+                top: auto;
+                bottom: 20px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: 90%;
+                max-width: none;
+            }
+        }
+
         /* Estilos para estado vacío (Sin pedidos) */
         .empty-state-container {
             text-align: center;
@@ -520,7 +533,8 @@
         scene.background = new THREE.Color(0xb3b3b3);
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-        camera.position.set(0, 0, 11); // Alejar cámara para que ocupe aprox 70% del alto
+        const isMobile = window.innerWidth < 768;
+        camera.position.set(0, 0, isMobile ? 24 : 11); // Más lejos en móvil para ver todo el mug
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
@@ -1029,11 +1043,14 @@
 
         const toggleBtn = document.createElement('button');
         toggleBtn.id = 'genderToggleBtn';
+        const isMobileBtn = window.innerWidth < 768;
+
         Object.assign(toggleBtn.style, {
             position: 'absolute',
-            left: '20px',
-            top: '50%',
-            transform: 'translateY(-50%)',
+            left: isMobileBtn ? '50%' : '20px',
+            top: isMobileBtn ? 'auto' : '50%',
+            bottom: isMobileBtn ? '10px' : 'auto',
+            transform: isMobileBtn ? 'translateX(-50%)' : 'translateY(-50%)',
             zIndex: '1005',
             padding: '10px 15px',
             borderRadius: '50px',
@@ -1108,8 +1125,41 @@
 
         // Mover modelo a la izquierda (Mover cámara a la derecha)
         if (!isModelShifted && controls && camera) {
-            animateCameraShift(3.5); // Desplazamiento positivo en X mueve la vista a la derecha (modelo a la izquierda)
+            const isMobilePortrait = window.matchMedia("(max-width: 768px) and (orientation: portrait)").matches;
+            let dx = 0, dy = 0, dz = 0;
+
+            if (isMobilePortrait) {
+                // LÓGICA MÓVIL: Mover modelo hacia ARRIBA (Bajando la cámara Y)
+                dy = -0.5; //Baja la camara haciendo que le modelo quede mas arriba
+                dz = 2.5; // Alejar cámara (Zoom out)
+                
+                if (currentPedidoData && currentPedidoData.producto) {
+                    const prod = currentPedidoData.producto.toLowerCase();
+                    if (prod.includes('mug')) {
+                        dy = -4.0; 
+                        dz = 4.0; // Alejar cámara (Zoom out) solo para Mug en móvil
+                    }
+                    else{
+                        dy = -0.35; 
+                        dz = 0.5; // Alejar cámara (Zoom out) solo para Mug en móvil
+                    }
+                }
+            } else {
+                // LÓGICA ESCRITORIO: Mover modelo a la IZQUIERDA (Moviendo cámara X)
+                let shiftValue = 0.5;
+                if (currentPedidoData && currentPedidoData.producto) {
+                    const prod = currentPedidoData.producto.toLowerCase();
+                    if (prod.includes('mug')) shiftValue = 3.5;
+                    else if (prod.includes('camiseta')) shiftValue = 0.5;
+                    else if (prod.includes('saco')) shiftValue = 0.5;
+                    else if (prod.includes('gorra')) shiftValue = 0.5;
+                }
+                dx = shiftValue;
+            }
+
+            animateCameraShift(dx, dy, dz);
             isModelShifted = true;
+            currentPedidoData.lastShift = { x: dx, y: dy, z: dz }; // Guardar vector completo
         }
     }
 
@@ -1121,25 +1171,45 @@
 
         // Restaurar modelo
         if (isModelShifted && controls && camera) {
-            animateCameraShift(-3.5);
+            const s = currentPedidoData.lastShift || { x: 0, y: 0, z: 0 };
+            animateCameraShift(-s.x, -s.y, -s.z);
             isModelShifted = false;
         }
     }
 
-    function animateCameraShift(offset) {
+    function animateCameraShift(dx, dy = 0, dz = 0) {
         if (!controls || !camera) return;
-        const startX = controls.target.x;
-        const endX = startX + offset;
-        const camStartX = camera.position.x;
-        const camEndX = camStartX + offset;
+        
+        const startTx = controls.target.x;
+        const startTy = controls.target.y;
+        const startTz = controls.target.z;
+        
+        const startCx = camera.position.x;
+        const startCy = camera.position.y;
+        const startCz = camera.position.z;
+
         const duration = 500;
         const startTime = Date.now();
+        
         function update() {
             const now = Date.now();
             const progress = Math.min((now - startTime) / duration, 1);
             const ease = 1 - Math.pow(1 - progress, 3);
-            controls.target.x = startX + (endX - startX) * ease;
-            camera.position.x = camStartX + (camEndX - camStartX) * ease;
+            
+            // Interpolar Target (X e Y)
+            controls.target.set(
+                startTx + dx * ease,
+                startTy + dy * ease,
+                startTz // Z del target no suele cambiar para zoom/pan simple
+            );
+            
+            // Interpolar Cámara (X, Y y Z para zoom)
+            camera.position.set(
+                startCx + dx * ease,
+                startCy + dy * ease,
+                startCz + dz * ease
+            );
+            
             controls.update();
             if (progress < 1) requestAnimationFrame(update);
         }
