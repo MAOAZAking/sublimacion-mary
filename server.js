@@ -26,12 +26,11 @@ const resolveEnvValue = (val) => {
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true, // true para puerto 465, false para otros
+        service: 'gmail', // Usar 'service' simplifica la configuración para servicios conocidos
         auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS.replace(/\s+/g, '') // Importante: Quita los espacios de la contraseña
+            // IMPORTANTE: Debe ser una "Contraseña de Aplicación" de 16 caracteres de Google, no la contraseña normal.
+            pass: process.env.EMAIL_PASS.replace(/\s+/g, '')
         }
     });
     console.log(`📧 Nodemailer configurado correctamente para: ${process.env.EMAIL_USER}`);
