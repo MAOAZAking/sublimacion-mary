@@ -1206,13 +1206,62 @@
                 // Y -> Entre mayor sea el número se mueve la lamina hacia abajo
                 // SCALE -> Entre mayor sea el número mas grande es la lamina
                 // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
-                frontal: { x: 230, y: 560, scale: 1.5, angle: 0, curvature: 60 },
+                frontal: { 
+                    warp: true,
+                    // Configuración de 8 puntos igual a la vista del cliente
+                    points: {
+                        tl: { x: 362, y: 530 },  
+                        tm: { x: 512, y: 490 },  
+                        tr: { x: 662, y: 560 },  // Lado derecho más bajo
+                        rm: { x: 682, y: 710 },  
+                        br: { x: 662, y: 860 },  
+                        bm: { x: 512, y: 850 },  
+                        bl: { x: 362, y: 830 },  
+                        lm: { x: 342, y: 680 }   
+                    }
+                },
             }
         };
 
         const settings = textureSettings[tipoProducto] || textureSettings.camiseta;
 
-        const drawImageOnCanvas = (img, offsetX, offsetY, scaleFactor, rotationDeg, curvature = 0) => {
+        // Función para dibujar imagen deformada con 8 puntos (Copiada de mis_pedidos.html)
+        const drawWarpedImage = (img, points) => {
+            const drawTriangle = (u0, v0, u1, v1, u2, v2, x0, y0, x1, y1, x2, y2) => {
+                ctx.save();
+                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2); ctx.closePath(); ctx.clip();
+                const delta = u0 * (v1 - v2) - v0 * (u1 - u2) + (u1 * v2 - u2 * v1);
+                const deltaA = x0 * (v1 - v2) - v0 * (x1 - x2) + (x1 * v2 - x2 * v1);
+                const deltaB = u0 * (x1 - x2) - x0 * (u1 - u2) + (u1 * x2 - u2 * x1);
+                const deltaC = u0 * (v1 * x2 - v2 * x1) - v0 * (u1 * x2 - u2 * x1) + x0 * (u1 * v2 - u2 * v1);
+                const deltaD = y0 * (v1 - v2) - v0 * (y1 - y2) + (y1 * v2 - y2 * v1);
+                const deltaE = u0 * (y1 - y2) - y0 * (u1 - u2) + (u1 * y2 - u2 * y1);
+                const deltaF = u0 * (v1 * y2 - v2 * y1) - v0 * (u1 * y2 - u2 * y1) + y0 * (u1 * v2 - u2 * v1);
+                ctx.transform(deltaA / delta, deltaD / delta, deltaB / delta, deltaE / delta, deltaC / delta, deltaF / delta);
+                ctx.drawImage(img, 0, 0);
+                ctx.restore();
+            };
+            const w = img.width, h = img.height;
+            const s = { tl:{x:0,y:0}, tm:{x:w/2,y:0}, tr:{x:w,y:0}, ml:{x:0,y:h/2}, mm:{x:w/2,y:h/2}, mr:{x:w,y:h/2}, bl:{x:0,y:h}, bm:{x:w/2,y:h}, br:{x:w,y:h} };
+            const p = points;
+            const c = { x: (p.tm.x + p.bm.x + p.lm.x + p.rm.x) / 4, y: (p.tm.y + p.bm.y + p.lm.y + p.rm.y) / 4 };
+            drawTriangle(s.tl.x, s.tl.y, s.tm.x, s.tm.y, s.mm.x, s.mm.y, p.tl.x, p.tl.y, p.tm.x, p.tm.y, c.x, c.y);
+            drawTriangle(s.tm.x, s.tm.y, s.tr.x, s.tr.y, s.mm.x, s.mm.y, p.tm.x, p.tm.y, p.tr.x, p.tr.y, c.x, c.y);
+            drawTriangle(s.tr.x, s.tr.y, s.mr.x, s.mr.y, s.mm.x, s.mm.y, p.tr.x, p.tr.y, p.rm.x, p.rm.y, c.x, c.y);
+            drawTriangle(s.mr.x, s.mr.y, s.br.x, s.br.y, s.mm.x, s.mm.y, p.rm.x, p.rm.y, p.br.x, p.br.y, c.x, c.y);
+            drawTriangle(s.br.x, s.br.y, s.bm.x, s.bm.y, s.mm.x, s.mm.y, p.br.x, p.br.y, p.bm.x, p.bm.y, c.x, c.y);
+            drawTriangle(s.bm.x, s.bm.y, s.bl.x, s.bl.y, s.mm.x, s.mm.y, p.bm.x, p.bm.y, p.bl.x, p.bl.y, c.x, c.y);
+            drawTriangle(s.bl.x, s.bl.y, s.ml.x, s.ml.y, s.mm.x, s.mm.y, p.bl.x, p.bl.y, p.lm.x, p.lm.y, c.x, c.y);
+            drawTriangle(s.ml.x, s.ml.y, s.tl.x, s.tl.y, s.mm.x, s.mm.y, p.lm.x, p.lm.y, p.tl.x, p.tl.y, c.x, c.y);
+        };
+
+        const drawImageOnCanvas = (img, offsetX, offsetY, scaleFactor, rotationDeg, curvature = 0, warpSettings = null) => {
+            // Si hay configuración de deformación (warp), usarla
+            if (warpSettings && warpSettings.warp && warpSettings.points) {
+                drawWarpedImage(img, warpSettings.points);
+                return;
+            }
+
             const maxAllowedWidth = 200 * scaleFactor;
             const maxAllowedHeight = 200 * scaleFactor;
 
@@ -1252,7 +1301,7 @@
 
         if (frontImg) {
             const s = settings.frontal;
-            drawImageOnCanvas(frontImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
+            drawImageOnCanvas(frontImg, s.x, s.y, s.scale, s.angle, s.curvature, s); // Pasamos 's' como warpSettings
         }
         if (backImg) {
             const s = settings.espaldar;

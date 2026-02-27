@@ -8,7 +8,8 @@ const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.
 const nodemailer = require('nodemailer'); // Para enviar correos
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 const archiver = require('archiver'); // Para crear archivos ZIP
-require('dotenv').config();
+const dotenv = require('dotenv');
+dotenv.config();
 
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -26,15 +27,15 @@ const resolveEnvValue = (val) => {
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com", // Host explícito de Gmail
-        port: 587, // Puerto 587 (STARTTLS) es más robusto en la nube que el 465
-        secure: false, // false para puerto 587
+        host: "smtp.gmail.com",
+        port: 465, // CAMBIO: Usaremos el puerto SSL directo.
+        secure: true, // 'true' es requerido para el puerto 465.
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS.replace(/\s+/g, '')
         },
         // SOLUCIÓN CLAVE: Forzar IPv4. Render a veces falla conectando a Gmail por IPv6 (causa del ETIMEDOUT)
-        family: 4 
+        family: 4
     });
     console.log(`📧 Nodemailer configurado correctamente para: ${process.env.EMAIL_USER}`);
 } else {
@@ -235,10 +236,23 @@ app.post('/api/check-user', (req, res) => {
     if (user) {
         // Securely prepare face data from environment variables
         let faceData = null;
-        if (user.faceDataEnvVar && process.env[user.faceDataEnvVar]) {
+        const envVarName = user.faceDataEnvVar;
+        let rawJson = process.env[envVarName];
+
+        // SOLUCIÓN LOCAL: Si no está en process.env (ej: npm start local), intentar leer .env manualmente
+        if (!rawJson && fs.existsSync(path.join(__dirname, '.env'))) {
+            try {
+                const envConfig = dotenv.parse(fs.readFileSync(path.join(__dirname, '.env')));
+                if (envConfig[envVarName]) {
+                    rawJson = envConfig[envVarName];
+                }
+            } catch (e) { console.error("Error leyendo .env local:", e); }
+        }
+
+        if (envVarName && rawJson) {
             try {
                 // We send the JSON data directly, not the path.
-                faceData = JSON.parse(process.env[user.faceDataEnvVar]);
+                faceData = JSON.parse(rawJson);
             } catch (e) {
                 console.error(`Error parsing face data for user ${username}:`, e);
             }
