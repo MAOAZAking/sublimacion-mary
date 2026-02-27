@@ -26,12 +26,15 @@ const resolveEnvValue = (val) => {
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
-        service: 'gmail', // Usar 'service' simplifica la configuración para servicios conocidos
+        host: "smtp.gmail.com", // Host explícito de Gmail
+        port: 587, // Puerto 587 (STARTTLS) es más robusto en la nube que el 465
+        secure: false, // false para puerto 587
         auth: {
             user: process.env.EMAIL_USER,
-            // IMPORTANTE: Debe ser una "Contraseña de Aplicación" de 16 caracteres de Google, no la contraseña normal.
             pass: process.env.EMAIL_PASS.replace(/\s+/g, '')
-        }
+        },
+        // SOLUCIÓN CLAVE: Forzar IPv4. Render a veces falla conectando a Gmail por IPv6 (causa del ETIMEDOUT)
+        family: 4 
     });
     console.log(`📧 Nodemailer configurado correctamente para: ${process.env.EMAIL_USER}`);
 } else {
