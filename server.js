@@ -1,5 +1,5 @@
 const express = require('express');
-const https = require('https'); // Necesario para la API de Resend
+const https = require('https'); // Necesario para la API de Brevo
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer'); // Necesario para subir archivos
@@ -53,15 +53,15 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
 
 // Función auxiliar para enviar notificaciones
 async function sendEmailNotification(subject, htmlContent) {
-    // PRIORIDAD 1: Usar Resend (API HTTP) - Solución para Render
-    if (process.env.RESEND_API_KEY) {
-        await sendEmailViaResend(subject, htmlContent);
+    // PRIORIDAD 1: Usar Brevo (API HTTP) - Solución definitiva para Render
+    if (process.env.BREVO_API_KEY) {
+        await sendEmailViaBrevo(subject, htmlContent);
         return;
     }
 
     // PRIORIDAD 2: Usar Nodemailer (SMTP) - Solución para Local
     if (!transporter) {
-        console.warn("⚠️ Ni Resend ni Nodemailer configurados. No se envió el correo.");
+        console.warn("⚠️ Ni Brevo ni Nodemailer configurados. No se envió el correo.");
         return;
     }
 
@@ -96,8 +96,8 @@ async function sendEmailNotification(subject, htmlContent) {
     }
 }
 
-// --- Función para enviar vía Resend (Sin librerías extra) ---
-function sendEmailViaResend(subject, htmlContent) {
+// --- Función para enviar vía Brevo (API HTTP) ---
+function sendEmailViaBrevo(subject, htmlContent) {
     return new Promise((resolve, reject) => {
         // Obtener correos de administradores
         const adminEmails = users
@@ -109,23 +109,22 @@ function sendEmailViaResend(subject, htmlContent) {
             adminEmails.push(process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
         }
 
-        // NOTA: En el plan gratuito de Resend, el 'from' debe ser onboarding@resend.dev
-        // y solo puedes enviar correos a la dirección con la que te registraste en Resend.
+        // Configuración para Brevo
         const data = JSON.stringify({
-            from: 'Sublimacion Mary <onboarding@resend.dev>',
-            to: adminEmails, 
+            sender: { name: "Sublimación Mary", email: "team.sublimacion.mary@gmail.com" }, // Remitente verificado
+            to: adminEmails.map(email => ({ email: email })), // Formato Brevo: array de objetos
             subject: subject,
-            html: htmlContent
+            htmlContent: htmlContent
         });
 
         const options = {
-            hostname: 'api.resend.com',
-            path: '/emails',
+            hostname: 'api.brevo.com',
+            path: '/v3/smtp/email',
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                'api-key': process.env.BREVO_API_KEY,
                 'Content-Type': 'application/json',
-                'Content-Length': data.length
+                'Content-Length': Buffer.byteLength(data)
             }
         };
 
@@ -134,15 +133,15 @@ function sendEmailViaResend(subject, htmlContent) {
             res.on('data', (chunk) => responseBody += chunk);
             res.on('end', () => {
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    console.log(`📧 Notificación enviada vía Resend a: ${adminEmails.join(', ')}`);
+                    console.log(`📧 Notificación enviada vía Brevo a: ${adminEmails.join(', ')}`);
                 } else {
-                    console.error(`❌ Error Resend API (${res.statusCode}):`, responseBody);
+                    console.error(`❌ Error Brevo API (${res.statusCode}):`, responseBody);
                 }
                 resolve();
             });
         });
 
-        req.on('error', (error) => { console.error("❌ Error de red con Resend:", error); resolve(); });
+        req.on('error', (error) => { console.error("❌ Error de red con Brevo:", error); resolve(); });
         req.write(data);
         req.end();
     });
