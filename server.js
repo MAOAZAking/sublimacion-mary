@@ -28,9 +28,11 @@ const resolveEnvValue = (val) => {
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
+        pool: true, // Usar pool de conexiones (Más robusto en la nube)
+        maxConnections: 1,
         host: "smtp.gmail.com", // Volvemos al host estándar
-        port: 587, // Puerto 587 (STARTTLS) es el más compatible en la nube
-        secure: false, // false para 587
+        port: 465, // Intentamos puerto seguro SSL
+        secure: true, // true para 465
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS.replace(/\s+/g, '')
@@ -38,13 +40,13 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         tls: {
             rejectUnauthorized: false // Ayuda a evitar bloqueos por certificados estrictos en la red interna
         },
-        // Tiempos de espera extendidos y forzado de IPv4
-        connectionTimeout: 20000, 
-        greetingTimeout: 20000,
-        socketTimeout: 20000,
+        // Tiempos de espera CORTOS para fallar rápido y pasar a Brevo si está bloqueado
+        connectionTimeout: 5000, 
+        greetingTimeout: 5000,
+        socketTimeout: 5000,
         family: 4,
-        debug: true, // Habilitar logs detallados para ver el handshake
-        logger: true // Mostrar logs en la consola de Render
+        debug: false, 
+        logger: false 
     });
     console.log(`📧 Nodemailer configurado correctamente para: ${process.env.EMAIL_USER}`);
 } else {
@@ -53,18 +55,6 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
 
 // Función auxiliar para enviar notificaciones
 async function sendEmailNotification(subject, htmlContent) {
-    // PRIORIDAD 1: Usar Brevo (API HTTP) - Solución definitiva para Render
-    if (process.env.BREVO_API_KEY) {
-        await sendEmailViaBrevo(subject, htmlContent);
-        return;
-    }
-
-    // PRIORIDAD 2: Usar Nodemailer (SMTP) - Solución para Local
-    if (!transporter) {
-        console.warn("⚠️ Ni Brevo ni Nodemailer configurados. No se envió el correo.");
-        return;
-    }
-
     // Lógica SMTP (Gmail)
     // Lógica de destinatario: Enviar a TODOS los administradores.
     // Un administrador es un usuario con redirectUrl a 'admin_dashboard.html' y un email configurado.
@@ -83,16 +73,30 @@ async function sendEmailNotification(subject, htmlContent) {
     // Nodemailer acepta una cadena de correos separados por comas.
     const recipients = adminEmails.join(', ');
 
-    try {
-        await transporter.sendMail({
-            from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
-            to: recipients,
-            subject: subject,
-            html: htmlContent
-        });
-        console.log(`📧 Notificación enviada a ${recipients}: ${subject}`);
-    } catch (error) {
-        console.error("❌ Error enviando correo:", error);
+    let enviadoPorGmail = false;
+
+    // INTENTO 1: Gmail Directo (Limpio, sin etiqueta "via")
+    if (transporter) {
+        try {
+            await transporter.sendMail({
+                from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
+                to: recipients,
+                subject: subject,
+                html: htmlContent
+            });
+            console.log(`📧 Notificación enviada (GMAIL DIRECTO) a ${recipients}`);
+            enviadoPorGmail = true;
+        } catch (error) {
+            console.warn("⚠️ Falló envío directo por Gmail (Bloqueo de puerto probable). Intentando respaldo...");
+        }
+    }
+
+    // INTENTO 2: Brevo (Respaldo seguro, con etiqueta "via")
+    if (!enviadoPorGmail && process.env.BREVO_API_KEY) {
+        console.log("🔄 Usando Brevo como respaldo...");
+        await sendEmailViaBrevo(subject, htmlContent);
+    } else if (!enviadoPorGmail && !process.env.BREVO_API_KEY) {
+        console.error("❌ No se pudo enviar el correo por ningún método.");
     }
 }
 
@@ -114,7 +118,13 @@ function sendEmailViaBrevo(subject, htmlContent) {
             sender: { name: "Sublimación Mary", email: "team.sublimacion.mary@gmail.com" }, // Remitente verificado
             to: adminEmails.map(email => ({ email: email })), // Formato Brevo: array de objetos
             subject: subject,
-            htmlContent: htmlContent
+            htmlContent: htmlContent,
+            // Encabezados para marcar como IMPORTANTE y tratar de evitar la pestaña Promociones
+            headers: {
+                "X-Priority": "1", // 1 = Alta prioridad
+                "X-MSMail-Priority": "High",
+                "Importance": "High"
+            }
         });
 
         const options = {
