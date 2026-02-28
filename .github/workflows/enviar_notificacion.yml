@@ -35,4 +35,4 @@ jobs:
           INPUT_RECIPIENTS: ${{ github.event.inputs.recipients }}
           INPUT_SUBJECT: ${{ github.event.inputs.subject }}
           INPUT_HTML_BASE64: ${{ github.event.inputs.html_base64 }}
-        run: node scripts/worker_email.js
+        run: node .github/workflows/worker_email.js
