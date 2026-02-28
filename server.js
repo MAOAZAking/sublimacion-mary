@@ -87,13 +87,37 @@ async function sendEmailNotification(subject, htmlContent) {
             console.log(`📧 Notificación enviada (GMAIL DIRECTO) a ${recipients}`);
             enviadoPorGmail = true;
         } catch (error) {
-            console.warn("⚠️ Falló envío directo por Gmail (Bloqueo de puerto probable). Intentando respaldo...");
+            console.warn("⚠️ Falló envío directo (Bloqueo Render). Intentando puente vía GitHub Action...");
         }
     }
 
-    // INTENTO 2: Brevo (Respaldo seguro, con etiqueta "via")
+    // INTENTO 2: GitHub Action (Gmail Nativo - Bypass de bloqueo)
+    if (!enviadoPorGmail && githubClient) {
+        try {
+            // Codificar HTML a Base64 para pasarlo seguro por la API de GitHub
+            const htmlBase64 = Buffer.from(htmlContent).toString('base64');
+            
+            await githubClient.actions.createWorkflowDispatch({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
+                workflow_id: 'enviar_notificacion.yml',
+                ref: 'main', // Asegúrate que tu rama principal se llame 'main'
+                inputs: {
+                    recipients: recipients,
+                    subject: subject,
+                    html_base64: htmlBase64
+                }
+            });
+            console.log(`🚀 Solicitud enviada a GitHub Action (Gmail Nativo) para: ${recipients}`);
+            enviadoPorGmail = true; // Marcamos como enviado (delegado)
+        } catch (error) {
+            console.error("❌ Falló el puente GitHub:", error.message);
+        }
+    }
+
+    // INTENTO 3: Brevo (Último recurso si falla GitHub)
     if (!enviadoPorGmail && process.env.BREVO_API_KEY) {
-        console.log("🔄 Usando Brevo como respaldo...");
+        console.log("🔄 Usando Brevo como último respaldo...");
         await sendEmailViaBrevo(subject, htmlContent);
     } else if (!enviadoPorGmail && !process.env.BREVO_API_KEY) {
         console.error("❌ No se pudo enviar el correo por ningún método.");

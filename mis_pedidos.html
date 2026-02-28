@@ -1130,22 +1130,21 @@
 
             if (isMobilePortrait) {
                 // LÓGICA MÓVIL: Mover modelo hacia ARRIBA (Bajando la cámara Y)
-                dy = -0.5; //Baja la camara haciendo que le modelo quede mas arriba
-                dz = 2.5; // Alejar cámara (Zoom out)
+                dy = -0.5; // Baja la camara haciendo que le modelo quede mas arriba
+                dz = 2.5;  // Alejar cámara (Zoom out)
                 
                 if (currentPedidoData && currentPedidoData.producto) {
                     const prod = currentPedidoData.producto.toLowerCase();
                     if (prod.includes('mug')) {
                         dy = -4.0; 
                         dz = 4.0; // Alejar cámara (Zoom out) solo para Mug en móvil
-                    }
-                    else{
+                    } else {
                         dy = -0.35; 
-                        dz = 0.5; // Alejar cámara (Zoom out) solo para Mug en móvil
+                        dz = 0.5; // Alejar cámara (Zoom out) para otros productos
                     }
                 }
             } else {
-                // LÓGICA ESCRITORIO: Mover modelo a la IZQUIERDA (Moviendo cámara X)
+                // LÓGICA ESCRITORIO: Mover modelo a la IZQUIERDA (Moviendo cámara a la DERECHA de la perspectiva actual)
                 let shiftValue = 0.5;
                 if (currentPedidoData && currentPedidoData.producto) {
                     const prod = currentPedidoData.producto.toLowerCase();
@@ -1154,7 +1153,18 @@
                     else if (prod.includes('saco')) shiftValue = 0.5;
                     else if (prod.includes('gorra')) shiftValue = 0.5;
                 }
-                dx = shiftValue;
+                
+                // Se calcula el vector "derecha" de la cámara en coordenadas del mundo.
+                const cameraRight = new THREE.Vector3();
+                cameraRight.setFromMatrixColumn(camera.matrixWorld, 0);
+                
+                // Se escala ese vector por el valor de desplazamiento.
+                const worldOffset = cameraRight.multiplyScalar(shiftValue);
+
+                // Se usan las componentes de este vector para el desplazamiento.
+                dx = worldOffset.x;
+                dy = worldOffset.y;
+                dz = worldOffset.z;
             }
 
             animateCameraShift(dx, dy, dz);

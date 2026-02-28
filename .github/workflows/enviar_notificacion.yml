@@ -1,0 +1,38 @@
+# .github/workflows/enviar_notificacion.yml
+name: Enviar Notificación Email
+on:
+  workflow_dispatch:
+    inputs:
+      recipients:
+        description: 'Destinatarios'
+        required: true
+      subject:
+        description: 'Asunto'
+        required: true
+      html_base64:
+        description: 'Contenido HTML (Base64)'
+        required: true
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install nodemailer
+
+      - name: Run Email Script
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          INPUT_RECIPIENTS: ${{ github.event.inputs.recipients }}
+          INPUT_SUBJECT: ${{ github.event.inputs.subject }}
+          INPUT_HTML_BASE64: ${{ github.event.inputs.html_base64 }}
+        run: node scripts/worker_email.js
