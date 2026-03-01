@@ -6,7 +6,6 @@ const multer = require('multer'); // Necesario para subir archivos
 const imageSizeLib = require('image-size'); // Para validar dimensiones
 // Fix: Asegurar que sizeOf sea una función (compatibilidad con diferentes versiones de la librería)
 const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.imageSize;
-const nodemailer = require('nodemailer'); // Para enviar correos
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 const archiver = require('archiver'); // Para crear archivos ZIP
 const dotenv = require('dotenv');
@@ -24,38 +23,8 @@ const resolveEnvValue = (val) => {
     return val;
 };
 
-// --- Configuración de Nodemailer ---
-let transporter = null;
-if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    transporter = nodemailer.createTransport({
-        pool: true, // Usar pool de conexiones (Más robusto en la nube)
-        maxConnections: 1,
-        host: "smtp.gmail.com", // Volvemos al host estándar
-        port: 465, // Intentamos puerto seguro SSL
-        secure: true, // true para 465
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS.replace(/\s+/g, '')
-        },
-        tls: {
-            rejectUnauthorized: false // Ayuda a evitar bloqueos por certificados estrictos en la red interna
-        },
-        // Tiempos de espera CORTOS para fallar rápido y pasar a Brevo si está bloqueado
-        connectionTimeout: 5000, 
-        greetingTimeout: 5000,
-        socketTimeout: 5000,
-        family: 4,
-        debug: false, 
-        logger: false 
-    });
-    console.log(`📧 Nodemailer configurado correctamente para: ${process.env.EMAIL_USER}`);
-} else {
-    console.warn("⚠️ ADVERTENCIA: Faltan variables de entorno para Nodemailer (EMAIL_USER, EMAIL_PASS). No se enviarán notificaciones por correo.");
-}
-
 // Función auxiliar para enviar notificaciones
 async function sendEmailNotification(subject, htmlContent) {
-    // Lógica SMTP (Gmail)
     // Lógica de destinatario: Enviar a TODOS los administradores.
     // Un administrador es un usuario con redirectUrl a 'admin_dashboard.html' y un email configurado.
     const adminEmails = users
@@ -70,29 +39,17 @@ async function sendEmailNotification(subject, htmlContent) {
         adminEmails.push(fallbackEmail);
     }
 
-    // Nodemailer acepta una cadena de correos separados por comas.
-    const recipients = adminEmails.join(', ');
+    // Usar la función centralizada de despacho
+    await dispatchEmail(adminEmails, subject, htmlContent);
+}
 
-    let enviadoPorGmail = false;
+// --- Función Centralizada de Envío (Estrategia: GitHub -> Brevo) ---
+async function dispatchEmail(recipientsArray, subject, htmlContent) {
+    const recipientsString = recipientsArray.join(', ');
+    let enviado = false;
 
-    // INTENTO 1: Gmail Directo (Limpio, sin etiqueta "via")
-    if (transporter) {
-        try {
-            await transporter.sendMail({
-                from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
-                to: recipients,
-                subject: subject,
-                html: htmlContent
-            });
-            console.log(`📧 Notificación enviada (GMAIL DIRECTO) a ${recipients}`);
-            enviadoPorGmail = true;
-        } catch (error) {
-            console.warn("⚠️ Falló envío directo (Bloqueo Render). Intentando puente vía GitHub Action...");
-        }
-    }
-
-    // INTENTO 2: GitHub Action (Gmail Nativo - Bypass de bloqueo)
-    if (!enviadoPorGmail && githubClient) {
+    // INTENTO 1: GitHub Action (Principal - Gmail Nativo via Runner)
+    if (githubClient) {
         try {
             // Codificar HTML a Base64 para pasarlo seguro por la API de GitHub
             const htmlBase64 = Buffer.from(htmlContent).toString('base64');
@@ -103,44 +60,34 @@ async function sendEmailNotification(subject, htmlContent) {
                 workflow_id: 'enviar_notificacion.yml',
                 ref: 'main', // Asegúrate que tu rama principal se llame 'main'
                 inputs: {
-                    recipients: recipients,
+                    recipients: recipientsString,
                     subject: subject,
                     html_base64: htmlBase64
                 }
             });
-            console.log(`🚀 Solicitud enviada a GitHub Action (Gmail Nativo) para: ${recipients}`);
-            enviadoPorGmail = true; // Marcamos como enviado (delegado)
+            console.log(`🚀 Solicitud enviada a GitHub Action (Gmail Nativo) para: ${recipientsString}`);
+            enviado = true; 
         } catch (error) {
-            console.error("❌ Falló el puente GitHub:", error.message);
+            console.error("❌ Falló el método principal (GitHub Action):", error.message);
         }
     }
 
-    // INTENTO 3: Brevo (Último recurso si falla GitHub)
-    if (!enviadoPorGmail && process.env.BREVO_API_KEY) {
+    // INTENTO 2: Brevo (Respaldo)
+    if (!enviado && process.env.BREVO_API_KEY) {
         console.log("🔄 Usando Brevo como último respaldo...");
-        await sendEmailViaBrevo(subject, htmlContent);
-    } else if (!enviadoPorGmail && !process.env.BREVO_API_KEY) {
+        await sendEmailViaBrevo(recipientsArray, subject, htmlContent);
+    } else if (!enviado) {
         console.error("❌ No se pudo enviar el correo por ningún método.");
     }
 }
 
 // --- Función para enviar vía Brevo (API HTTP) ---
-function sendEmailViaBrevo(subject, htmlContent) {
+function sendEmailViaBrevo(recipientsArray, subject, htmlContent) {
     return new Promise((resolve, reject) => {
-        // Obtener correos de administradores
-        const adminEmails = users
-            .filter(u => u.email && u.redirectUrl === 'admin_dashboard.html')
-            .map(u => resolveEnvValue(u.email))
-            .filter(email => email);
-
-        if (adminEmails.length === 0) {
-            adminEmails.push(process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
-        }
-
         // Configuración para Brevo
         const data = JSON.stringify({
             sender: { name: "Sublimación Mary", email: "team.sublimacion.mary@gmail.com" }, // Remitente verificado
-            to: adminEmails.map(email => ({ email: email })), // Formato Brevo: array de objetos
+            to: recipientsArray.map(email => ({ email: email })), // Formato Brevo: array de objetos
             subject: subject,
             htmlContent: htmlContent,
             // Encabezados para marcar como IMPORTANTE y tratar de evitar la pestaña Promociones
@@ -167,7 +114,7 @@ function sendEmailViaBrevo(subject, htmlContent) {
             res.on('data', (chunk) => responseBody += chunk);
             res.on('end', () => {
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    console.log(`📧 Notificación enviada vía Brevo a: ${adminEmails.join(', ')}`);
+                    console.log(`📧 Notificación enviada vía Brevo a: ${recipientsArray.join(', ')}`);
                 } else {
                     console.error(`❌ Error Brevo API (${res.statusCode}):`, responseBody);
                 }
@@ -480,14 +427,12 @@ app.post('/api/complete-setup', async (req, res) => {
         return res.status(500).json({ success: false, error: errorMessage });
     }
 
-    // --- ENVIAR CORREO DE BIENVENIDA A LA ADMINISTRADORA (Nodemailer) ---
-    if (transporter) {
-        try {
-            const repoOwner = process.env.GITHUB_OWNER || 'MAOAZAking';
-            const repoName = process.env.GITHUB_REPO || 'sublimacion-mary';
-            const imgUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/img/logo_sin_fondo.png`;
+    // --- ENVIAR CORREO DE BIENVENIDA A LA ADMINISTRADORA ---
+    const repoOwner = process.env.GITHUB_OWNER || 'MAOAZAking';
+    const repoName = process.env.GITHUB_REPO || 'sublimacion-mary';
+    const imgUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/img/logo_sin_fondo.png`;
 
-            const welcomeBody = `
+    const welcomeBody = `
                 <p>Hola <strong>${newUsername}</strong>,</p>
                 <p>Te damos la bienvenida desde el equipo de desarrollo y soporte de <strong>Sublimación Mary</strong>.</p>
                 <div class="info-card" style="border-left-color: #9b59b6;">
@@ -497,21 +442,11 @@ app.post('/api/complete-setup', async (req, res) => {
                 <p>Hemos preparado todo para que tengas la mejor experiencia gestionando tu negocio.</p>
                 <br>
                 <p>Hemos creado este logo para tu emprendimiento, esperamos te guste, aunque si tienes otro en mente podemos cambiarlo</p>
-            `;
-            
-            const emailHtml = getEmailTemplate("🫂 ¡Bienvenida al Equipo! 🎉 ", welcomeBody, imgUrl);
-
-            await transporter.sendMail({
-                from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
-                to: newEmail, // Solo al nuevo usuario (Majo)
-                subject: "🎉 ¡Bienvenida Majo! 🤗 Configuración Exitosa - Support Team Sublimación Mary",
-                html: emailHtml
-            });
-            console.log(`Correo de bienvenida enviado a ${newEmail}`);
-        } catch (emailErr) {
-            console.error("Error enviando correo de bienvenida (no crítico):", emailErr);
-        }
-    }
+    `;
+    
+    const emailHtml = getEmailTemplate("🫂 ¡Bienvenida al Equipo! 🎉 ", welcomeBody, imgUrl);
+    // Usar la nueva función dispatchEmail
+    await dispatchEmail([newEmail], "🎉 ¡Bienvenida Majo! 🤗 Configuración Exitosa - Support Team Sublimación Mary", emailHtml);
 
     res.json({ success: true });
 });
