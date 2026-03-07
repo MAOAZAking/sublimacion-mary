@@ -1,6 +1,6 @@
 [
     {
-        "id": 1,
+        "s_n": "MUGS_0001",
         "telefono": "3000000000",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 11:34:16",
@@ -10,7 +10,7 @@
         "color_mug": "naranja"
     },
     {
-        "id": 2,
+        "s_n": "MUGS_0002",
         "telefono": "3123456789",
         "producto": "Mug Personalizado",
         "fecha": "15/02/2026 12:34:21",
@@ -20,7 +20,7 @@
         "color_mug": "verde"
     },
     {
-        "id": 3,
+        "s_n": "CAMI_0001",
         "telefono": "3002052842",
         "producto": "Camiseta Estampada",
         "fecha": "14/01/2026 13:34:16",
@@ -28,7 +28,7 @@
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768420878/mwd7jjcyeyvxorsteybw.png"
     },
     {
-        "id": 4,
+        "s_n": "MUGS_0003",
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 14:34:16",
@@ -37,7 +37,7 @@
         "tipo_mug": "clasico"
     },
     {
-        "id": 5,
+        "s_n": "MUGS_0004",
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 15:34:16",
@@ -46,7 +46,7 @@
         "tipo_mug": "clasico"
     },
     {
-        "id": 6,
+        "s_n": "MUGS_0005",
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 16:34:16",
@@ -55,7 +55,7 @@
         "tipo_mug": "clasico"
     },
     {
-        "id": 7,
+        "s_n": "CAMI_0002",
         "telefono": "3000000000",
         "producto": "Camiseta Estampada",
         "fecha": "26/02/2026 17:59:12",
@@ -67,7 +67,7 @@
         }
     },
     {
-        "id": 8,
+        "s_n": "MUGS_0006",
         "telefono": "3002052842",
         "producto": "Mug Personalizado",
         "fecha": "12/02/2026 09:23:18",
@@ -77,7 +77,7 @@
         "color_mug": "rojo"
     },
     {
-        "id": 9,
+        "s_n": "MUGS_0007",
         "telefono": "3152214070",
         "producto": "Mug Personalizado",
         "fecha": "01/03/2026 12:32:12",
@@ -87,7 +87,7 @@
         "color_mug": "naranja"
     },
     {
-        "id": 10,
+        "s_n": "MUGS_0008",
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
         "fecha": "15/02/2026 12:30:57",
@@ -97,7 +97,7 @@
         "color_mug": "amarillo"
     },
     {
-        "id": 11,
+        "s_n": "CAMI_0003",
         "telefono": "3169445092",
         "producto": "Camiseta Estampada",
         "fecha": "26/02/2026 18:06:11",
@@ -109,7 +109,7 @@
         }
     },
     {
-        "id": 12,
+        "s_n": "CAMI_0004",
         "telefono": "3169445092",
         "producto": "Camiseta Estampada",
         "fecha": "19/01/2026 18:04:36",
@@ -121,7 +121,7 @@
         }
     },
     {
-        "id": 13,
+        "s_n": "CAMI_0005",
         "telefono": "603013748",
         "producto": "Camiseta Estampada",
         "fecha": "30/01/2026 17:40:07",
@@ -134,7 +134,7 @@
         "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/foto_usada_en_camiseta_4.jpg"
     },
     {
-        "id": 14,
+        "s_n": "SACO_0001",
         "telefono": "3002052842",
         "producto": "Saco Estampado",
         "fecha": "20/02/2026 10:00:00",
@@ -146,7 +146,7 @@
         }
     },
     {
-        "id": 15,
+        "s_n": "GORR_0001",
         "telefono": "3002052842",
         "producto": "Gorra Estampada",
         "fecha": "20/02/2026 10:05:00",

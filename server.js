@@ -681,18 +681,18 @@ app.post('/api/pedidos', upload.fields([
 
         let maxSeq = 0;
         pedidos.forEach(p => {
-            if (p.id && typeof p.id === 'string' && p.id.startsWith(prefix + '-')) {
-                const parts = p.id.split('-');
+            if (p.s_n && typeof p.s_n === 'string' && p.s_n.startsWith(prefix + '_')) {
+                const parts = p.s_n.split('_');
                 if (parts.length === 2) {
                     const seq = parseInt(parts[1], 10);
                     if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
                 }
             }
         });
-        const nextId = `${prefix}-${String(maxSeq + 1).padStart(4, '0')}`;
+        const nextId = `${prefix}_${String(maxSeq + 1).padStart(4, '0')}`;
 
         const nuevoPedido = { 
-            id: nextId,
+            s_n: nextId,
             telefono, producto, fecha, estado, tipo_mug, color_mug,
             imagen_url: mainImageUrl,
             imagenes: { frontal: urlFrontal, espaldar: urlespaldar },
@@ -888,13 +888,13 @@ app.post('/api/pedidos/edit', upload.fields([
         const bodyContent = `
             <p>El pedido del cliente <strong>${telefono}</strong> ha sido modificado exitosamente por el administrador.</p>
             <div class="info-card" style="border-left-color: #2980b9;">
-                <div class="info-item"><strong>S/N:</strong> ${pedido.id || 'N/A'}</div>
+                <div class="info-item"><strong>S/N:</strong> ${pedido.s_n || 'N/A'}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
                 <div class="info-item"><strong>Fecha Actualizada:</strong> ${fecha}</div>
             </div>
         `;
         const emailHtml = getEmailTemplate(`Pedido Editado ✏️`, bodyContent, mainImageUrl);
-        sendEmailNotification(`Pedido Editado S/N: ${pedido.id || 'N/A'} - ${telefono}`, emailHtml);
+        sendEmailNotification(`Pedido Editado S/N: ${pedido.s_n || 'N/A'} - ${telefono}`, emailHtml);
 
         res.json({ success: true, pedido: pedido });
 
@@ -945,7 +945,7 @@ app.post('/api/update-status', async (req, res) => {
 
         // --- ENVIAR CORREO: ACTUALIZACIÓN DE ESTADO (CLIENTE) ---
         if (pedidoEncontrado) {
-            const pedidoId = pedidoEncontrado.id || 'N/A';
+            const pedidoId = pedidoEncontrado.s_n || 'N/A';
             let asunto = `Actualización de Estado - Pedido S/N: ${pedidoId}`;
             let titulo = `Estado Actualizado`;
             let mensaje = `<p>El estado del pedido ha cambiado a: <strong>${nuevo_estado}</strong></p>`;

@@ -1151,7 +1151,7 @@
         // La notificación por correo ahora se envía automáticamente desde el backend (server.js)
         // al llamar a /api/update-status. No se necesita hacer nada más aquí.
         // Redireccionar a WhatsApp
-        const idPedido = currentPedidoData.id || 'N/A';
+        const idPedido = currentPedidoData.s_n || 'N/A';
         const mensajeWA = `Hola, soy el cliente ${telefono}. Mi pedido identificado con el S/N: ${idPedido} ME ENCANTA EL DISEÑO, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${imgUrl})`;
         const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         
@@ -1170,7 +1170,7 @@
         const telefono = currentPedidoData.telefono || currentPedidoData.teléfono;
         const imgUrl = currentPedidoData.imagen_url;
         const linkPagina = window.location.href;
-        const idPedido = currentPedidoData.id || 'N/A';
+        const idPedido = currentPedidoData.s_n || 'N/A';
 
         // Actualizar estado localmente y ocultar overlay inmediatamente
         currentPedidoData.estado = "Creando diseño";
