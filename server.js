@@ -671,8 +671,25 @@ app.post('/api/pedidos', upload.fields([
             if (error.status !== 404) console.warn("pedidos.json no encontrado, creando nuevo.");
         }
 
-        // Generar nuevo ID único
-        const nextId = pedidos.length > 0 ? Math.max(...pedidos.map(p => p.id || 0)) + 1 : 1;
+        // Generar nuevo S/N (Serial Number) Profesional
+        let prefix = 'PROD';
+        const prodLower = producto.toLowerCase();
+        if (prodLower.includes('mug')) prefix = 'MUGS';
+        else if (prodLower.includes('camiseta')) prefix = 'CAMI';
+        else if (prodLower.includes('saco')) prefix = 'SACO';
+        else if (prodLower.includes('gorra')) prefix = 'GORR';
+
+        let maxSeq = 0;
+        pedidos.forEach(p => {
+            if (p.id && typeof p.id === 'string' && p.id.startsWith(prefix + '-')) {
+                const parts = p.id.split('-');
+                if (parts.length === 2) {
+                    const seq = parseInt(parts[1], 10);
+                    if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+                }
+            }
+        });
+        const nextId = `${prefix}-${String(maxSeq + 1).padStart(4, '0')}`;
 
         const nuevoPedido = { 
             id: nextId,
@@ -705,6 +722,7 @@ app.post('/api/pedidos', upload.fields([
         const bodyContent = `
             <p>Se ha registrado un nuevo pedido en el sistema. A continuación los detalles:</p>
             <div class="info-card">
+                <div class="info-item"><strong>S/N:</strong> ${nextId}</div>
                 <div class="info-item"><strong>Cliente:</strong> ${telefono}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
                 <div class="info-item"><strong>Fecha:</strong> ${fecha}</div>
@@ -714,7 +732,7 @@ app.post('/api/pedidos', upload.fields([
             </div>
         `;
         const emailHtml = getEmailTemplate(`¡Nuevo Pedido Recibido! 🎉`, bodyContent, mainImageUrl);
-        sendEmailNotification(`Nuevo Pedido - ${telefono} (${producto})`, emailHtml);
+        sendEmailNotification(`Nuevo Pedido S/N: ${nextId} - ${telefono}`, emailHtml);
 
         return res.json({ success: true, pedido: nuevoPedido });
 
@@ -870,12 +888,13 @@ app.post('/api/pedidos/edit', upload.fields([
         const bodyContent = `
             <p>El pedido del cliente <strong>${telefono}</strong> ha sido modificado exitosamente por el administrador.</p>
             <div class="info-card" style="border-left-color: #2980b9;">
+                <div class="info-item"><strong>S/N:</strong> ${pedido.id || 'N/A'}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
                 <div class="info-item"><strong>Fecha Actualizada:</strong> ${fecha}</div>
             </div>
         `;
         const emailHtml = getEmailTemplate(`Pedido Editado ✏️`, bodyContent, mainImageUrl);
-        sendEmailNotification(`Pedido Editado - ${telefono}`, emailHtml);
+        sendEmailNotification(`Pedido Editado S/N: ${pedido.id || 'N/A'} - ${telefono}`, emailHtml);
 
         res.json({ success: true, pedido: pedido });
 
@@ -927,25 +946,25 @@ app.post('/api/update-status', async (req, res) => {
         // --- ENVIAR CORREO: ACTUALIZACIÓN DE ESTADO (CLIENTE) ---
         if (pedidoEncontrado) {
             const pedidoId = pedidoEncontrado.id || 'N/A';
-            let asunto = `Actualización de Estado - Pedido #${pedidoId}`;
+            let asunto = `Actualización de Estado - Pedido S/N: ${pedidoId}`;
             let titulo = `Estado Actualizado`;
             let mensaje = `<p>El estado del pedido ha cambiado a: <strong>${nuevo_estado}</strong></p>`;
             let colorBorde = "#27ae60"; // Verde por defecto
 
             if (nuevo_estado === "Creando diseño" && detalles) {
-                asunto = `⚠️ Solicitud de CAMBIO - Pedido #${pedidoId}`;
+                asunto = `⚠️ Solicitud de CAMBIO - Pedido S/N: ${pedidoId}`;
                 titulo = `Solicitud de Cambio`;
-                mensaje = `<p>El cliente solicita los siguientes cambios para el <strong>Pedido #${pedidoId}</strong>:</p><div style="background: #fff0f0; padding: 15px; border-left: 4px solid #e74c3c; font-style: italic; margin: 15px 0;">"${detalles}"</div>`;
+                mensaje = `<p>El cliente solicita los siguientes cambios para el <strong>Pedido identificado con S/N: ${pedidoId}</strong>:</p><div style="background: #fff0f0; padding: 15px; border-left: 4px solid #e74c3c; font-style: italic; margin: 15px 0;">"${detalles}"</div>`;
                 colorBorde = "#e74c3c"; // Rojo para cambios
             } else if (nuevo_estado.includes("Listo")) {
-                asunto = `✅ Cliente SATISFECHO - Pedido #${pedidoId}`;
+                asunto = `✅ Cliente SATISFECHO - Pedido S/N: ${pedidoId}`;
                 titulo = `¡Cliente Satisfecho!`;
-                mensaje = `<p>¡El cliente ha aprobado el diseño del <strong>Pedido #${pedidoId}</strong>! El pedido está listo para la siguiente fase.</p>`;
+                mensaje = `<p>¡El cliente ha aprobado el diseño del <strong>Pedido identificado con S/N: ${pedidoId}</strong>! El pedido está listo para la siguiente fase.</p>`;
             }
 
             const bodyContent = `
                 <div class="info-card" style="border-left-color: ${colorBorde};">
-                    <div class="info-item"><strong>Pedido:</strong> #${pedidoId}</div>
+                    <div class="info-item"><strong>S/N:</strong> ${pedidoId}</div>
                     <div class="info-item"><strong>Producto:</strong> ${pedidoEncontrado.producto}</div>
                     <div class="info-item"><strong>Cliente:</strong> ${pedidoEncontrado.telefono}</div>
                 </div>
