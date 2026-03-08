@@ -259,7 +259,12 @@ if (devIndex !== -1) {
     if (process.env.DEV_PASSWORD) users[devIndex].password = devPass;
 } else {
     // Si no existe, lo creamos
-    users.push({ username: 'MAOAZAking', password: devPass, email: devEmail, redirectUrl: 'admin_dashboard.html' });
+    users.push({ 
+        username: 'MAOAZAking', 
+        password: devPass, 
+        email: devEmail, 
+        redirectUrl: 'admin_dashboard.html'
+    });
 }
 
 // Configuración de GitHub (Si existen las variables)
@@ -285,26 +290,46 @@ app.post('/api/check-user', (req, res) => {
     if (user) {
         // Securely prepare face data from environment variables
         let faceData = null;
-        const envVarName = user.faceDataEnvVar;
+        // FIX: Fallback inteligente. Si no tiene variable asignada, busca una basada en el nombre (ej: MAOAZAKING_FACE_DATA_JSON)
+        const envVarName = user.faceDataEnvVar || `${user.username.toUpperCase()}_FACE_DATA_JSON`;
+        console.log(`🔍 Buscando datos faciales en variable: ${envVarName}`);
+        
         let rawJson = process.env[envVarName];
 
-        // SOLUCIÓN LOCAL: Si no está en process.env (ej: npm start local), intentar leer .env manualmente
-        if (!rawJson && fs.existsSync(path.join(__dirname, '.env'))) {
+        // 1. Intentar parsear lo que ya cargó dotenv (si existe)
+        if (rawJson) {
             try {
-                const envConfig = dotenv.parse(fs.readFileSync(path.join(__dirname, '.env')));
-                if (envConfig[envVarName]) {
-                    rawJson = envConfig[envVarName];
+                faceData = JSON.parse(rawJson);
+            } catch (e) {
+                console.warn(`⚠️ Error parseando process.env['${envVarName}']. Posiblemente truncado. Intentando lectura manual...`);
+                faceData = null; // Resetear para intentar lectura manual
+            }
+        }
+
+        // 2. Si falló o no existe, y estamos en local, intentar leer .env manualmente (Soporte multilínea sin comillas)
+        if (!faceData && fs.existsSync(path.join(__dirname, '.env'))) {
+            try {
+                const envContent = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+                // Busca: NOMBRE_VAR={...} capturando todo el bloque JSON hasta el cierre }
+                const regex = new RegExp(`^${envVarName}\\s*=\\s*({[\\s\\S]*?})`, 'm');
+                const match = envContent.match(regex);
+                if (match) {
+                    rawJson = match[1];
+                    try {
+                        faceData = JSON.parse(rawJson);
+                        console.log("✅ Datos recuperados correctamente mediante lectura manual del .env");
+                    } catch (e) {
+                        console.error("❌ Error parseando JSON manual:", e.message);
+                    }
                 }
             } catch (e) { console.error("Error leyendo .env local:", e); }
         }
 
-        if (envVarName && rawJson) {
-            try {
-                // We send the JSON data directly, not the path.
-                faceData = JSON.parse(rawJson);
-            } catch (e) {
-                console.error(`Error parsing face data for user ${username}:`, e);
-            }
+        if (faceData) {
+            console.log(`✅ Datos faciales listos para: ${username}`);
+        } else {
+            if (rawJson) console.error("⚠️ Contenido crudo final que falló:", rawJson);
+            console.warn(`⚠️ No se encontraron datos faciales válidos para ${username} en la variable: ${envVarName}`);
         }
 
         // Si la contraseña está vacía, requiere configuración (Flujo Majo)

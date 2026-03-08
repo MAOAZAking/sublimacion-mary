@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Panel Administrador</title>
     <link rel="icon" href="https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/global.css">
     <script src="js/global.js"></script>
     <meta name="theme-color" content="#121212">
@@ -31,6 +31,11 @@
         }
     </script>
     <style>
+        body { 
+            font-family: 'Poppins', sans-serif; background-color: #121212; margin: 0; color: rgb(255, 255, 255);
+            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        }
         .header { text-align: center; margin-bottom: 40px; background: #1e1e1e; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid #333; }
         .header h2 { margin-top: 0; color: rgb(255, 255, 255); }
         .controls { text-align: center; margin-bottom: 30px; }
@@ -167,6 +172,86 @@
         .btn-download { position: absolute; bottom: 30px; left: 30px; z-index: 1005; background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 12px 25px; border: none; border-radius: 50px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4); transition: transform 0.2s; display: none; font-family: 'Poppins', sans-serif; align-items: center; gap: 8px; }
         .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(142, 68, 173, 0.6); }
 
+        /* Loader Styles */
+        #global-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #333; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; transition: opacity 0.5s ease;
+        }
+        .loader-uib-container {
+            --uib-size: 45px;
+            --uib-color: white;
+            --uib-speed: 2.5s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: var(--uib-size);
+            width: var(--uib-size);
+        }
+        .slice {
+            position: relative;
+            height: calc(var(--uib-size) / 6);
+            width: 100%;
+        }
+        .slice::before, .slice::after {
+            --uib-a: calc(var(--uib-speed) / -2);
+            --uib-b: calc(var(--uib-speed) / -6);
+            content: '';
+            position: absolute;
+            top: 0;
+            left: calc(50% - var(--uib-size) / 12);
+            height: 100%;
+            width: calc(100% / 6);
+            border-radius: 50%;
+            background-color: var(--uib-color);
+            flex-shrink: 0;
+            animation: orbit var(--uib-speed) linear infinite;
+            transition: background-color 0.3s ease;
+        }
+        .slice:nth-child(1)::after { animation-delay: var(--uib-a); }
+        .slice:nth-child(2)::before { animation-delay: var(--uib-b); }
+        .slice:nth-child(2)::after { animation-delay: calc(var(--uib-a) + var(--uib-b)); }
+        .slice:nth-child(3)::before { animation-delay: calc(var(--uib-b) * 2); }
+        .slice:nth-child(3)::after { animation-delay: calc(var(--uib-a) + var(--uib-b) * 2); }
+        .slice:nth-child(4)::before { animation-delay: calc(var(--uib-b) * 3); }
+        .slice:nth-child(4)::after { animation-delay: calc(var(--uib-a) + var(--uib-b) * 3); }
+        .slice:nth-child(5)::before { animation-delay: calc(var(--uib-b) * 4); }
+        .slice:nth-child(5)::after { animation-delay: calc(var(--uib-a) + var(--uib-b) * 4); }
+        .slice:nth-child(6)::before { animation-delay: calc(var(--uib-b) * 5); }
+        .slice:nth-child(6)::after { animation-delay: calc(var(--uib-a) + var(--uib-b) * 5); }
+        @keyframes orbit {
+            0% { transform: translateX(calc(var(--uib-size) * 0.25)) scale(0.73684); opacity: 0.65; }
+            5% { transform: translateX(calc(var(--uib-size) * 0.235)) scale(0.684208); opacity: 0.58; }
+            10% { transform: translateX(calc(var(--uib-size) * 0.182)) scale(0.631576); opacity: 0.51; }
+            15% { transform: translateX(calc(var(--uib-size) * 0.129)) scale(0.578944); opacity: 0.44; }
+            20% { transform: translateX(calc(var(--uib-size) * 0.076)) scale(0.526312); opacity: 0.37; }
+            25% { transform: translateX(0%) scale(0.47368); opacity: 0.3; }
+            30% { transform: translateX(calc(var(--uib-size) * -0.076)) scale(0.526312); opacity: 0.37; }
+            35% { transform: translateX(calc(var(--uib-size) * -0.129)) scale(0.578944); opacity: 0.44; }
+            40% { transform: translateX(calc(var(--uib-size) * -0.182)) scale(0.631576); opacity: 0.51; }
+            45% { transform: translateX(calc(var(--uib-size) * -0.235)) scale(0.684208); opacity: 0.58; }
+            50% { transform: translateX(calc(var(--uib-size) * -0.25)) scale(0.73684); opacity: 0.65; }
+            55% { transform: translateX(calc(var(--uib-size) * -0.235)) scale(0.789472); opacity: 0.72; }
+            60% { transform: translateX(calc(var(--uib-size) * -0.182)) scale(0.842104); opacity: 0.79; }
+            65% { transform: translateX(calc(var(--uib-size) * -0.129)) scale(0.894736); opacity: 0.86; }
+            70% { transform: translateX(calc(var(--uib-size) * -0.076)) scale(0.947368); opacity: 0.93; }
+            75% { transform: translateX(0%) scale(1); opacity: 1; }
+            80% { transform: translateX(calc(var(--uib-size) * 0.076)) scale(0.947368); opacity: 0.93; }
+            85% { transform: translateX(calc(var(--uib-size) * 0.129)) scale(0.894736); opacity: 0.86; }
+            90% { transform: translateX(calc(var(--uib-size) * 0.182)) scale(0.842104); opacity: 0.79; }
+            95% { transform: translateX(calc(var(--uib-size) * 0.235)) scale(0.789472); opacity: 0.72; }
+            100% { transform: translateX(calc(var(--uib-size) * 0.25)) scale(0.73684); opacity: 0.65; }
+        }
+        /* Background Logo */
+        #background-logo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background-image: url('https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png');
+            background-position: center; background-repeat: no-repeat;
+            opacity: 0.1;
+        }
     </style>
 </head>
 <body>
@@ -185,7 +270,7 @@
 
 <div class="header">
     <h2>Panel de Administración</h2>
-    <button class="btn-create" onclick="window.location.href='nuevo_pedido.html'">+ Crear Nuevo Pedido</button>
+    <button class="btn-create" onclick="navigateTo('nuevo_pedido.html')">+ Crear Nuevo Pedido</button>
     <button id="btnEditMode" class="btn-edit-mode" onclick="toggleEditMode()">✎ Editar Pedido</button>
     <button id="btnFinishMode" class="btn-finish-mode" onclick="toggleFinishMode()">✓ Producto Terminado</button>
     <button style="background-color: #666; color: white;" onclick="cerrarSesion()">Cerrar Sesión</button>
@@ -259,8 +344,28 @@
     let currentSortField = 'estado'; // Valor inicial cambiado a 'estado'
     let isSortAscending = true; // Valor inicial cambiado a true (ascendente por prioridad/fecha)
     let currentDownloadUrl = '';
+    let isInternalNavigation = false; // Bandera para controlar la navegación interna
     let renderer, scene, camera, controls, animationId;
     const videoEl = document.querySelector('#video');
+
+    // Función inteligente para cargar modelos
+    async function cargarModelosSmart() {
+        const MODEL_URL = 'models_rf';
+        try {
+            if (typeof faceapi === 'undefined') return;
+            
+            const models = [
+                faceapi.nets.ssdMobilenetv1,
+                faceapi.nets.faceLandmark68Net,
+                faceapi.nets.faceRecognitionNet
+            ];
+            
+            await Promise.all(models.map(net => net.isLoaded ? Promise.resolve() : net.loadFromUri(MODEL_URL)));
+            console.log("Modelos de reconocimiento facial listos.");
+        } catch (e) {
+            console.error("Error cargando modelos:", e);
+        }
+    }
 
     window.addEventListener('load', function() {
         // Configurar efecto "Flash" y mensaje personalizado
@@ -282,27 +387,92 @@
         }
 
         // El loader ya está visible. Iniciamos la re-verificación facial.
+        // El loader ya está visible.
         document.documentElement.style.display = 'block'; // Mostramos el body para que el loader sea visible
         reverificarIdentidad();
+
+        // Verificar si ya se realizó la validación facial en esta sesión
+        if (sessionStorage.getItem('adminFacialVerified') === 'true') {
+            const loaderText = document.getElementById('loader-text');
+            if (loaderText) loaderText.innerText = "Sesión verificada. Cargando panel...";
+            inicializarDashboard();
+        } else {
+            const loaderText = document.getElementById('loader-text');
+            if (loaderText) loaderText.innerText = "Verificando identidad del administrador...";
+            reverificarIdentidad();
+        }
+
+        // --- LÓGICA DE INACTIVIDAD ROBUSTA ---
+        const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutos
+
+        function updateActivity() {
+            sessionStorage.setItem('adminLastActivity', Date.now().toString());
+        }
+
+        function checkInactivity() {
+            const lastActivity = parseInt(sessionStorage.getItem('adminLastActivity') || Date.now());
+            if (Date.now() - lastActivity > INACTIVITY_LIMIT) {
+                cerrarSesion("Sesión cerrada por inactividad.");
+            }
+        }
+
+        // Eventos que reinician el temporizador
+        ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => 
+            document.addEventListener(evt, updateActivity, false)
+        );
+
+        // Chequeo periódico (cada 10s) para detectar inactividad incluso si la pestaña está en segundo plano
+        setInterval(checkInactivity, 10000);
+        
+        // Chequeo inmediato al volver al foco
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) checkInactivity();
+        });
+
+        updateActivity(); // Iniciar contador
+
+        // Lógica del Logo de Fondo
+        const bg = document.createElement('div');
+        bg.id = 'background-logo';
+        document.body.prepend(bg);
+
+        function updateBg() {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+            if (isMobile) {
+                if (window.innerHeight > window.innerWidth) {
+                    bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
+                } else {
+                    bg.style.backgroundSize = "auto 60vh"; // Horizontal: 60% del alto
+                }
+            } else {
+                bg.style.backgroundSize = "auto 85vh"; // Escritorio: 85% del alto
+            }
+        }
+        updateBg();
+
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
+            setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
+        } else {
+            window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
+        }
     });
 
     async function reverificarIdentidad() {
         const loaderText = document.getElementById('loader-text');
         // El texto por defecto del loader es "Estamos preparando...", que es el deseado.
         try {
-            // 1. Cargar modelos
-            await Promise.all([
-                faceapi.nets.ssdMobilenetv1.loadFromUri('models_rf'),
-                faceapi.nets.faceLandmark68Net.loadFromUri('models_rf'),
-                faceapi.nets.faceRecognitionNet.loadFromUri('models_rf')
-            ]);
+            // 1. Cargar modelos (Smart Load)
+            await cargarModelosSmart();
 
              // 2. Cargar descriptores desde sessionStorage (puestos ahí por la página de login)
             const faceDataString = sessionStorage.getItem('faceData');
             if (!faceDataString) throw new Error("No se encontraron los datos faciales en la sesión.");
 
             const faceData = JSON.parse(faceDataString);
-            if (!faceData || !faceData.descriptors) throw new Error("Datos faciales inválidos o corruptos.");
+            if (!faceData || !faceData.descriptors) {
+                console.error("Datos faciales en dashboard:", faceData);
+                throw new Error("Datos faciales inválidos o corruptos. Revisa la configuración del servidor.");
+            }
             
             const descriptors = faceData.descriptors.map(d => new Float32Array(d));
             const labeledDescriptors = new faceapi.LabeledFaceDescriptors(faceData.label, descriptors);
@@ -314,34 +484,61 @@
             await new Promise(resolve => videoEl.onloadedmetadata = resolve);
             videoEl.play();
 
-            // 4. Realizar detección de TODOS los rostros
-            const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-                                         .withFaceLandmarks()
-                                         .withFaceDescriptors();
+            // 4. Realizar detección con reintentos
+            let matchFound = false;
+            for (let i = 0; i < 20; i++) {
+                const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                                            .withFaceLandmarks()
+                                            .withFaceDescriptors();
+                
+                if (detections.length > 0) {
+                    if (detections.some(d => faceMatcher.findBestMatch(d.descriptor).label !== 'unknown')) {
+                        matchFound = true;
+                        break;
+                    }
+                }
+                await new Promise(r => setTimeout(r, 200));
+            }
             
             stream.getTracks().forEach(track => track.stop());
 
-            if (detections.length > 0) {
-                // Verificar si ALGUNO de los rostros detectados es el admin
-                const matchFound = detections.some(d => faceMatcher.findBestMatch(d.descriptor).label !== 'unknown');
-
-                if (matchFound) {
-                    // ¡Éxito! Iniciar el dashboard
-                    const gender = sessionStorage.getItem('adminGender') || 'hombre';
-                    const saludo = gender === 'mujer' ? '¡Bienvenida de nuevo!' : '¡Bienvenido de nuevo!';
-                    
-                    loaderText.innerText = `${saludo} Cargando panel...`;
-                    inicializarDashboard();
-                    return;
-                }
+            if (matchFound) {
+                // ¡Éxito! Iniciar el dashboard
+                sessionStorage.setItem('adminFacialVerified', 'true'); // Crear token para esta sesión
+                const gender = sessionStorage.getItem('adminGender') || 'hombre';
+                const saludo = gender === 'mujer' ? '¡Bienvenida de nuevo!' : '¡Bienvenido de nuevo!';
+                
+                loaderText.innerText = `${saludo} Cargando panel...`;
+                inicializarDashboard();
+                return;
             }
 
             // Si llegamos aquí, la verificación falló
-            throw new Error("Rostro no reconocido.");
+            throw new Error("Rostro no reconocido tras varios intentos.");
 
         } catch (err) {
             console.error("Error en re-verificación facial:", err);
-            cerrarSesion();
+            
+            // Mostrar error en el loader en lugar de redirigir
+            const loader = document.getElementById('global-loader');
+            const loaderText = document.getElementById('loader-text');
+            const spinner = document.querySelector('.loader-uib-container');
+            
+            if (loader && loaderText) {
+                loader.style.backgroundColor = '#000000'; // Fondo negro para leer mejor
+                loader.style.color = '#ffffff';
+                if (spinner) spinner.style.display = 'none'; // Ocultar animación
+                
+                loaderText.innerHTML = `
+                    <div style="color: #ff4444; margin-bottom: 20px; font-weight:bold;">Error: ${err.message}</div>
+                    <div style="font-size: 0.9rem; color: #ccc; margin-bottom: 20px;">Si estás en local, verifica que tu cámara tenga permisos y el archivo .env esté bien cargado.</div>
+                    <button onclick="window.location.reload()" style="padding: 10px 25px; border-radius: 50px; border: none; background: white; color: black; font-weight: bold; cursor: pointer; font-size: 1rem;">Reintentar</button>
+                    <br><br>
+                    <button onclick="cerrarSesion()" style="background: none; border: 1px solid #666; color: #888; padding: 5px 15px; border-radius: 50px; cursor: pointer;">Cerrar Sesión</button>
+                `;
+            } else {
+                alert("Error crítico: " + err.message);
+            }
         }
     }
 
@@ -670,6 +867,7 @@
 
     function editarPedido(pedido) {
         // Redirigir a la página de edición, pasando la URL de la imagen como identificador único
+        isInternalNavigation = true; // Marcar como navegación interna segura
         window.location.href = `editar_pedido.html?pedido=${encodeURIComponent(pedido.imagen_url)}`;
     }
 
@@ -1079,52 +1277,41 @@
         ctx.fillStyle = 'rgb(255, 255, 255)';
         ctx.fillRect(0, 0, size, size);
 
+        // Configuración separada por género y producto (Igual que en mis_pedidos.html)
         const textureSettings = {
-            camiseta: {
-                //Explicacion de dimensiones en camiseta:
-                // X -> Entre mayor sea el número se mueve la lamina hacia la derecha
-                // NOTA DE X: Su tope esta en la costura derecha en la parte frontal de la camiseta
-                // Y -> Entre mayor sea el número se mueve la lamina hacia abajo
-                // SCALE -> Entre mayor sea el número mas grande es la lamina
-                // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
-                frontal: { x: -240, y: 200, scale: 1.5, angle: 0 },
-                espaldar: { x: 270, y: 200, scale: 1.5, angle: 0 }
-            },
-            saco: {
-                //Explicacion de dimensiones en saco:
-                // X -> Entre mayor sea el número se mueve la lamina hacia la derecha
-                // NOTA DE X: Su tope esta en la costura izquierda en la parte frontal del saco
-
-                // Y -> Entre mayor sea el número se mueve la lamina hacia abajo
-                // SCALE -> Entre mayor sea el número mas grande es la lamina
-                // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
-                frontal: { x: 40, y: 260, scale: 1.0, angle: 0 },
-                espaldar: { x: -320, y: 260, scale: 1.0, angle: 0 }
-            },
-            gorra: {
-                //Explicacion de dimensiones en gorra:
-                // X -> Entre mayor sea el número se mueve la lamina hacia la derecha
-                // Y -> Entre mayor sea el número se mueve la lamina hacia abajo
-                // SCALE -> Entre mayor sea el número mas grande es la lamina
-                // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
-                frontal: { 
-                    warp: true,
-                    // Configuración de 8 puntos igual a la vista del cliente
-                    points: {
-                        tl: { x: 592, y: 530 },  
-                        tm: { x: 742, y: 490 },  
-                        tr: { x: 892, y: 560 },  
-                        rm: { x: 912, y: 710 },  
-                        br: { x: 892, y: 860 },  
-                        bm: { x: 742, y: 850 },  
-                        bl: { x: 592, y: 830 },  
-                        lm: { x: 572, y: 680 }   
-                    }
+            hombre: {
+                camiseta: {
+                    frontal: { x: -240, y: 200, scale: 1.5, angle: 0 },
+                    espaldar: { x: 270, y: 200, scale: 1.5, angle: 0 }
                 },
+                saco: {
+                    frontal: { x: 40, y: 260, scale: 1.0, angle: 0 },
+                    espaldar: { x: -320, y: 260, scale: 1.0, angle: 0 }
+                },
+                gorra: {
+                    frontal: { 
+                        // Configuración para gorra hombre
+                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: 0.3
+                    }
+                }
+            },
+            mujer: {
+                camiseta: {
+                    frontal: { x: -240, y: 230, scale: 1.5, angle: 0 },
+                    espaldar: { x: 270, y: 230, scale: 1.5, angle: 0 }
+                },
+                saco: {
+                    frontal: { x: 40, y: 260, scale: 0.9, angle: 0 },
+                    espaldar: { x: -320, y: 260, scale: 0.9, angle: 0 }
+                },
+                gorra: {
+                    frontal: { 
+                        // Configuración para gorra mujer
+                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: 0.3
+                    }
+                }
             }
         };
-
-        const settings = textureSettings[tipoProducto] || textureSettings.camiseta;
 
         // Función para dibujar imagen deformada con 8 puntos (Copiada de mis_pedidos.html)
         const drawWarpedImage = (img, points) => {
@@ -1177,6 +1364,11 @@
             ctx.translate(cx, cy);
             ctx.rotate(rotationDeg * Math.PI / 180);
             
+            // Aplicar espejo horizontal si se requiere
+            if (warpSettings && warpSettings.flipX) {
+                ctx.scale(-1, 1);
+            }
+
             if (curvature && curvature !== 0) {
                 // Dibujar en franjas para simular curvatura (Corrección de arco)
                 const slices = 30; 
@@ -1200,14 +1392,24 @@
             ctx.restore();
         };
 
-        if (frontImg) {
-            const s = settings.frontal;
-            drawImageOnCanvas(frontImg, s.x, s.y, s.scale, s.angle, s.curvature, s); // Pasamos 's' como warpSettings
-        }
-        if (backImg) {
-            const s = settings.espaldar;
-            drawImageOnCanvas(backImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
-        }
+        // Función para actualizar la textura según el género actual
+        const updateTextureForGender = (gender) => {
+            // Limpiar canvas
+            ctx.fillStyle = 'rgb(255, 255, 255)';
+            ctx.fillRect(0, 0, size, size);
+
+            const settings = textureSettings[gender][tipoProducto] || textureSettings[gender].camiseta;
+
+            if (frontImg && settings.frontal) {
+                const s = settings.frontal;
+                drawImageOnCanvas(frontImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
+            }
+            if (backImg && settings.espaldar) {
+                const s = settings.espaldar;
+                drawImageOnCanvas(backImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
+            }
+            if (texture) texture.needsUpdate = true;
+        };
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.flipY = false;
@@ -1219,6 +1421,9 @@
 
         const loadModel = (gender) => {
             if (loaderElement) { loaderElement.style.display = 'flex'; loaderElement.style.opacity = '1'; }
+
+            // Actualizar textura con las coordenadas del género seleccionado
+            updateTextureForGender(gender);
 
             const productType = tipoProducto;
             const modelPath = `modelo_3d/${gender}/modelo_3d_${gender}_${productType}.glb`;
@@ -1235,7 +1440,11 @@
                     let isTarget = false;
                     if (tipoProducto === 'gorra') {
                         // Para gorras, buscamos la malla del accesorio de cabeza
-                        if (child.isMesh && child.material && (child.material.name.includes('Headwear') || child.material.name.includes('Cap') || child.name.includes('Headwear'))) isTarget = true;
+                        if (child.isMesh && child.material && (child.material.name.includes('Headwear') || child.material.name.includes('Cap') || child.name.includes('Headwear'))) {
+                            child.material.color.setHex(0xffffff);
+                            child.material.map = null;
+                            child.material.needsUpdate = true;
+                        }
                     } else {
                         // Para camisetas y sacos
                         if (child.isMesh && child.material && (child.material.name === 'Wolf3D_Outfit_Top' || child.material.name.includes('Fabric') || child.material.name.includes('Material'))) isTarget = true;
@@ -1268,7 +1477,36 @@
                 // Calcular posición del foco (Pecho para ropa, Cabeza para gorras)
                 let focusY = box.min.y + (size.y * 0.75); // Por defecto pecho
                 if (tipoProducto === 'gorra') {
-                    focusY = box.max.y - (size.y * 0.15); // Foco en la cabeza
+                    focusY = box.max.y - (size.y * 0.1); // Foco en la cabeza
+
+                    // --- CREAR LÁMINA FLOTANTE PARA LA GORRA ---
+                    // Creamos un segmento de cilindro curvo que simula el frente de la gorra
+                    const laminaHeight = size.y * 0.035; // Altura reducida (aprox 6% de la altura total)
+                    const laminaRadius = size.y * 0.06; // Radio basado en la altura (aprox tamaño cabeza)
+                    const arcLength = Math.PI / 3; // Arco más estrecho (60 grados)
+
+                    // Obtener inclinación de la configuración actual
+                    const settings = textureSettings[gender].gorra.frontal;
+                    const inclination = settings.inclination || 0;
+                    const radiusTop = laminaRadius * (1 - inclination); // Reducir radio superior para inclinar hacia atrás
+                    
+                    const laminaGeo = new THREE.CylinderGeometry(radiusTop, laminaRadius, laminaHeight, 64, 1, true, -arcLength/2, arcLength);
+                    // Eliminamos rotación para que mire al frente (+Z) por defecto
+                    
+                    const laminaMat = new THREE.MeshBasicMaterial({ 
+                        map: texture, 
+                        transparent: true, 
+                        side: THREE.DoubleSide,
+                        depthTest: true,
+                        depthWrite: true
+                    });
+                    
+                    const laminaMesh = new THREE.Mesh(laminaGeo, laminaMat);
+                    // Posicionar en el centro de la cabeza, ajustando altura a la frente
+                    // Subimos la posición (menos resta en Y) y ajustamos Z si es necesario
+                    laminaMesh.position.set(center.x, box.max.y - size.y * 0.02, center.z);
+                    
+                    scene.add(laminaMesh);
                 }
 
                 controls.target.set(center.x, focusY, center.z);
@@ -1359,6 +1597,24 @@
         }
     }
 
+    // Función para navegar internamente sin cerrar sesión
+    function navigateTo(url) {
+        isInternalNavigation = true;
+        window.location.href = url;
+    }
+
+    // Detectar salida de la página para cerrar sesión si no es navegación interna
+    window.addEventListener('pagehide', () => {
+        if (!isInternalNavigation) {
+            // Limpiar credenciales críticas al salir del entorno admin
+            sessionStorage.removeItem('adminLogueado');
+            sessionStorage.removeItem('adminUsername');
+            sessionStorage.removeItem('faceData');
+            sessionStorage.removeItem('adminFacialVerified');
+            sessionStorage.removeItem('adminLastActivity');
+        }
+    });
+
     function cerrarSesion(message) {
         if (message) {
             alert(message);
@@ -1366,6 +1622,8 @@
         sessionStorage.removeItem('adminLogueado');
         sessionStorage.removeItem('adminUsername');
         sessionStorage.removeItem('faceData');
+        sessionStorage.removeItem('adminFacialVerified'); // Eliminar token al salir
+        sessionStorage.removeItem('adminLastActivity');
         window.location.href = 'index.html';
     }
 
@@ -1381,6 +1639,7 @@
     window.cerrarModal = cerrarModal;
     window.toggleInfo = toggleInfo;
     window.descargarCarpeta = descargarCarpeta;
+    window.navigateTo = navigateTo;
 </script>
 
 </body>

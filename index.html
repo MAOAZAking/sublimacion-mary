@@ -14,18 +14,111 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        body { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; height: 100dvh; padding: 0; overflow: hidden; }
-        .footer-copy { position: absolute; bottom: 10px; }
+        body { font-family: 'Poppins', sans-serif; background-color: #121212; display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; margin: 0; color: white; }
+        .container { background: #1e1e1e; padding: 3rem 2rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); width: 100%; max-width: 380px; text-align: center; transition: transform 0.3s; border: 1px solid #333; }
+        .container:hover { transform: translateY(-5px); }
+        h2 { color: rgb(255, 255, 255); margin-bottom: 2rem; font-weight: 600; letter-spacing: -0.5px; }
+        input { width: 100%; padding: 15px; margin-bottom: 20px; border: 2px solid #333; background: #2d2d2d; color: white; border-radius: 12px; font-size: 1rem; box-sizing: border-box; text-align: center; transition: all 0.3s; font-family: inherit; -webkit-appearance: none; }
+        input:focus { border-color: #8e44ad; background: #333; outline: none; box-shadow: 0 0 0 4px rgba(142, 68, 173, 0.2); }
+        button { width: 100%; padding: 15px; background: linear-gradient(135deg, rgb(213, 0, 249), rgb(192, 0, 224)); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(142, 68, 173, 0.3); -webkit-appearance: none; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(192, 0, 224, 0.4); }
+        button:active { transform: translateY(0); }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .error-msg { color: red; font-size: 0.9rem; margin-top: 10px; display: none; }
 
-        /* Restaurar estilos específicos de la caja de login para que se vea como antes */
-        .container { 
-            max-width: 380px; 
-            padding: 2rem 2rem;
-            margin-bottom: 60px;
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-15px); }
+            40% { transform: translateX(15px); }
+            60% { transform: translateX(-15px); }
+            80% { transform: translateX(15px); }
+            100% { transform: translateX(0); }
         }
-        input { 
-            text-align: center; 
+        .shake { animation: shake 0.5s ease-in-out; }
+
+        /* Loader Styles */
+        #global-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #333; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; transition: opacity 0.5s ease;
         }
+        .loader-uib-container {
+            --uib-size: 45px;
+            --uib-color: white;
+            --uib-speed: 2.5s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: var(--uib-size);
+            width: var(--uib-size);
+        }
+        .slice {
+            position: relative;
+            height: calc(var(--uib-size) / 6);
+            width: 100%;
+        }
+        .slice::before, .slice::after {
+            --uib-a: calc(var(--uib-speed) / -2);
+            --uib-b: calc(var(--uib-speed) / -6);
+            content: '';
+            position: absolute;
+            top: 0;
+            left: calc(50% - var(--uib-size) / 12);
+            height: 100%;
+            width: calc(100% / 6);
+            border-radius: 50%;
+            background-color: var(--uib-color);
+            flex-shrink: 0;
+            animation: orbit var(--uib-speed) linear infinite;
+            transition: background-color 0.3s ease;
+        }
+        .slice:nth-child(1)::after { animation-delay: var(--uib-a); }
+        .slice:nth-child(2)::before { animation-delay: var(--uib-b); }
+        .slice:nth-child(2)::after { animation-delay: calc(var(--uib-a) + var(--uib-b)); }
+        .slice:nth-child(3)::before { animation-delay: calc(var(--uib-b) * 2); }
+        .slice:nth-child(3)::after { animation-delay: calc(var(--uib-a) + var(--uib-b) * 2); }
+        .slice:nth-child(4)::before { animation-delay: calc(var(--uib-b) * 3); }
+        .slice:nth-child(4)::after { animation-delay: calc(var(--uib-a) + var(--uib-b) * 3); }
+        .slice:nth-child(5)::before { animation-delay: calc(var(--uib-b) * 4); }
+        .slice:nth-child(5)::after { animation-delay: calc(var(--uib-a) + var(--uib-b) * 4); }
+        .slice:nth-child(6)::before { animation-delay: calc(var(--uib-b) * 5); }
+        .slice:nth-child(6)::after { animation-delay: calc(var(--uib-a) + var(--uib-b) * 5); }
+        @keyframes orbit {
+            0% { transform: translateX(calc(var(--uib-size) * 0.25)) scale(0.73684); opacity: 0.65; }
+            5% { transform: translateX(calc(var(--uib-size) * 0.235)) scale(0.684208); opacity: 0.58; }
+            10% { transform: translateX(calc(var(--uib-size) * 0.182)) scale(0.631576); opacity: 0.51; }
+            15% { transform: translateX(calc(var(--uib-size) * 0.129)) scale(0.578944); opacity: 0.44; }
+            20% { transform: translateX(calc(var(--uib-size) * 0.076)) scale(0.526312); opacity: 0.37; }
+            25% { transform: translateX(0%) scale(0.47368); opacity: 0.3; }
+            30% { transform: translateX(calc(var(--uib-size) * -0.076)) scale(0.526312); opacity: 0.37; }
+            35% { transform: translateX(calc(var(--uib-size) * -0.129)) scale(0.578944); opacity: 0.44; }
+            40% { transform: translateX(calc(var(--uib-size) * -0.182)) scale(0.631576); opacity: 0.51; }
+            45% { transform: translateX(calc(var(--uib-size) * -0.235)) scale(0.684208); opacity: 0.58; }
+            50% { transform: translateX(calc(var(--uib-size) * -0.25)) scale(0.73684); opacity: 0.65; }
+            55% { transform: translateX(calc(var(--uib-size) * -0.235)) scale(0.789472); opacity: 0.72; }
+            60% { transform: translateX(calc(var(--uib-size) * -0.182)) scale(0.842104); opacity: 0.79; }
+            65% { transform: translateX(calc(var(--uib-size) * -0.129)) scale(0.894736); opacity: 0.86; }
+            70% { transform: translateX(calc(var(--uib-size) * -0.076)) scale(0.947368); opacity: 0.93; }
+            75% { transform: translateX(0%) scale(1); opacity: 1; }
+            80% { transform: translateX(calc(var(--uib-size) * 0.076)) scale(0.947368); opacity: 0.93; }
+            85% { transform: translateX(calc(var(--uib-size) * 0.129)) scale(0.894736); opacity: 0.86; }
+            90% { transform: translateX(calc(var(--uib-size) * 0.182)) scale(0.842104); opacity: 0.79; }
+            95% { transform: translateX(calc(var(--uib-size) * 0.235)) scale(0.789472); opacity: 0.72; }
+            100% { transform: translateX(calc(var(--uib-size) * 0.25)) scale(0.73684); opacity: 0.65; }
+        }
+        /* Background Logo */
+        #background-logo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background-image: url('https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png');
+            background-position: center; background-repeat: no-repeat;
+            opacity: 0.1;
+        }
+        .footer-copy { position: absolute; bottom: 10px; }
     </style>
 </head>
 <body>
@@ -69,6 +162,62 @@
 
 <script>
     let usuarioIngresado = "";
+
+    // Función inteligente para cargar modelos (solo si no están cargados)
+    async function cargarModelosSmart() {
+        const MODEL_URL = 'models_rf';
+        try {
+            if (typeof faceapi === 'undefined') return;
+            
+            const models = [
+                faceapi.nets.ssdMobilenetv1,
+                faceapi.nets.faceLandmark68Net,
+                faceapi.nets.faceRecognitionNet
+            ];
+            
+            // Cargar en paralelo solo lo que falte (verifica isLoaded)
+            await Promise.all(models.map(net => net.isLoaded ? Promise.resolve() : net.loadFromUri(MODEL_URL)));
+            console.log("Modelos de reconocimiento facial listos.");
+        } catch (e) {
+            console.error("Error cargando modelos:", e);
+        }
+    }
+
+    window.addEventListener('load', function() {
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+
+        // Lógica del Logo de Fondo
+        const bg = document.createElement('div');
+        bg.id = 'background-logo';
+        document.body.prepend(bg);
+
+        function updateBg() {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+            if (isMobile) {
+                if (window.innerHeight > window.innerWidth) {
+                    bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
+                } else {
+                    bg.style.backgroundSize = "auto 60vh"; // Horizontal: 60% del alto
+                }
+            } else {
+                bg.style.backgroundSize = "auto 85vh"; // Escritorio: 85% del alto
+            }
+        }
+        updateBg();
+
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
+            setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
+        } else {
+            window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
+        }
+
+        // Precargar modelos en segundo plano al entrar a la página
+        cargarModelosSmart();
+    });
 
     async function verificarEntrada() {
         const input = document.getElementById('generalInput').value.trim();
@@ -306,19 +455,18 @@
 
         const videoEl = document.getElementById('video');
         try {
-            // 1. Cargar modelos de face-api
-            await Promise.all([
-                faceapi.nets.ssdMobilenetv1.loadFromUri('models_rf'),
-                faceapi.nets.faceLandmark68Net.loadFromUri('models_rf'),
-                faceapi.nets.faceRecognitionNet.loadFromUri('models_rf')
-            ]);
+            // 1. Asegurar que los modelos estén cargados (usando la función smart)
+            await cargarModelosSmart();
 
             // 2. Cargar los descriptores del admin
             const faceDataString = sessionStorage.getItem('faceData');
             if (!faceDataString) throw new Error("No se encontraron los datos faciales en la sesión.");
             
             const faceData = JSON.parse(faceDataString);
-            if (!faceData || !faceData.descriptors) throw new Error("");
+            if (!faceData || !faceData.descriptors) {
+                console.error("Datos faciales recibidos:", faceData);
+                throw new Error("El servidor envió datos faciales vacíos. Verifica que en tu archivo .env exista la variable MAOAZAKING_FACE_DATA_JSON con los datos correctos.");
+            }
             
             const descriptors = faceData.descriptors.map(d => new Float32Array(d));
             const labeledDescriptors = new faceapi.LabeledFaceDescriptors(faceData.label, descriptors);
@@ -330,35 +478,56 @@
             await new Promise(resolve => videoEl.onloadedmetadata = resolve);
             videoEl.play();
 
-            // 4. Realizar detección de TODOS los rostros (para permitir acceso si hay más gente)
-            const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-                                         .withFaceLandmarks()
-                                         .withFaceDescriptors();
+            // 4. Realizar detección con reintentos (dar tiempo a la cámara y al usuario)
+            let matchFound = false;
+            // Intentar durante aprox 4-5 segundos (20 intentos x 200ms)
+            for (let i = 0; i < 20; i++) {
+                const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                                            .withFaceLandmarks()
+                                            .withFaceDescriptors();
+                
+                if (detections.length > 0) {
+                    // Verificar si ALGUNO de los rostros detectados coincide con el admin
+                    if (detections.some(d => faceMatcher.findBestMatch(d.descriptor).label !== 'unknown')) {
+                        matchFound = true;
+                        break; // Éxito, salir del bucle
+                    }
+                }
+                // Pequeña pausa entre intentos para no saturar
+                await new Promise(r => setTimeout(r, 200));
+            }
             
             // Detener la cámara inmediatamente
             stream.getTracks().forEach(track => track.stop());
 
-            if (detections.length > 0) {
-                // Verificar si ALGUNO de los rostros detectados coincide con el admin
-                const matchFound = detections.some(d => faceMatcher.findBestMatch(d.descriptor).label !== 'unknown');
-                
-                if (matchFound) {
-                    // ¡Éxito!
-                    sessionStorage.setItem('adminLogueado', 'true');
-                    if (adminEmail) sessionStorage.setItem('adminEmail', adminEmail);
-                    // Guardar también el usuario para la re-verificación
-                    sessionStorage.setItem('adminUsername', usuarioIngresado);
-                    window.location.href = "admin_dashboard.html";
-                    return;
-                }
+            if (matchFound) {
+                // ¡Éxito!
+                sessionStorage.setItem('adminLogueado', 'true');
+                // No establecemos adminFacialVerified aquí para obligar a verificar de nuevo en el dashboard
+                if (adminEmail) sessionStorage.setItem('adminEmail', adminEmail);
+                // Guardar también el usuario para la re-verificación
+                sessionStorage.setItem('adminUsername', usuarioIngresado);
+                window.location.href = "admin_dashboard.html";
+                return;
             }
 
             // Si llegamos aquí, la verificación falló
-            throw new Error("");
+            throw new Error("No se reconoció el rostro tras varios intentos.");
 
         } catch (err) {
-            console.error(err);
-            window.location.reload();
+            console.error("Error en verificación facial:", err);
+            
+            // Detener loader y mostrar formulario de nuevo
+            const loader = document.getElementById('global-loader');
+            if (loader) loader.style.display = 'none';
+            document.querySelector('.container').style.display = 'block';
+
+            // Mostrar mensaje de error visible
+            const errorMsg = document.getElementById('errorMsg');
+            if (errorMsg) {
+                errorMsg.textContent = "Error: " + err.message;
+                errorMsg.style.display = 'block';
+            }
         }
     }
 
