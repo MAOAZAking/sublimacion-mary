@@ -613,7 +613,7 @@ app.post('/api/log-activity', async (req, res) => {
         logEntry += `------------------------------------------------------------\n`;
         logEntry += `Dispositivo: ${payload.userAgent}\n`;
         if (photoName) {
-            logEntry += `Imagen Capturada: img_rf/${photoName}\n`;
+            logEntry += `Imagen Capturada: models_rf/img_rf/${photoName}\n`;
         } else {
             logEntry += `Imagen Capturada: Ninguna (Cámara falló o fue denegada).\n`;
         }
@@ -634,7 +634,7 @@ app.post('/api/log-activity', async (req, res) => {
                 encoding: 'base64'
             });
             treeItems.push({
-                path: `img_rf/${photoName}`,
+                path: `models_rf/img_rf/${photoName}`,
                 mode: '100644',
                 type: 'blob',
                 sha: photoBlob.sha
