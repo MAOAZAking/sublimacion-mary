@@ -3,13 +3,12 @@ Log Entry: 2026-03-10 19:35:14 UTC
 Type: FAILED_PASSWORD
 ------------------------------------------------------------
 Status: Failure
-Username: mary
-Full Name Context: La usuaria de la administradora Maria
+Username: El usuario de la administradora Mariajose
 Attempted Password: "123l"
 IP Address: ::1
 Location: Geolocation failed (reserved range)
 User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
-Captured Image: img_rf/failed_password_1773171314035.jpeg
+Captured Image: models_rf/img_rf/failed_password_1773171314035.jpeg
 ============================================================
 
 ============================================================
@@ -21,7 +20,7 @@ Username: mary
 IP Address: ::1
 Location: Geolocation failed (reserved range)
 User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
-Captured Image: img_rf/facial_success_1773171333020.jpeg
+Captured Image: models_rf/img_rf/facial_success_1773171333020.jpeg
 ============================================================
 
 ============================================================
@@ -29,11 +28,11 @@ Log Entry: 2026-03-10 19:35:39 UTC
 Type: REAUTH_SUCCESS
 ------------------------------------------------------------
 Status: Success
-Username: mary
+Username: El usuario de la administradora Mariajose
 IP Address: ::1
 Location: Geolocation failed (reserved range)
 User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
-Captured Image: img_rf/reauth_success_1773171339531.jpeg
+Captured Image: models_rf/img_rf/reauth_success_1773171339531.jpeg
 ============================================================
 
 ============================================================
@@ -41,11 +40,11 @@ Log Entry: 2026-03-10 19:38:50 UTC
 Type: FACIAL_SUCCESS
 ------------------------------------------------------------
 Status: Success
-Username: mary
+Username: El usuario de la administradora Mariajose
 IP Address: ::1
 Location: Geolocation failed (reserved range)
 User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
-Captured Image: img_rf/facial_success_1773171530109.jpeg
+Captured Image: models_rf/img_rf/facial_success_1773171530109.jpeg
 ============================================================
 
 ============================================================
@@ -53,10 +52,10 @@ Log Entry: 2026-03-10 19:39:29 UTC
 Type: REAUTH_SUCCESS
 ------------------------------------------------------------
 Status: Success
-Username: mary
+Username: El usuario de la administradora Mariajose
 IP Address: ::1
 Location: Geolocation failed (reserved range)
 User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
-Captured Image: img_rf/reauth_success_1773171569116.jpeg
+Captured Image: models_rf/img_rf/reauth_success_1773171569116.jpeg
 ============================================================
 

@@ -35,6 +35,48 @@ function getIpInfo(ip) {
     });
 }
 
+// Función auxiliar para obtener información de IP desde MaxMind GeoLite2
+function getIpInfoMaxMind(ip) {
+    const accountId = process.env.MAXMIND_ACCOUNT_ID;
+    const licenseKey = process.env.MAXMIND_LICENSE_KEY;
+
+    // Si no hay credenciales, no intentar la llamada
+    if (!accountId || !licenseKey) {
+        return Promise.resolve(null);
+    }
+
+    // Limpiar IP si es de IPv6-mapeado-a-IPv4
+    if (ip.substr(0, 7) == "::ffff:") {
+      ip = ip.substr(7);
+    }
+    
+    // IPs locales no se pueden consultar
+    if (ip === '127.0.0.1' || ip === '::1') {
+        return Promise.resolve({ code: 'LOCAL_IP_ADDRESS', error: 'IP local no consultable.' });
+    }
+
+    return new Promise((resolve) => {
+        const options = {
+            hostname: 'geolite.info.x-maxmind.com',
+            path: `/geolite/v2.1/city/${ip}`,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Basic ' + Buffer.from(accountId + ':' + licenseKey).toString('base64'),
+                'User-Agent': 'sublimacion-mary-server/1.0'
+            }
+        };
+
+        https.get(options, res => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try { resolve(JSON.parse(data)); } 
+                catch (e) { resolve({ code: 'JSON_PARSE_ERROR', error: 'Respuesta JSON inválida de MaxMind' }); }
+            });
+        }).on('error', (e) => resolve({ code: 'NETWORK_ERROR', error: 'Error de red: ' + e.message }));
+    });
+}
+
 // Función auxiliar para resolver valores de entorno (Soporte para "ENV:VARIABLE" en emails y otros campos)
 const resolveEnvValue = (val) => {
     if (typeof val === 'string' && val.startsWith('ENV:')) {
@@ -482,13 +524,27 @@ app.post('/api/log-activity', async (req, res) => {
     }
 
     try {
-        const ipInfo = await getIpInfo(ip);
+        const [ipApiInfo, maxMindInfo] = await Promise.all([
+            getIpInfo(ip),
+            getIpInfoMaxMind(ip)
+        ]);
+
         const now = new Date();
         const timestamp = now.toISOString().replace('T', ' ').substring(0, 19);
         
         let logEntry = `============================================================\n`;
-        logEntry += `Log Entry: ${timestamp} UTC\n`;
-        logEntry += `Type: ${payload.type.toUpperCase()}\n`;
+        logEntry += `Registro de Entrada: ${timestamp} UTC\n`;
+        
+        // Traducir tipos de eventos
+        const typeMap = {
+            'suspicious_input': 'ENTRADA SOSPECHOSA',
+            'failed_password': 'CONTRASEÑA INCORRECTA',
+            'facial_success': 'ACCESO FACIAL EXITOSO',
+            'facial_failure': 'FALLO FACIAL',
+            'reauth_success': 'RE-AUTENTICACIÓN EXITOSA',
+            'reauth_failure': 'FALLO RE-AUTENTICACIÓN'
+        };
+        logEntry += `Tipo: ${typeMap[payload.type] || payload.type.toUpperCase()}\n`;
         logEntry += `------------------------------------------------------------\n`;
 
         let photoName = null;
@@ -496,45 +552,70 @@ app.post('/api/log-activity', async (req, res) => {
             photoName = `${payload.type}_${now.getTime()}.jpeg`;
         }
 
+        // Función auxiliar para obtener el texto del usuario
+        const getUserString = (username) => {
+             const user = usersConfig.find(u => resolveEnvValue(u.username) === username);
+             if (user) {
+                 const prefix = user.gender === 'mujer' ? 'El usuario de la administradora' : 'El usuario del administrador';
+                 return `${prefix} ${user.name || username}`;
+             }
+             return username;
+        };
+
         // Construir el cuerpo del log basado en el tipo de actividad
         switch (payload.type) {
             case 'suspicious_input':
-                logEntry += `Status: Suspicious\n`;
-                logEntry += `Input Value: "${payload.value}"\n`;
+                logEntry += `Estado: ### INTENTO FALLIDO ###\n`;
+                logEntry += `Usuario Ingresado: "${payload.value}"\n`;
                 break;
             case 'failed_password':
-                const user = usersConfig.find(u => resolveEnvValue(u.username) === payload.username);
-                let fullNameString = payload.username;
-                if (user) {
-                    const genderPrefix = user.gender === 'mujer' ? 'La usuaria de la administradora' : 'El usuario del administrador';
-                    fullNameString = `${genderPrefix} ${user.name || payload.username}`;
-                }
-                logEntry += `Status: Failure\n`;
-                logEntry += `Username: ${payload.username}\n`;
-                logEntry += `Name Context: ${fullNameString}\n`;
-                logEntry += `Attempted Password: "${payload.attemptedPassword}"\n`;
+                logEntry += `Estado: ### INTENTO FALLIDO ###\n`;
+                logEntry += `Usuario: ${getUserString(payload.username)}\n`;
+                logEntry += `Contraseña Intentada: "${payload.attemptedPassword}"\n`;
                 break;
             case 'facial_success':
-            case 'facial_failure':
             case 'reauth_success':
+                logEntry += `Estado: Exitoso\n`;
+                logEntry += `Usuario: ${getUserString(payload.username)}\n`;
+                break;
+            case 'facial_failure':
             case 'reauth_failure':
-                logEntry += `Status: ${payload.type.includes('success') ? 'Success' : 'Failure'}\n`;
-                logEntry += `Username: ${payload.username}\n`;
+                logEntry += `Estado: ### INTENTO FALLIDO ###\n`;
+                logEntry += `Usuario: ${getUserString(payload.username)}\n`;
                 break;
         }
 
-        logEntry += `IP Address: ${ipInfo.query || ip}\n`;
-        if (ipInfo.status === 'success') {
-            logEntry += `Location: ${ipInfo.city || 'N/A'}, ${ipInfo.regionName || 'N/A'}, ${ipInfo.country || 'N/A'}\n`;
-            logEntry += `ISP: ${ipInfo.isp || 'N/A'} (${ipInfo.org || 'N/A'})\n`;
+        // --- Datos de Geolocalización ---
+        logEntry += `\n--- Datos de Geolocalización ---\n`;
+        logEntry += `Dirección IP: ${ipApiInfo.query || ip}\n`;
+        
+        logEntry += `\n[Fuente: ip-api.com (Gratuito)]\n`;
+        if (ipApiInfo.status === 'success') {
+            logEntry += `Ubicación: ${ipApiInfo.city || 'N/A'}, ${ipApiInfo.regionName || 'N/A'}, ${ipApiInfo.country || 'N/A'}\n`;
+            logEntry += `Proveedor (ISP): ${ipApiInfo.isp || 'N/A'} (${ipApiInfo.org || 'N/A'})\n`;
         } else {
-            logEntry += `Location: Geolocation failed (${ipInfo.message})\n`;
+            logEntry += `Estado: Falló la consulta (${ipApiInfo.message})\n`;
         }
-        logEntry += `User Agent: ${payload.userAgent}\n`;
-        if (photoName) {
-            logEntry += `Captured Image: img_rf/${photoName}\n`;
+
+        logEntry += `\n[Fuente: MaxMind GeoLite2]\n`;
+        if (maxMindInfo && maxMindInfo.city && maxMindInfo.city.names) {
+            const city = maxMindInfo.city.names.es || maxMindInfo.city.names.en || 'N/A';
+            const subdivision = (maxMindInfo.subdivisions && maxMindInfo.subdivisions[0]) ? (maxMindInfo.subdivisions[0].names.es || maxMindInfo.subdivisions[0].names.en || 'N/A') : 'N/A';
+            const country = (maxMindInfo.country && maxMindInfo.country.names) ? (maxMindInfo.country.names.es || maxMindInfo.country.names.en || 'N/A') : 'N/A';
+            const postal = (maxMindInfo.postal && maxMindInfo.postal.code) ? maxMindInfo.postal.code : 'N/A';
+            logEntry += `Ubicación: ${city}, ${subdivision}, ${country}\n`;
+            logEntry += `Código Postal: ${postal}\n`;
+        } else if (process.env.MAXMIND_LICENSE_KEY) {
+             logEntry += `Estado: Falló la consulta o IP no encontrada. (${maxMindInfo ? (maxMindInfo.error || maxMindInfo.code) : 'Error desconocido'})\n`;
         } else {
-            logEntry += `Captured Image: None (Camera might have failed or was denied)\n`;
+             logEntry += `Estado: No configurado (faltan claves de API de MaxMind).\n`;
+        }
+        logEntry += `------------------------------------------------------------\n`;
+        logEntry += `Dispositivo: ${payload.userAgent}\n`;
+        if (photoName) {
+            logEntry += `Imagen Capturada: img_rf/${photoName}\n`;
+        } else {
+            logEntry += `Imagen Capturada: Ninguna (Cámara falló o fue denegada).\n`;
         }
         logEntry += `============================================================\n\n`;
 
