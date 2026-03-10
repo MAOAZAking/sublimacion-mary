@@ -24,3 +24,15 @@ User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 Captured Image: img_rf/facial_success_1773171333020.jpeg
 ============================================================
 
+============================================================
+Log Entry: 2026-03-10 19:35:39 UTC
+Type: REAUTH_SUCCESS
+------------------------------------------------------------
+Status: Success
+Username: mary
+IP Address: ::1
+Location: Geolocation failed (reserved range)
+User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Captured Image: img_rf/reauth_success_1773171339531.jpeg
+============================================================
+
