@@ -1,5 +1,6 @@
 const express = require('express');
 const https = require('https'); // Necesario para la API de Brevo
+const http = require('http'); // Necesario para la API de geolocalización
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer'); // Necesario para subir archivos
@@ -13,6 +14,26 @@ dotenv.config();
 
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Función auxiliar para obtener información de IP
+function getIpInfo(ip) {
+    // Limpiar IP si es de IPv6-mapeado-a-IPv4
+    if (ip.substr(0, 7) == "::ffff:") {
+      ip = ip.substr(7);
+    }
+    return new Promise((resolve) => {
+        // API gratuita sin clave
+        const url = `http://ip-api.com/json/${ip}?fields=status,message,country,regionName,city,isp,org,query`;
+        http.get(url, res => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try { resolve(JSON.parse(data)); } 
+                catch (e) { resolve({ status: 'fail', message: 'Invalid JSON response' }); }
+            });
+        }).on('error', (e) => resolve({ status: 'fail', message: 'Network error: ' + e.message }));
+    });
+}
 
 // Función auxiliar para resolver valores de entorno (Soporte para "ENV:VARIABLE" en emails y otros campos)
 const resolveEnvValue = (val) => {
@@ -194,6 +215,20 @@ app.use((req, res, next) => {
     next();
 });
 
+// --- Cargar Configuración de Usuarios ---
+// Se carga la configuración "cruda" para poder resolver los valores de .env sobre la marcha.
+let usersConfig = [];
+try {
+    const usersPath = path.join(__dirname, 'usuarios.json');
+    if (fs.existsSync(usersPath)) {
+        const usersData = fs.readFileSync(usersPath, 'utf8');
+        usersConfig = JSON.parse(usersData);
+        console.log("✅ Configuración de usuarios cargada desde usuarios.json");
+    }
+} catch (err) {
+    console.error("❌ Error crítico al cargar usuarios.json:", err.message);
+}
+
 // Configuración de Multer para almacenamiento temporal
 const upload = multer({ 
     dest: 'temp_uploads/',
@@ -212,61 +247,6 @@ try {
     console.error("Error cargando pedidos.json local:", err.message);
 }
 
-// Endpoint prioritario para servir pedidos desde memoria (intercepta la petición al archivo estático)
-app.get('/pedidos.json', (req, res) => res.json(localPedidos));
-
-// Servir archivos estáticos (HTML, CSS, JS, Imágenes)
-app.use(express.static(path.join(__dirname, '.')));
-
-// Cargar usuarios desde usuarios.json
-let users = [];
-try {
-    const usersPath = path.join(__dirname, 'usuarios.json');
-    if (fs.existsSync(usersPath)) {
-        const usersData = fs.readFileSync(usersPath, 'utf8');
-        users = JSON.parse(usersData);
-    }
-} catch (err) {
-    console.error("Error cargando usuarios.json:", err.message);
-}
-
-// Cargar usuarios desde variables de entorno (USERS_JSON) como respaldo o complemento
-if (process.env.USERS_JSON) {
-    try {
-        const envUsers = JSON.parse(process.env.USERS_JSON);
-        if (Array.isArray(envUsers)) {
-            envUsers.forEach(envUser => {
-                // Prioridad a usuarios.json: solo agregar si el usuario NO existe ya en la lista cargada
-                if (!users.some(u => u.username === envUser.username)) {
-                    users.push(envUser);
-                }
-            });
-        }
-    } catch (err) {
-        console.error("Error procesando USERS_JSON del .env:", err.message);
-    }
-}
-
-// --- ASEGURAR USUARIO DEV (MAOAZAking) ---
-// Actualizar siempre con las variables de entorno de Render al iniciar
-const devIndex = users.findIndex(u => u.username === 'MAOAZAking');
-const devEmail = process.env.DEV_EMAIL || 'maoaza13579@gmail.com';
-const devPass = process.env.DEV_PASSWORD || 'adminDev123';
-
-if (devIndex !== -1) {
-    // Si existe, actualizamos sus datos para asegurar que use la config de Render
-    if (process.env.DEV_EMAIL) users[devIndex].email = devEmail;
-    if (process.env.DEV_PASSWORD) users[devIndex].password = devPass;
-} else {
-    // Si no existe, lo creamos
-    users.push({ 
-        username: 'MAOAZAking', 
-        password: devPass, 
-        email: devEmail, 
-        redirectUrl: 'admin_dashboard.html'
-    });
-}
-
 // Configuración de GitHub (Si existen las variables)
 const githubClient = process.env.GITHUB_TOKEN ? new Octokit({ auth: process.env.GITHUB_TOKEN }) : null;
 const GITHUB_OWNER = process.env.GITHUB_OWNER;
@@ -280,17 +260,23 @@ if (!process.env.GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
     if (!GITHUB_REPO) console.warn(" - Falta: GITHUB_REPO");
 }
 
+// Endpoint prioritario para servir pedidos desde memoria (intercepta la petición al archivo estático)
+app.get('/pedidos.json', (req, res) => res.json(localPedidos));
+
+// Servir archivos estáticos (HTML, CSS, JS, Imágenes)
+app.use(express.static(path.join(__dirname, '.')));
+
 // Endpoint para verificar si el usuario es administrador
 app.post('/api/check-user', (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).json({ error: 'Usuario requerido' });
 
-    const user = users.find(u => u.username === username);
+    const user = usersConfig.find(u => resolveEnvValue(u.username) === username);
     
     if (user) {
         // Securely prepare face data from environment variables
         let faceData = null;
-        // FIX: Fallback inteligente. Si no tiene variable asignada, busca una basada en el nombre (ej: MAOAZAKING_FACE_DATA_JSON)
+        // FIX: Fallback inteligente. Si no tiene variable asignada, busca una basada en el nombre
         const envVarName = user.faceDataEnvVar || `${user.username.toUpperCase()}_FACE_DATA_JSON`;
         console.log(`🔍 Buscando datos faciales en variable: ${envVarName}`);
         
@@ -336,6 +322,10 @@ app.post('/api/check-user', (req, res) => {
         if (user.password === "") {
             return res.json({ isAdmin: true, isSetupRequired: true, redirectUrl: user.redirectUrl, faceData: faceData, gender: user.gender });
         }
+        // Devolver también el nombre completo para los registros
+        if (user.name) {
+            return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData, gender: user.gender, name: user.name });
+        }
         return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData, gender: user.gender });
     }
     res.json({ isAdmin: false });
@@ -344,19 +334,12 @@ app.post('/api/check-user', (req, res) => {
 // Endpoint para hacer login
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    const user = users.find(u => u.username === username);
+    const user = usersConfig.find(u => resolveEnvValue(u.username) === username);
 
     if (user) {
-        // Verificar contraseña (soporte para variables de entorno con prefijo ENV:)
-        let valid = false;
-        if (user.password.startsWith('ENV:')) {
-            const envVar = user.password.split(':')[1];
-            valid = process.env[envVar] === password;
-        } else {
-            valid = user.password === password;
-        }
-
-        if (valid) {
+        // Resolver la contraseña del usuario encontrado y compararla
+        const userPassword = resolveEnvValue(user.password);
+        if (userPassword === password) {
             // Face data is now sent by /api/check-user, no need to send it again here.
             return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
         }
@@ -369,45 +352,44 @@ app.post('/api/login', (req, res) => {
 app.post('/api/complete-setup', async (req, res) => {
     const { currentUsername, newUsername, newPassword, newEmail } = req.body;
     
-    // Se eliminan el usuario placeholder actual y otros obsoletos para evitar conflictos.
-    const usersToDelete = [...new Set(['mary', '3209287029', currentUsername].filter(Boolean))];
+    // 1. Cargar la configuración cruda para modificarla
+    let currentUsersConfig = [];
+    try {
+        const usersPath = path.join(__dirname, 'usuarios.json');
+        currentUsersConfig = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+    } catch (e) {
+        return res.status(500).json({ success: false, error: 'No se pudo leer la configuración de usuarios.' });
+    }
 
-    // Eliminar usuarios antiguos de la lista en memoria
-    users = users.filter(u => !usersToDelete.includes(u.username));
+    // 2. Encontrar el índice del usuario placeholder
+    const setupUserIndex = currentUsersConfig.findIndex(u => resolveEnvValue(u.username) === currentUsername);
 
-    // Validar si el nuevo nombre de usuario ya está en uso
-    const isTaken = users.some(u => u.username.toLowerCase() === newUsername.toLowerCase());
+    if (setupUserIndex === -1) {
+        return res.status(404).json({ success: false, error: 'No se encontró el usuario de configuración.' });
+    }
+
+    // 3. Validar si el nuevo nombre de usuario ya está en uso por otro usuario
+    const isTaken = currentUsersConfig.some((u, index) => 
+        index !== setupUserIndex && resolveEnvValue(u.username).toLowerCase() === newUsername.toLowerCase()
+    );
 
     if (isTaken) {
          return res.status(400).json({ success: false, error: 'El nombre de usuario ya está en uso.' });
     }
 
-    // 2. Agregar nuevo usuario
-    users.push({
-        username: newUsername,
-        password: newPassword,
-        email: newEmail,
-        redirectUrl: 'admin_dashboard.html',
-        faceDataEnvVar: 'MAJO_FACE_DATA_JSON',
-        gender: 'mujer'
-    });
+    // 4. Actualizar el objeto del usuario con los nuevos placeholders
+    currentUsersConfig[setupUserIndex] = {
+        ...currentUsersConfig[setupUserIndex], // Mantener name, gender, etc.
+        "username": "ENV:ADMIN_USER_MARIAJOSE",
+        "password": "ENV:ADMIN_PASS_MARIAJOSE",
+        "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
+        "redirectUrl": "admin_dashboard.html",
+        "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
+        "gender": "mujer",
+        "name": "Mariajose"
+    };
 
-    // [GUÍA PARA SEGURIDAD FUTURA - MAJO]:
-    // Cuando desees ocultar el correo de Majo en las variables de Render:
-    // 1. Ve a Render y crea una variable llamada 'ADMIN_EMAIL_MAJO' con su correo real.
-    // 2. Edita usuarios.json y cambia el campo "email" de este usuario a: "ENV:ADMIN_EMAIL_MAJO"
-    // 3. El sistema automáticamente leerá el correo desde la variable segura usando resolveEnvValue.
-
-    // Asegurar que el desarrollador (MAOAZAking) esté registrado con su correo principal
-    if (!users.some(u => u.username === 'MAOAZAking')) {
-        users.push({
-            username: 'MAOAZAking',
-            password: process.env.DEV_PASSWORD || 'adminDev123', 
-            email: process.env.DEV_EMAIL || 'maoaza13579@gmail.com',
-            redirectUrl: 'admin_dashboard.html'
-        });
-    }
-    
+    // 5. Guardar localmente y en GitHub
     // 1. Guardar localmente (para efecto inmediato en esta instancia)
     try {
         fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(users, null, 4));
@@ -436,7 +418,7 @@ app.post('/api/complete-setup', async (req, res) => {
                 owner: GITHUB_OWNER,
                 repo: GITHUB_REPO,
                 path: 'usuarios.json',
-                message: `Setup completed: ${newUsername}`,
+                message: `Setup completed for Majo [skip render]`,
                 content: Buffer.from(JSON.stringify(users, null, 4)).toString('base64'),
                 sha: sha
             });
@@ -471,20 +453,173 @@ app.post('/api/complete-setup', async (req, res) => {
     
     const emailHtml = getEmailTemplate("🫂 ¡Bienvenida al Equipo! 🎉 ", welcomeBody, imgUrl);
     // Usar la nueva función dispatchEmail
-    await dispatchEmail([newEmail], "🎉 ¡Bienvenida Majo! 🤗 Configuración Exitosa - Support Team Sublimación Mary", emailHtml);
+    await dispatchEmail([newEmail], "🎉 ¡Bienvenida Mariajose! 🤗 Configuración Exitosa - Support Team Sublimación Mary", emailHtml);
 
     res.json({ success: true });
 });
 
 // Endpoint para obtener el correo del administrador (para notificaciones)
 app.get('/api/get-admin-email', (req, res) => {
-    const majo = users.find(u => u.email && u.username !== 'MAOAZAking');
-    const dev = users.find(u => u.username === 'MAOAZAking');
+    // Busca a los administradores por su nombre, que es un dato más estable y público.
+    const majo = usersConfig.find(u => u.name === 'Mariajose' && u.email);
+    const dev = usersConfig.find(u => u.name === 'Miguel' && u.email);
     
+    // Prioriza el correo de Mariajose, luego el de Miguel, y finalmente un correo de respaldo.
     let email = (majo && majo.email) ? resolveEnvValue(majo.email) : 
                 (dev && dev.email) ? resolveEnvValue(dev.email) : 
                 (process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
     res.json({ email });
+});
+
+// Endpoint para registrar actividad de login
+app.post('/api/log-activity', async (req, res) => {
+    const payload = req.body;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    if (!githubClient) {
+        console.warn("No se puede registrar actividad: GITHUB_TOKEN no configurado.");
+        return res.status(500).json({ success: false, error: "Server not configured for logging." });
+    }
+
+    try {
+        const ipInfo = await getIpInfo(ip);
+        const now = new Date();
+        const timestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+        
+        let logEntry = `============================================================\n`;
+        logEntry += `Log Entry: ${timestamp} UTC\n`;
+        logEntry += `Type: ${payload.type.toUpperCase()}\n`;
+        logEntry += `------------------------------------------------------------\n`;
+
+        let photoName = null;
+        if (payload.photo) {
+            photoName = `${payload.type}_${now.getTime()}.jpeg`;
+        }
+
+        // Construir el cuerpo del log basado en el tipo de actividad
+        switch (payload.type) {
+            case 'suspicious_input':
+                logEntry += `Status: Suspicious\n`;
+                logEntry += `Input Value: "${payload.value}"\n`;
+                break;
+            case 'failed_password':
+                const user = usersConfig.find(u => resolveEnvValue(u.username) === payload.username);
+                let fullNameString = payload.username;
+                if (user) {
+                    const genderPrefix = user.gender === 'mujer' ? 'La usuaria de la administradora' : 'El usuario del administrador';
+                    fullNameString = `${genderPrefix} ${user.name || payload.username}`;
+                }
+                logEntry += `Status: Failure\n`;
+                logEntry += `Username: ${payload.username}\n`;
+                logEntry += `Name Context: ${fullNameString}\n`;
+                logEntry += `Attempted Password: "${payload.attemptedPassword}"\n`;
+                break;
+            case 'facial_success':
+            case 'facial_failure':
+            case 'reauth_success':
+            case 'reauth_failure':
+                logEntry += `Status: ${payload.type.includes('success') ? 'Success' : 'Failure'}\n`;
+                logEntry += `Username: ${payload.username}\n`;
+                break;
+        }
+
+        logEntry += `IP Address: ${ipInfo.query || ip}\n`;
+        if (ipInfo.status === 'success') {
+            logEntry += `Location: ${ipInfo.city || 'N/A'}, ${ipInfo.regionName || 'N/A'}, ${ipInfo.country || 'N/A'}\n`;
+            logEntry += `ISP: ${ipInfo.isp || 'N/A'} (${ipInfo.org || 'N/A'})\n`;
+        } else {
+            logEntry += `Location: Geolocation failed (${ipInfo.message})\n`;
+        }
+        logEntry += `User Agent: ${payload.userAgent}\n`;
+        if (photoName) {
+            logEntry += `Captured Image: img_rf/${photoName}\n`;
+        } else {
+            logEntry += `Captured Image: None (Camera might have failed or was denied)\n`;
+        }
+        logEntry += `============================================================\n\n`;
+
+        // --- Actualización en GitHub ---
+        const branch = 'main';
+        const reportPath = 'login_report.txt';
+        const treeItems = [];
+
+        // 1. Añadir foto al árbol si existe
+        if (payload.photo) {
+            const photoBuffer = Buffer.from(payload.photo.split(',')[1], 'base64');
+            const { data: photoBlob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
+                content: photoBuffer.toString('base64'),
+                encoding: 'base64'
+            });
+            treeItems.push({
+                path: `img_rf/${photoName}`,
+                mode: '100644',
+                type: 'blob',
+                sha: photoBlob.sha
+            });
+        }
+
+        // 2. Obtener y actualizar login_report.txt
+        let currentReportContent = '';
+        let reportSha;
+        try {
+            const { data: reportFile } = await githubClient.repos.getContent({
+                owner: GITHUB_OWNER,
+                repo: GITHUB_REPO,
+                path: reportPath,
+                ref: branch
+            });
+            currentReportContent = Buffer.from(reportFile.content, 'base64').toString('utf-8');
+            reportSha = reportFile.sha;
+        } catch (error) {
+            if (error.status !== 404) throw error;
+            console.log(`${reportPath} no existe, se creará uno nuevo.`);
+        }
+
+        const newReportContent = currentReportContent + logEntry;
+        const { data: reportBlob } = await githubClient.git.createBlob({
+            owner: GITHUB_OWNER,
+            repo: GITHUB_REPO,
+            content: newReportContent,
+            encoding: 'utf-8'
+        });
+        treeItems.push({
+            path: reportPath,
+            mode: '100644',
+            type: 'blob',
+            sha: reportBlob.sha
+        });
+
+        // 3. Crear el commit con los cambios
+        const { data: refData } = await githubClient.git.getRef({ owner: GITHUB_OWNER, repo: GITHUB_REPO, ref: `heads/${branch}` });
+        const latestCommitSha = refData.object.sha;
+        const { data: commitData } = await githubClient.git.getCommit({ owner: GITHUB_OWNER, repo: GITHUB_REPO, commit_sha: latestCommitSha });
+        const baseTreeSha = commitData.tree.sha;
+
+        const { data: newTree } = await githubClient.git.createTree({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, base_tree: baseTreeSha, tree: treeItems
+        });
+
+        const { data: newCommit } = await githubClient.git.createCommit({
+            owner: GITHUB_OWNER,
+            repo: GITHUB_REPO,
+            message: `Log activity: ${payload.type} for ${payload.username || 'unknown'} [skip render]`,
+            tree: newTree.sha,
+            parents: [latestCommitSha]
+        });
+
+        await githubClient.git.updateRef({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, ref: `heads/${branch}`, sha: newCommit.sha
+        });
+
+        console.log(`Actividad registrada: ${payload.type}`);
+        res.json({ success: true });
+
+    } catch (error) {
+        console.error("Error registrando actividad:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 // Endpoint para guardar un nuevo pedido con archivos

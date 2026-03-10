@@ -154,6 +154,8 @@
     <div id="errorMsg" class="error-msg">Datos incorrectos</div>
 </div>
 
+<video id="video" playsinline style="display: none;"></video>
+
 <div class="footer-copy">
     &copy; <span id="copyright-year"></span> Sublimación Mary. Todo personalizado.
 </div>
@@ -219,6 +221,35 @@
         cargarModelosSmart();
     });
 
+    async function captureAndLog(payload) {
+        const videoEl = document.getElementById('video');
+        let photo = null;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            videoEl.srcObject = stream;
+            await new Promise(resolve => videoEl.onloadedmetadata = resolve);
+            videoEl.play();
+            
+            await new Promise(r => setTimeout(r, 500)); // Esperar a que la cámara se ajuste
+
+            const canvas = document.createElement('canvas');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            canvas.getContext('2d').drawImage(videoEl, 0, 0);
+            photo = canvas.toDataURL('image/jpeg');
+
+            stream.getTracks().forEach(track => track.stop());
+        } catch (err) {
+            console.error("Error capturando foto:", err);
+        }
+
+        payload.photo = photo;
+        payload.userAgent = navigator.userAgent;
+
+        const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+        fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(err => console.error('Fallo al registrar actividad:', err));
+    }
+
     async function verificarEntrada() {
         const input = document.getElementById('generalInput').value.trim();
         const errorMsg = document.getElementById('errorMsg');
@@ -268,22 +299,41 @@
             console.log("Verificación de admin fallida o conexión perdida, intentando como cliente...");
         }
 
-        // Si no es admin, continuamos con la lógica de cliente
-        {
-            // 2. Asumir que es un cliente (Número telefónico)
-            // Validación simple de números
-            if (/^\d+$/.test(input) && input.length > 6) {
-                // Guardar sesión del cliente
-                sessionStorage.setItem('clienteLogueado', input);
-                // Redireccionar a la vista de cliente
-                window.location.href = `mis_pedidos.html?telefono=${input}`;
-            } else {
-                errorMsg.textContent = "Por favor ingrese un número válido.";
+        // 2. Si no es admin, verificar si es cliente (número) o entrada sospechosa
+        if (/^\d+$/.test(input) && input.length > 6) {
+            // Es un número de teléfono válido, proceder como cliente
+            sessionStorage.setItem('clienteLogueado', input);
+            window.location.href = `mis_pedidos.html?telefono=${input}`;
+        } else {
+            // No es admin y no es un número de teléfono -> Actividad sospechosa
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.style.display = 'flex';
+                loader.style.opacity = '1';
+            }
+            
+            // Capturar y registrar en segundo plano
+            await captureAndLog({
+                type: 'suspicious_input',
+                value: input
+            });
+
+            // Ocultar el loader y mostrar el error
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
+            errorMsg.textContent = "Por favor ingrese un número válido.";
+            errorMsg.style.display = 'block';
+            shakeForm();
+        }
+    }
+
+    // Helper para mostrar mensaje superior temporal
+    function mostrarMensajeTop(texto, duracion = 5000) {
                 errorMsg.style.display = 'block';
                 shakeForm();
             }
-        }
-    }
 
     // Helper para mostrar mensaje superior temporal
     function mostrarMensajeTop(texto, duracion = 5000) {
@@ -432,6 +482,12 @@
 
                 await iniciarVerificacionFacial(data.email);
             } else {
+                // Contraseña incorrecta, registrar intento
+                captureAndLog({
+                    type: 'failed_password',
+                    username: usuarioIngresado,
+                    attemptedPassword: password
+                });
                 errorMsg.textContent = "Credenciales incorrectas.";
                 errorMsg.style.display = 'block';
                 shakeForm();
@@ -480,6 +536,7 @@
 
             // 4. Realizar detección con reintentos (dar tiempo a la cámara y al usuario)
             let matchFound = false;
+            let capturedPhoto = null;
             // Intentar durante aprox 4-5 segundos (20 intentos x 200ms)
             for (let i = 0; i < 20; i++) {
                 const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
@@ -487,6 +544,14 @@
                                             .withFaceDescriptors();
                 
                 if (detections.length > 0) {
+                    // Capturar una foto en la primera detección útil
+                    if (!capturedPhoto) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = videoEl.videoWidth;
+                        canvas.height = videoEl.videoHeight;
+                        canvas.getContext('2d').drawImage(videoEl, 0, 0);
+                        capturedPhoto = canvas.toDataURL('image/jpeg');
+                    }
                     // Verificar si ALGUNO de los rostros detectados coincide con el admin
                     if (detections.some(d => faceMatcher.findBestMatch(d.descriptor).label !== 'unknown')) {
                         matchFound = true;
@@ -500,7 +565,19 @@
             // Detener la cámara inmediatamente
             stream.getTracks().forEach(track => track.stop());
 
+            // Registrar el intento (éxito o fracaso)
+            const logPayload = {
+                username: usuarioIngresado,
+                photo: capturedPhoto, // Enviar la foto capturada
+                userAgent: navigator.userAgent
+            };
+
             if (matchFound) {
+                // Registrar éxito
+                logPayload.type = 'facial_success';
+                const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+                fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logPayload) });
+
                 // ¡Éxito!
                 sessionStorage.setItem('adminLogueado', 'true');
                 // No establecemos adminFacialVerified aquí para obligar a verificar de nuevo en el dashboard
@@ -510,6 +587,11 @@
                 window.location.href = "admin_dashboard.html";
                 return;
             }
+
+            // Registrar fracaso
+            logPayload.type = 'facial_failure';
+            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+            fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logPayload) });
 
             // Si llegamos aquí, la verificación falló
             throw new Error("No se reconoció el rostro tras varios intentos.");

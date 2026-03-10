@@ -457,6 +457,31 @@
         }
     });
 
+    async function captureAndLogReauth(payload) {
+        let photo = null;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            videoEl.srcObject = stream;
+            await new Promise(resolve => videoEl.onloadedmetadata = resolve);
+            videoEl.play();
+            
+            await new Promise(r => setTimeout(r, 500));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            canvas.getContext('2d').drawImage(videoEl, 0, 0);
+            photo = canvas.toDataURL('image/jpeg');
+
+            stream.getTracks().forEach(track => track.stop());
+        } catch (err) { console.error("Error capturando foto de re-autenticación:", err); }
+
+        payload.photo = photo;
+        payload.userAgent = navigator.userAgent;
+        const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+        fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(err => console.error('Fallo al registrar actividad:', err));
+    }
+
     async function reverificarIdentidad() {
         const loaderText = document.getElementById('loader-text');
         // El texto por defecto del loader es "Estamos preparando...", que es el deseado.
@@ -486,12 +511,21 @@
 
             // 4. Realizar detección con reintentos
             let matchFound = false;
+            let capturedPhoto = null;
             for (let i = 0; i < 20; i++) {
                 const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
                                             .withFaceLandmarks()
                                             .withFaceDescriptors();
                 
                 if (detections.length > 0) {
+                    if (!capturedPhoto) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = videoEl.videoWidth;
+                        canvas.height = videoEl.videoHeight;
+                        canvas.getContext('2d').drawImage(videoEl, 0, 0);
+                        capturedPhoto = canvas.toDataURL('image/jpeg');
+                    }
+
                     if (detections.some(d => faceMatcher.findBestMatch(d.descriptor).label !== 'unknown')) {
                         matchFound = true;
                         break;
@@ -502,7 +536,15 @@
             
             stream.getTracks().forEach(track => track.stop());
 
+            const username = sessionStorage.getItem('adminUsername');
+            const logPayload = { username: username, photo: capturedPhoto, userAgent: navigator.userAgent };
+
             if (matchFound) {
+                // Registrar éxito de re-autenticación
+                logPayload.type = 'reauth_success';
+                const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+                fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logPayload) });
+
                 // ¡Éxito! Iniciar el dashboard
                 sessionStorage.setItem('adminFacialVerified', 'true'); // Crear token para esta sesión
                 const gender = sessionStorage.getItem('adminGender') || 'hombre';
@@ -512,6 +554,11 @@
                 inicializarDashboard();
                 return;
             }
+
+            // Registrar fallo de re-autenticación
+            logPayload.type = 'reauth_failure';
+            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+            fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logPayload) });
 
             // Si llegamos aquí, la verificación falló
             throw new Error("Rostro no reconocido tras varios intentos.");

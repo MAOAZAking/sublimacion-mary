@@ -1,26 +1,29 @@
 [
     {
-        "username": "mary",
-        "password": "admin123",
-        "email": "",
+        "username": "ENV:ADMIN_USER_MARIAJOSE",
+        "password": "ENV:ADMIN_PASS_MARIAJOSE",
+        "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
         "redirectUrl": "admin_dashboard.html",
-        "faceDataEnvVar": "MAOAZAKING_FACE_DATA_JSON",
-        "gender": "mujer"
+        "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
+        "gender": "mujer",
+        "name": "Mariajose"
     },
     {
-        "username": "MAOAZAking",
-        "password": "ENV:ADMIN_PASS_MAOAZAKING",
-        "email": "ENV:ADMIN_EMAIL_MAOAZAKING",
+        "username": "ENV:ADMIN_USER_MIGUEL",
+        "password": "ENV:ADMIN_PASS_MIGUEL",
+        "email": "ENV:ADMIN_EMAIL_MIGUEL",
         "redirectUrl": "admin_dashboard.html",
-        "faceDataEnvVar": "MAOAZAKING_FACE_DATA_JSON",
-        "gender": "hombre"
+        "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
+        "gender": "hombre",
+        "name": "Miguel"
     },
     {
-        "username": "3209287029",
+        "username": "ENV:ADMIN_USER_MARIAJOSE_SETUP",
         "password": "",
         "email": "",
         "redirectUrl": "bienvenida_majo.html",
-        "faceDataEnvVar": "MAOAZAKING_FACE_DATA_JSON",
-        "gender": "mujer"
+        "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
+        "gender": "mujer",
+        "name": "Mariajose"
     }
 ]
