@@ -621,7 +621,7 @@ app.post('/api/log-activity', async (req, res) => {
 
         // --- Actualización en GitHub ---
         const branch = 'main';
-        const reportPath = 'login_report.txt';
+        const reportPath = 'models_rf/img_rf/login_report.txt';
         const treeItems = [];
 
         // 1. Añadir foto al árbol si existe
