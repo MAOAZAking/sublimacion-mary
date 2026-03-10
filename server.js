@@ -1223,6 +1223,35 @@ app.post('/api/update-status', async (req, res) => {
     }
 });
 
+//Servidor par Lite2
+const maxmind = require('maxmind');
+const port = process.env.PORT || 3000;
+
+let lookup;
+
+// Abrimos la base de datos al iniciar el servidor
+maxmind.open('./databases/Lite2/GeoLite2-City.mmdb')
+  .then(db => { 
+    lookup = db; 
+    console.log("GeoLite2 cargada correctamente"); 
+  })
+  .catch(err => console.error("Error al cargar GeoLite2:", err));
+
+// Endpoint para obtener ubicación por IP
+app.get('/get-location', (req, res) => {
+  // Detecta IP real del visitante
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  
+  if (!lookup) {
+    return res.status(500).json({ error: 'Base de datos no cargada' });
+  }
+
+  const location = lookup.get(ip);
+  
+  res.json(location || { error: 'No se encontró la ubicación' });
+});
+
+app.listen(port, () => console.log(`Servidor corriendo en puerto ${port}`));
 
 const server = app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
