@@ -1,0 +1,14 @@
+============================================================
+Log Entry: 2026-03-10 19:35:14 UTC
+Type: FAILED_PASSWORD
+------------------------------------------------------------
+Status: Failure
+Username: mary
+Full Name Context: La usuaria de la administradora Maria
+Attempted Password: "123l"
+IP Address: ::1
+Location: Geolocation failed (reserved range)
+User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Captured Image: img_rf/failed_password_1773171314035.jpeg
+============================================================
+
