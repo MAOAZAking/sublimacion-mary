@@ -154,3 +154,23 @@ Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML
 Imagen Capturada: models_rf/img_rf/reauth_success_1773242156932.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 15:48:07 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "miguelo"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125, 104.23.160.215, 10.23.20.130
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (invalid query)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773244087036.jpeg
+============================================================
+
