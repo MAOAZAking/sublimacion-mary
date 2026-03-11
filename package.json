@@ -28,6 +28,7 @@
     "ldrs": "^1.1.9",
     "maxmind": "^5.0.5",
     "multer": "^2.0.2",
-    "nodemailer": "^6.9.13"
+    "nodemailer": "^6.9.13",
+    "ua-parser-js": "^2.0.9"
   }
 }

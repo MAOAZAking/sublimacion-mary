@@ -6,3 +6,11 @@ node server.js
 git fetch --all
 #
 git reset --hard origin/main
+
+
+## Forma de enviar commits
+
+# Correccion N° del parche de seguridad N°
+Security Patch #6 Fix #2
+# Mejora N° del parche de seguridad N°
+Security Patch #6 Enhancement #1
