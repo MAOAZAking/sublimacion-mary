@@ -2,6 +2,7 @@ const express = require('express');
 const https = require('https'); // Necesario para la API de Brevo
 const http = require('http'); // Necesario para la API de geolocalización
 const path = require('path');
+const dns = require('dns'); // Necesario para forzar un DNS público
 const fs = require('fs');
 const multer = require('multer'); // Necesario para subir archivos
 const imageSizeLib = require('image-size'); // Para validar dimensiones
@@ -10,6 +11,7 @@ const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 const archiver = require('archiver'); // Para crear archivos ZIP
 const dotenv = require('dotenv');
+const UAParser = require('ua-parser-js'); // Para analizar el User-Agent
 dotenv.config();
 
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
@@ -298,6 +300,23 @@ function getIpInfoMaxMind(ip) {
             headers: {
                 'Authorization': 'Basic ' + Buffer.from(accountId + ':' + licenseKey).toString('base64'),
                 'User-Agent': 'sublimacion-mary-server/1.0'
+            },
+            // --- FIX: Forzar un DNS público para evitar errores 'ENOTFOUND' en Render ---
+            lookup: (hostname, opts, callback) => {
+                // Usar los servidores DNS públicos de Google y Cloudflare
+                const resolver = new dns.Resolver();
+                resolver.setServers(['8.8.8.8', '1.1.1.1']);
+                resolver.resolve4(hostname, (err, addresses) => {
+                    if (err) {
+                        // Si la resolución IPv4 falla, intentar con IPv6 como respaldo
+                        resolver.resolve6(hostname, (err6, addresses6) => {
+                            if (err6) return callback(err6); // Si ambos fallan, devolver el error
+                            callback(null, addresses6[0], 6);
+                        });
+                        return;
+                    }
+                    callback(null, addresses[0], 4);
+                });
             }
         };
 
@@ -960,11 +979,14 @@ app.post('/api/log-activity', async (req, res) => {
             getIpInfoMaxMind(ip)
         ]);
 
+        // Convertir la hora a la zona horaria de Colombia (UTC-5)
         const now = new Date();
-        const timestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+        const localTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
+        const timestamp = localTime.toISOString().replace('T', ' ').substring(0, 19) + ' (Hora de Colombia)';
         
         let logEntry = `============================================================\n`;
-        logEntry += `Registro de Entrada: ${timestamp} UTC\n`;
+        logEntry += `Registro de Entrada: ${timestamp}\n`;
+        logEntry += `(UTC: ${now.toISOString().replace('T', ' ').substring(0, 19)})\n`;
         
         // Traducir tipos de eventos
         const typeMap = {
@@ -1036,13 +1058,30 @@ app.post('/api/log-activity', async (req, res) => {
             const postal = (maxMindInfo.postal && maxMindInfo.postal.code) ? maxMindInfo.postal.code : 'N/A';
             logEntry += `Ubicación: ${city}, ${subdivision}, ${country}\n`;
             logEntry += `Código Postal: ${postal}\n`;
-        } else if (process.env.MAXMIND_LICENSE_KEY) {
-             logEntry += `Estado: Falló la consulta o IP no encontrada. (${maxMindInfo ? (maxMindInfo.error || maxMindInfo.code) : 'Error desconocido'})\n`;
+        } else if (process.env.MAXMIND_ACCOUNT_ID && process.env.MAXMIND_LICENSE_KEY) {
+            const errorMessage = maxMindInfo ? (maxMindInfo.error || maxMindInfo.code) : 'Error desconocido';
+            logEntry += `Estado: Falló la consulta. (${errorMessage})\n`;
+            // Añadir nota específica para el error de DNS en Render
+            if (errorMessage.includes('ENOTFOUND')) {
+                logEntry += `Nota: El error 'ENOTFOUND' usualmente indica un problema de DNS en el servidor (Render), no un problema de la API de MaxMind.\n`;
+            }
         } else {
              logEntry += `Estado: No configurado (faltan claves de API de MaxMind).\n`;
         }
+
+        // --- Análisis del Dispositivo y Navegador ---
+        const parser = new UAParser(payload.userAgent);
+        const deviceInfo = parser.getResult();
+        const osInfo = `${deviceInfo.os.name || 'Desconocido'} ${deviceInfo.os.version || ''}`.trim();
+        const browserInfo = `${deviceInfo.browser.name || 'Desconocido'} ${deviceInfo.browser.version || ''}`.trim();
+        const deviceType = deviceInfo.device.vendor ? `${deviceInfo.device.vendor} ${deviceInfo.device.model}` : (deviceInfo.device.type || 'Escritorio');
+
+        logEntry += `\n--- Dispositivo y Navegador ---\n`;
+        logEntry += `Sistema Operativo: ${osInfo}\n`;
+        logEntry += `Navegador: ${browserInfo}\n`;
+        logEntry += `Tipo de Dispositivo: ${deviceType}\n`;
         logEntry += `------------------------------------------------------------\n`;
-        logEntry += `Dispositivo: ${payload.userAgent}\n`;
+
         if (photoName) {
             logEntry += `Imagen Capturada: models_rf/img_rf/${photoName}\n`;
         } else {
