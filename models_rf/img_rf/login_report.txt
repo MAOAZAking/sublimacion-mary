@@ -275,3 +275,23 @@ Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML
 Imagen Capturada: models_rf/img_rf/reauth_success_1773244997829.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 16:06:01 UTC
+Tipo: ACCESO FACIAL EXITOSO
+------------------------------------------------------------
+Estado: Exitoso
+Usuario: El usuario de la administradora Mariajose
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125, 104.23.160.30, 10.23.60.117
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (invalid query)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/facial_success_1773245161818.jpeg
+============================================================
+
