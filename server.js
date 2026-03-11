@@ -259,7 +259,7 @@ const resolveEnvValue = (val) => {
  * @param {number} details.attempts - El número de intentos fallidos.
  * @param {string} details.userAgent - El dispositivo del atacante.
  */
-async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duration }) {
+async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duration, level }) {
     const ipInfo = await getIpInfo(ip);
     let locationInfo = `Ubicación: Falló geolocalización (${ipInfo.message || 'N/A'})`;
     if (ipInfo.status === 'success') {
@@ -272,19 +272,17 @@ async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duratio
 
     const subject = `🚨 Alerta de Seguridad: ${reason}`;
     const bodyContent = `
-        <div style="background-color:#e74c3c; padding:20px; color:white; font-family:Arial; border-radius:8px;">
-            <p>Se ha detectado una actividad potencialmente maliciosa en el sistema.</p>
-            <div class="info-card" style="border-left-color: #e74c3c;">
-                <div class="info-item"><strong>Motivo:</strong> ${reason}</div>
-                <div class="info-item"><strong>Dirección IP:</strong> ${ip}</div>
-                <div class="info-item"><strong>Intentos Fallidos Recientes:</strong> ${attempts}</div>
-                <div class="info-item"><strong>Dispositivo:</strong> ${userAgent}</div>
-                <div class="info-item"><strong>Geolocalización (aprox.):</strong><br>${locationInfo}</div>
-            </div>
-            <p>${durationText} Se recomienda monitorear el archivo <strong>login_report.txt</strong> para más detalles.</p>
+        <p>Se ha detectado una actividad potencialmente maliciosa en el sistema.</p>
+        <div class="info-card">
+            <div class="info-item"><strong>Motivo:</strong> ${reason}</div>
+            <div class="info-item"><strong>Dirección IP:</strong> ${ip}</div>
+            <div class="info-item"><strong>Intentos Fallidos Recientes:</strong> ${attempts}</div>
+            <div class="info-item"><strong>Dispositivo:</strong> ${userAgent}</div>
+            <div class="info-item"><strong>Geolocalización (aprox.):</strong><br>${locationInfo}</div>
         </div>
+        <p>${durationText} Se recomienda monitorear el archivo <strong>login_report.txt</strong> para más detalles.</p>
     `;
-    const emailHtml = getEmailTemplate('Alerta de Seguridad', bodyContent);
+    const emailHtml = getEmailTemplate('Alerta de Seguridad', bodyContent, null, { type: 'security', level: level });
     
     const adminEmails = usersConfig
         .filter(u => u.email && u.redirectUrl === 'admin_dashboard.html')
@@ -457,11 +455,50 @@ function sendEmailViaBrevo(recipientsArray, subject, htmlContent) {
 }
 
 // --- Plantilla de Correo Profesional ---
-const getEmailTemplate = (title, bodyContent, imageUrl) => {
+const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
+    const { type, level } = options;
     // URL pública de la imagen de presentación en tu repositorio
     const footerImage = "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/presentacion_email.png";
     const year = new Date().getFullYear();
     
+    // Estilos por defecto
+    let bodyBg = '#f4f4f4';
+    let headerBg = '#121212';
+    let footerBg = '#121212';
+    let headerTitle = 'Support Sublimación Mary';
+    let containerBorder = 'none';
+    let infoCardBorder = '#8e44ad'; // Morado por defecto
+
+    // Aplicar estilos de seguridad según el nivel
+    if (type === 'security') {
+        headerTitle = '🚨 Alerta de Seguridad 🚨'; // Común para nivel 1 y 2
+        if (level === 1) {
+            infoCardBorder = '#e74c3c'; // Borde rojo para la tarjeta de información
+        }
+        if (level === 2) {
+            infoCardBorder = '#e74c3c'; // Mantiene el borde rojo
+            headerBg = '#c0392b'; // Fondo rojo oscuro
+            footerBg = '#c0392b'; // Fondo rojo oscuro
+        }
+        if (level >= 3) {
+        if (level >= 3) { // Baneo permanente
+            bodyBg = '#c0392b'; // Fondo rojo oscuro para todo el correo
+            headerBg = '#c0392b'; // Fondo rojo oscuro
+            footerBg = '#c0392b'; // Fondo rojo oscuro
+            containerBorder = '2px solid white'; // Borde blanco para el contenedor principal
+            headerTitle = '🚨☠️ Alerta de Seguridad ☠️🚨';
+            infoCardBorder = '#e74c3c'; // Asegurar que la tarjeta también tenga borde rojo
+        } else if (level === 2) { // Segunda infracción
+            headerTitle = '🚨 Alerta de Seguridad 🚨';
+            infoCardBorder = '#e74c3c'; // Mantiene el borde rojo
+            headerBg = '#c0392b'; // Fondo rojo oscuro
+            footerBg = '#c0392b'; // Fondo rojo oscuro
+        } else if (level === 1) { // Primera infracción
+            headerTitle = '🚨 Alerta de Seguridad 🚨';
+            infoCardBorder = '#e74c3c'; // Borde rojo para la tarjeta de información
+        }
+    }
+
     return `
     <!DOCTYPE html>
     <html>
@@ -469,25 +506,25 @@ const getEmailTemplate = (title, bodyContent, imageUrl) => {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333; }
-            .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-            .header { background-color: #121212; padding: 30px 20px; text-align: center; }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: ${bodyBg}; margin: 0; padding: 0; color: #333; }
+            .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: ${containerBorder}; }
+            .header { background-color: ${headerBg}; padding: 30px 20px; text-align: center; }
             .header h1 { color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
             .content { padding: 40px 30px; line-height: 1.6; font-size: 16px; color: #555; }
             .content h2 { color: #121212; font-size: 22px; margin-top: 0; margin-bottom: 20px; font-weight: 600; }
-            .info-card { background-color: #f8f9fa; border-left: 5px solid #8e44ad; padding: 20px; margin: 25px 0; border-radius: 4px; }
+            .info-card { background-color: #f8f9fa; border-left: 5px solid ${infoCardBorder}; padding: 20px; margin: 25px 0; border-radius: 4px; }
             .info-item { margin-bottom: 10px; }
             .info-item strong { color: #333; display: inline-block; width: 120px; }
             .btn { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #ffffff !important; text-decoration: none; border-radius: 50px; font-weight: bold; margin-top: 25px; text-align: center; box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3); }
             .footer-image { width: 100%; display: block; border-top: 1px solid #eee; }
-            .footer { background-color: #121212; padding: 20px; text-align: center; color: #888; font-size: 13px; }
+            .footer { background-color: ${footerBg}; padding: 20px; text-align: center; color: #aaa; font-size: 13px; }
             .footer p { margin: 5px 0; }
         </style>
     </head>
     <body>
         <div class="email-container">
             <div class="header">
-                <h1>Support Sublimación Mary</h1>
+                <h1>${headerTitle}</h1>
             </div>
             <div class="content">
                 <h2>${title}</h2>
@@ -1265,7 +1302,7 @@ app.post('/api/pedidos', upload.fields([
         // --- ENVIAR CORREO: NUEVO PEDIDO ---
         const bodyContent = `
             <p>Se ha registrado un nuevo pedido en el sistema. A continuación los detalles:</p>
-            <div class="info-card">
+            <div class="info-card" style="border-left-color: #e74c3c;">
                 <div class="info-item"><strong>S/N:</strong> ${nextId}</div>
                 <div class="info-item"><strong>Cliente:</strong> ${telefono}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
