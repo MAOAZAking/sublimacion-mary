@@ -1674,6 +1674,25 @@
         window.location.href = 'index.html';
     }
 
+    // --- Verificación de Baneo en Tiempo Real ---
+    function checkBanStatus() {
+        const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+        fetch(`${BACKEND_URL}/api/heartbeat`)
+            .then(response => {
+                // Un código 429 (Too Many Requests) indica un baneo temporal.
+                if (response.status === 429) {
+                    console.warn("Baneo temporal detectado desde el panel. Cerrando sesión por seguridad.");
+                    cerrarSesion("Tu dirección IP ha sido bloqueada temporalmente. Se ha cerrado la sesión.");
+                }
+            })
+            .catch(error => {
+                // Un fallo en la red (fetch fallido) indica que el servidor cerró la conexión (baneo permanente).
+                console.error("Heartbeat falló desde el panel. Posible baneo permanente. Cerrando sesión.", error);
+                cerrarSesion("Tu dirección IP ha sido bloqueada permanentemente. Se ha cerrado la sesión.");
+            });
+    }
+    setInterval(checkBanStatus, 7000); // Verificar cada 7 segundos para ser un poco menos agresivo en el dashboard
+
     // Exponer funciones al scope global
     window.filtrar = filtrar;
     window.toggleEditMode = toggleEditMode;

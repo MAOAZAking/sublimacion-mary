@@ -36,12 +36,46 @@ const blockedIPs = {};
 const banLevels = {}; // Para rastrear el nivel de ofensa de cada IP
 const permanentBans = new Set(); // Para baneos permanentes
 const BANNED_IPS_PATH = path.join(__dirname, 'models_rf/img_rf/security/banned-ips.json'); // Ruta al archivo de baneos
+const SECURITY_STATE_PATH = path.join(__dirname, 'models_rf/img_rf/security/security-state.json'); // Ruta para guardar intentos y niveles
 
 const MAX_ATTEMPTS = 5; // Intentos fallidos antes de bloquear
 const BLOCK_DURATION = 1 * 60 * 1000; // 1 minuto de bloqueo para la primera ofensa (para pruebas)
 const ATTEMPT_WINDOW = 5 * 60 * 1000; // Ventana de 5 minutos para contar intentos
 
 // --- Funciones de Gestión de Baneos ---
+
+function saveSecurityState() {
+    try {
+        const state = {
+            loginAttempts,
+            banLevels
+        };
+        // Asegurar que el directorio exista
+        const dirPath = path.dirname(SECURITY_STATE_PATH);
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+        fs.writeFileSync(SECURITY_STATE_PATH, JSON.stringify(state, null, 2));
+    } catch (err) {
+        console.error("❌ Error al guardar 'security-state.json':", err);
+    }
+}
+
+function loadSecurityState() {
+    if (fs.existsSync(SECURITY_STATE_PATH)) {
+        try {
+            const data = fs.readFileSync(SECURITY_STATE_PATH, 'utf8');
+            if (data && data.trim()) {
+                const state = JSON.parse(data);
+                if (state.loginAttempts) Object.assign(loginAttempts, state.loginAttempts);
+                if (state.banLevels) Object.assign(banLevels, state.banLevels);
+                console.log(`✅ Estado de seguridad cargado: ${Object.keys(loginAttempts).length} IPs con intentos, ${Object.keys(banLevels).length} IPs con niveles de sanción.`);
+            }
+        } catch (err) {
+            console.error("❌ Error al cargar o parsear 'security-state.json'. Iniciando con estado de seguridad vacío.", err);
+        }
+    }
+}
 
 function loadPermanentBans() {
     // Prioridad 1: Cargar desde la variable de entorno de Render
@@ -385,6 +419,8 @@ function recordFailedAttempt(req, context = "General") {
         }
         delete loginAttempts[ip];
     }
+    // Guardar el estado de los intentos y niveles de baneo en cada intento fallido
+    saveSecurityState();
 }
 
 // Función auxiliar para enviar notificaciones
@@ -670,6 +706,15 @@ app.get('/pedidos.json', (req, res) => res.json(localPedidos));
 // Servir archivos estáticos (HTML, CSS, JS, Imágenes)
 app.use(express.static(path.join(__dirname, '.')));
 
+// Endpoint para el "heartbeat" del cliente, para forzar recarga si está baneado
+app.get('/api/heartbeat', (req, res) => {
+    // El middleware global `rateLimiter` se encarga de todo.
+    // Si no está baneado, devuelve 200 OK.
+    // Si está baneado temporalmente, devuelve 429.
+    // Si está baneado permanentemente, destruye el socket.
+    res.sendStatus(200);
+});
+
 // Endpoint para verificar si el usuario es administrador
 app.post('/api/check-user', (req, res) => {
     const { username } = req.body;
@@ -748,6 +793,7 @@ app.post('/api/login', (req, res) => {
             const ip = getClientIp(req);
             if (loginAttempts[ip]) {
                 delete loginAttempts[ip];
+                saveSecurityState(); // Persistir la limpieza de intentos
             }
             // Face data is now sent by /api/check-user, no need to send it again here.
             return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
@@ -1609,6 +1655,7 @@ app.post('/api/update-status', async (req, res) => {
 
 // Cargar baneos permanentes al iniciar el servidor
 loadPermanentBans();
+loadSecurityState(); // Cargar estado de intentos y niveles de baneo
 
 const server = app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);

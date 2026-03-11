@@ -993,6 +993,25 @@
                 typeWriterEffect();
             }
         });
+
+        // --- Verificación de Baneo en Tiempo Real ---
+        function checkBanStatus() {
+            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+            fetch(`${BACKEND_URL}/api/heartbeat`)
+                .then(response => {
+                    // Un código 429 (Too Many Requests) indica un baneo temporal.
+                    if (response.status === 429) {
+                        console.warn("Baneo temporal detectado. Redirigiendo a index.");
+                        window.location.href = 'index.html';
+                    }
+                })
+                .catch(error => {
+                    // Un fallo en la red (fetch fallido) indica que el servidor cerró la conexión (baneo permanente).
+                    console.error("Heartbeat falló. Posible baneo permanente. Redirigiendo a index.", error);
+                    window.location.href = 'index.html';
+                });
+        }
+        setInterval(checkBanStatus, 5000); // Verificar cada 5 segundos
     </script>
 </body>
 </html>
