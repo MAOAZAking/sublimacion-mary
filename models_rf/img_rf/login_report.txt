@@ -1432,3 +1432,24 @@ Dispositivo: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like 
 Imagen Capturada: models_rf/img_rf/suspicious_input_1773265860850.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 21:51:03 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "124m"
+
+--- Datos de Geolocalización ---
+Dirección IP: 191.106.211.85
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Colombia Telecomunicaciones S.a. ESP BIC (Colombia Telecomunicaciones S.a. ESP BIC)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773265863186.jpeg
+============================================================
+
