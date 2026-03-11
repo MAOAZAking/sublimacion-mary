@@ -246,17 +246,23 @@ function getClientIp(req) {
 
 // Función auxiliar para obtener información de IP
 function getIpInfo(ip) {
+    // --- FIX: Asegurar que solo se use la primera IP de la lista ---
+    let singleIp = ip;
+    if (singleIp && typeof singleIp === 'string' && singleIp.includes(',')) {
+        singleIp = singleIp.split(',')[0].trim();
+    }
+
     // Limpiar IP si es de IPv6-mapeado-a-IPv4
-    if (ip.substr(0, 7) == "::ffff:") {
-      ip = ip.substr(7);
+    if (singleIp.substr(0, 7) == "::ffff:") {
+      singleIp = singleIp.substr(7);
     }
     // No consultar IPs locales
-    if (ip === '127.0.0.1') {
+    if (singleIp === '127.0.0.1') {
         return Promise.resolve({ status: 'fail', message: 'reserved range' });
     }
     return new Promise((resolve) => {
         // API gratuita sin clave
-        const url = `http://ip-api.com/json/${ip}?fields=status,message,country,regionName,city,isp,org,query`;
+        const url = `http://ip-api.com/json/${singleIp}?fields=status,message,country,regionName,city,isp,org,query`;
         http.get(url, res => {
             let data = '';
             res.on('data', chunk => data += chunk);
@@ -278,24 +284,30 @@ function getIpInfoMaxMind(ip) {
         return Promise.resolve(null);
     }
 
+    // --- FIX: Asegurar que solo se use la primera IP de la lista ---
+    let singleIp = ip;
+    if (singleIp && typeof singleIp === 'string' && singleIp.includes(',')) {
+        singleIp = singleIp.split(',')[0].trim();
+    }
+
     // Limpiar IP si es de IPv6-mapeado-a-IPv4
-    if (ip.substr(0, 7) == "::ffff:") {
-      ip = ip.substr(7);
+    if (singleIp.substr(0, 7) == "::ffff:") {
+      singleIp = singleIp.substr(7);
     }
     // No consultar IPs locales
-    if (ip === '127.0.0.1') {
+    if (singleIp === '127.0.0.1') {
         return Promise.resolve({ code: 'LOCAL_IP_ADDRESS', error: 'IP local no consultable.' });
     }
     
     // IPs locales no se pueden consultar
-    if (ip === '127.0.0.1' || ip === '::1') {
+    if (singleIp === '127.0.0.1' || singleIp === '::1') {
         return Promise.resolve({ code: 'LOCAL_IP_ADDRESS', error: 'IP local no consultable.' });
     }
 
     return new Promise((resolve) => {
         const options = {
             hostname: 'geolite.info.x-maxmind.com',
-            path: `/geolite/v2.1/city/${encodeURIComponent(ip)}`,
+            path: `/geolite/v2.1/city/${encodeURIComponent(singleIp)}`,
             method: 'GET',
             headers: {
                 'Authorization': 'Basic ' + Buffer.from(accountId + ':' + licenseKey).toString('base64'),
