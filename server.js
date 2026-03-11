@@ -270,7 +270,7 @@ async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duratio
         ? 'La dirección IP ha sido <strong>bloqueada permanentemente</strong>.'
         : `La dirección IP ha sido bloqueada temporalmente por <strong>${duration / 60000} minutos</strong>.`;
 
-    const subject = `🚨 Alerta de Seguridad: ${reason}`;
+    const subject = `🚨 Alerta de Seguridad: ${reason} 🚨`;
     const bodyContent = `
         <p>Se ha detectado una actividad potencialmente maliciosa en el sistema.</p>
         <div class="info-card">
