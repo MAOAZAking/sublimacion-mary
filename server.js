@@ -15,6 +15,21 @@ dotenv.config();
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// --- CLASE MUTEX PARA EVITAR CONFLICTOS EN GITHUB (RACE CONDITIONS) ---
+class Mutex {
+    constructor() {
+        this._queue = Promise.resolve();
+    }
+    lock() {
+        let next;
+        const promise = new Promise(resolve => next = resolve);
+        const previous = this._queue;
+        this._queue = previous.then(() => promise);
+        return previous.then(() => next);
+    }
+}
+const gitMutex = new Mutex(); // Instancia global del semáforo
+
 // --- Métricas de Seguridad y Límite de Intentos ---
 const loginAttempts = {};
 const blockedIPs = {};
@@ -41,13 +56,18 @@ function loadPermanentBans() {
     else if (fs.existsSync(BANNED_IPS_PATH)) {
         try {
             const data = fs.readFileSync(BANNED_IPS_PATH, 'utf8');
-            if (data) { // Asegurarse que el archivo no esté vacío
-                const bannedArray = JSON.parse(data);
-                bannedArray.forEach(ip => permanentBans.add(ip));
-                console.log(`✅ ${permanentBans.size} IPs cargadas desde el archivo de respaldo 'banned-ips.json'.`);
+            if (data && data.trim()) {
+                const bannedData = JSON.parse(data);
+                if (Array.isArray(bannedData)) {
+                    bannedData.forEach(ip => permanentBans.add(ip));
+                    console.log(`✅ ${permanentBans.size} IPs cargadas desde el archivo de respaldo 'banned-ips.json'.`);
+                } else {
+                    // Si el archivo contiene '{}' u otro JSON no-array, lo ignoramos para evitar que el servidor se caiga.
+                    console.warn("⚠️ [ADVERTENCIA] 'banned-ips.json' no contiene un array. Se iniciará como vacío. El contenido correcto para un archivo vacío es '[]'.");
+                }
             }
         } catch (err) {
-            console.error("❌ Error al cargar 'banned-ips.json':", err);
+            console.error("❌ Error al cargar o parsear 'banned-ips.json'. El archivo podría estar corrupto. Iniciando con lista de baneos vacía.", err);
         }
     }
 }
@@ -68,6 +88,12 @@ async function updateBannedIpsInRender(newIpToBan) {
         if (!permanentBans.has(newIpToBan)) {
             permanentBans.add(newIpToBan);
             try {
+                // Asegurar que el directorio exista antes de escribir
+                const dirPath = path.dirname(BANNED_IPS_PATH);
+                if (!fs.existsSync(dirPath)) {
+                    fs.mkdirSync(dirPath, { recursive: true });
+                }
+
                 const bannedArray = Array.from(permanentBans);
                 fs.writeFileSync(BANNED_IPS_PATH, JSON.stringify(bannedArray, null, 4));
             } catch (err) {
@@ -103,6 +129,10 @@ async function updateBannedIpsInRender(newIpToBan) {
 
     try {
         // 1. Obtener variables de entorno actuales
+        // NOTA: Para actualizar una variable específica en Render, usamos PUT sobre la key específica
+        // Esto evita tener que leer todas y volver a enviarlas, reduciendo riesgo de errores.
+        
+        // Primero necesitamos saber el valor actual para concatenar, así que leemos primero.
         const envVars = await new Promise((resolve, reject) => {
             const req = https.request({
                 hostname: 'api.render.com', path: `/v1/services/${serviceId}/env-vars`, method: 'GET',
@@ -127,24 +157,30 @@ async function updateBannedIpsInRender(newIpToBan) {
         currentBannedIps.push(newIpToBan);
         const newBannedIpsValue = currentBannedIps.join(',');
 
-        // 2. Actualizar la variable de entorno
-        const patchData = JSON.stringify([{ key: 'PERMANENTLY_BANNED_IPS', value: newBannedIpsValue }]);
+        // 2. Actualizar la variable de entorno usando PUT (Correcto para Render API v1 por key)
+        const putData = JSON.stringify({ value: newBannedIpsValue });
         await new Promise((resolve, reject) => {
              const req = https.request({
-                hostname: 'api.render.com', path: `/v1/services/${serviceId}/env-vars`, method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json', 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(patchData) }
+                hostname: 'api.render.com', 
+                path: `/v1/services/${serviceId}/env-vars/PERMANENTLY_BANNED_IPS`, 
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json', 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(putData) }
             }, res => {
                 let data = '';
                 res.on('data', chunk => data += chunk);
-                res.on('end', () => res.statusCode >= 200 && res.statusCode < 300 ? resolve() : reject(new Error(`Render API (PATCH) falló con estado ${res.statusCode}: ${data}`)));
+                res.on('end', () => res.statusCode >= 200 && res.statusCode < 300 ? resolve() : reject(new Error(`Render API (PUT) falló con estado ${res.statusCode}: ${data}`)));
             });
             req.on('error', reject);
-            req.write(patchData);
+            req.write(putData);
             req.end();
         });
 
         console.log(`✅ Variable de entorno PERMANENTLY_BANNED_IPS actualizada en Render. El servicio se reiniciará automáticamente.`);
         permanentBans.add(newIpToBan);
+        
+        // También guardamos localmente por seguridad
+        const dirPath = path.dirname(BANNED_IPS_PATH);
+        if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
         fs.writeFileSync(BANNED_IPS_PATH, JSON.stringify(Array.from(permanentBans), null, 4));
 
     } catch (error) {
@@ -857,6 +893,9 @@ app.post('/api/log-activity', rateLimiter, async (req, res) => {
         return res.status(500).json({ success: false, error: "Server not configured for logging." });
     }
 
+    // INICIO DEL BLOQUEO GIT (Mutex)
+    const unlock = await gitMutex.lock();
+
     try {
         const [ipApiInfo, maxMindInfo] = await Promise.all([
             getIpInfo(ip),
@@ -1034,6 +1073,8 @@ app.post('/api/log-activity', rateLimiter, async (req, res) => {
     } catch (error) {
         console.error("Error registrando actividad:", error);
         res.status(500).json({ success: false, error: error.message });
+    } finally {
+        unlock(); // LIBERAR BLOQUEO GIT SIEMPRE
     }
 });
 
@@ -1152,6 +1193,9 @@ app.post('/api/pedidos', upload.fields([
         console.error(`Error: Faltan credenciales de GitHub (${missing.join(', ')}).`);
         return res.status(500).json({ success: false, error: `El servidor no tiene configuradas las credenciales de GitHub: ${missing.join(', ')}. No se puede guardar el pedido en la nube.` });
     }
+
+    // INICIO DEL BLOQUEO GIT (Mutex)
+    const unlock = await gitMutex.lock();
 
     try {
         console.log("Procesando pedido vía GitHub API...");
@@ -1310,6 +1354,8 @@ app.post('/api/pedidos', upload.fields([
     } catch (error) {
         console.error("Error GitHub API:", error);
         return res.status(500).json({ success: false, error: 'Error guardando en repositorio remoto: ' + error.message });
+    } finally {
+        unlock(); // LIBERAR BLOQUEO GIT
     }
 });
 
@@ -1327,6 +1373,9 @@ app.post('/api/pedidos/edit', upload.fields([
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
         return res.status(500).json({ success: false, error: 'Credenciales de GitHub no configuradas.' });
     }
+
+    // INICIO DEL BLOQUEO GIT (Mutex)
+    const unlock = await gitMutex.lock();
 
     try {
         console.log("Editando pedido vía GitHub API...");
@@ -1468,6 +1517,8 @@ app.post('/api/pedidos/edit', upload.fields([
     } catch (error) {
         console.error("Error editando pedido:", error);
         res.status(500).json({ success: false, error: error.message });
+    } finally {
+        unlock(); // LIBERAR BLOQUEO GIT
     }
 });
 
@@ -1478,6 +1529,9 @@ app.post('/api/update-status', async (req, res) => {
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
         return res.status(500).json({ success: false, error: 'Credenciales de GitHub no configuradas.' });
     }
+
+    // INICIO DEL BLOQUEO GIT (Mutex)
+    const unlock = await gitMutex.lock();
 
     try {
         const { data: jsonFile } = await githubClient.repos.getContent({
@@ -1542,6 +1596,8 @@ app.post('/api/update-status', async (req, res) => {
     } catch (error) {
         console.error("Error actualizando estado:", error);
         res.status(500).json({ success: false, error: error.message });
+    } finally {
+        unlock(); // LIBERAR BLOQUEO GIT
     }
 });
 
