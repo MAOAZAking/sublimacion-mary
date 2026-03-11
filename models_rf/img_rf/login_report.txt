@@ -1264,3 +1264,24 @@ Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML
 Imagen Capturada: models_rf/img_rf/failed_password_1773264653079.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 21:49:02 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "marijooloo"
+
+--- Datos de Geolocalización ---
+Dirección IP: 191.106.211.85
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Colombia Telecomunicaciones S.a. ESP BIC (Colombia Telecomunicaciones S.a. ESP BIC)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773265742806.jpeg
+============================================================
+
