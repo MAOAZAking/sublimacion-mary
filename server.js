@@ -58,7 +58,7 @@ function getIpInfoMaxMind(ip) {
     return new Promise((resolve) => {
         const options = {
             hostname: 'geolite.info.x-maxmind.com',
-            path: `/geolite/v2.1/city/${ip}`,
+            path: `/geolite/v2.1/city/${encodeURIComponent(ip)}`,
             method: 'GET',
             headers: {
                 'Authorization': 'Basic ' + Buffer.from(accountId + ':' + licenseKey).toString('base64'),
@@ -432,13 +432,6 @@ app.post('/api/complete-setup', async (req, res) => {
     };
 
     // 5. Guardar localmente y en GitHub
-    // 1. Guardar localmente (para efecto inmediato en esta instancia)
-    try {
-        fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(users, null, 4));
-    } catch (err) {
-        console.error("Error guardando usuarios.json local:", err);
-    }
-
     // 2. Guardar en GitHub (Persistencia real)
     if (githubClient && GITHUB_OWNER && GITHUB_REPO) {
         try {
@@ -461,7 +454,7 @@ app.post('/api/complete-setup', async (req, res) => {
                 repo: GITHUB_REPO,
                 path: 'usuarios.json',
                 message: `Setup completed for Majo [skip render]`,
-                content: Buffer.from(JSON.stringify(users, null, 4)).toString('base64'),
+                content: Buffer.from(JSON.stringify(currentUsersConfig, null, 4)).toString('base64'),
                 sha: sha
             });
         } catch (ghErr) {
@@ -942,10 +935,6 @@ app.post('/api/pedidos', upload.fields([
         pedidos.push(nuevoPedido);
 
         localPedidos = pedidos;
-        try {
-            fs.writeFileSync(path.join(__dirname, 'pedidos.json'), JSON.stringify(localPedidos, null, 4));
-        } catch (e) { console.error("Error actualizando cache local:", e.message); }
-
         const { data: jsonBlob } = await githubClient.git.createBlob({
             owner: GITHUB_OWNER, repo: GITHUB_REPO, content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'), encoding: 'base64'
         });
@@ -1098,10 +1087,6 @@ app.post('/api/pedidos/edit', upload.fields([
         }
 
         localPedidos = pedidos;
-        try {
-            fs.writeFileSync(path.join(__dirname, 'pedidos.json'), JSON.stringify(localPedidos, null, 4));
-        } catch (e) { console.error("Error actualizando cache local:", e.message); }
-
         const { data: jsonBlob } = await githubClient.git.createBlob({
             owner: GITHUB_OWNER, repo: GITHUB_REPO,
             content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'), encoding: 'base64'
@@ -1173,10 +1158,6 @@ app.post('/api/update-status', async (req, res) => {
         if (!modificado) return res.json({ success: false, message: 'Pedido no encontrado' });
 
         localPedidos = pedidos;
-        try {
-            fs.writeFileSync(path.join(__dirname, 'pedidos.json'), JSON.stringify(localPedidos, null, 4));
-        } catch (e) { console.error("Error actualizando cache local:", e.message); }
-
         await githubClient.repos.createOrUpdateFileContents({
             owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json',
             message: `Update status to ${nuevo_estado} [skip render]`,
@@ -1222,36 +1203,6 @@ app.post('/api/update-status', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
-//Servidor par Lite2
-const maxmind = require('maxmind');
-const port = process.env.PORT || 3000;
-
-let lookup;
-
-// Abrimos la base de datos al iniciar el servidor
-maxmind.open('./databases/Lite2/GeoLite2-City.mmdb')
-  .then(db => { 
-    lookup = db; 
-    console.log("GeoLite2 cargada correctamente"); 
-  })
-  .catch(err => console.error("Error al cargar GeoLite2:", err));
-
-// Endpoint para obtener ubicación por IP
-app.get('/get-location', (req, res) => {
-  // Detecta IP real del visitante
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  
-  if (!lookup) {
-    return res.status(500).json({ error: 'Base de datos no cargada' });
-  }
-
-  const location = lookup.get(ip);
-  
-  res.json(location || { error: 'No se encontró la ubicación' });
-});
-
-app.listen(port, () => console.log(`Servidor corriendo en puerto ${port}`));
 
 const server = app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
