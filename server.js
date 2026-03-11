@@ -364,7 +364,8 @@ function recordFailedAttempt(req, context = "General") {
                 reason: `Baneo Permanente por Múltiples Infracciones`,
                 attempts: attempt.count,
                 userAgent: req.headers['user-agent'],
-                duration: 'permanent'
+                duration: 'permanent',
+                level: level
             });
             // ¡ACCIÓN CLAVE! Actualizar la variable de entorno en Render.
             updateBannedIpsInRender(ip);
@@ -378,7 +379,8 @@ function recordFailedAttempt(req, context = "General") {
                 reason: `Múltiples intentos fallidos (Infracción Nivel ${level})`,
                 attempts: attempt.count,
                 userAgent: req.headers['user-agent'],
-                duration: currentBlockDuration
+                duration: currentBlockDuration,
+                level: level
             });
         }
         delete loginAttempts[ip];
@@ -613,6 +615,10 @@ function rateLimiter(req, res, next) {
     next();
 }
 
+// --- SEGURIDAD GLOBAL ---
+// Aplicar el bloqueo de IPs a TODAS las rutas (Página web, imágenes, APIs)
+app.use(rateLimiter);
+
 // --- Cargar Configuración de Usuarios ---
 // Se carga la configuración "cruda" para poder resolver los valores de .env sobre la marcha.
 let usersConfig = [];
@@ -665,7 +671,7 @@ app.get('/pedidos.json', (req, res) => res.json(localPedidos));
 app.use(express.static(path.join(__dirname, '.')));
 
 // Endpoint para verificar si el usuario es administrador
-app.post('/api/check-user', rateLimiter, (req, res) => {
+app.post('/api/check-user', (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).json({ error: 'Usuario requerido' });
 
@@ -730,7 +736,7 @@ app.post('/api/check-user', rateLimiter, (req, res) => {
 });
 
 // Endpoint para hacer login
-app.post('/api/login', rateLimiter, (req, res) => {
+app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const user = usersConfig.find(u => resolveEnvValue(u.username) === username);
 
@@ -873,15 +879,15 @@ app.get('/api/get-admin-email', (req, res) => {
 });
 
 // Endpoint para registrar actividad de login
-app.post('/api/log-activity', rateLimiter, async (req, res) => {
+app.post('/api/log-activity', async (req, res) => {
     const payload = req.body;
     const ip = getClientIp(req);
 
     // Registrar intento fallido para el rate limiter
-    const isFailure = ['suspicious_input', 'failed_password', 'facial_failure', 'reauth_failure'].includes(payload.type);
+    // Corrección: Quitamos 'failed_password' de aquí para evitar que cuente doble (ya lo cuenta /api/login)
+    const isFailure = ['suspicious_input', 'facial_failure', 'reauth_failure'].includes(payload.type);
     if (isFailure) {
         let context = "Actividad sospechosa";
-        if (payload.type === 'failed_password') context = "Contraseña incorrecta (Frontend)";
         if (payload.type === 'facial_failure') context = "Validación facial fallida";
         if (payload.type === 'reauth_failure') context = "Re-autenticación facial fallida";
         if (payload.type === 'suspicious_input') context = "Input sospechoso";
