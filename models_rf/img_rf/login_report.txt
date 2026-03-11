@@ -93,3 +93,24 @@ Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML
 Imagen Capturada: models_rf/img_rf/suspicious_input_1773241081919.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 15:15:17 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123+"
+
+--- Datos de Geolocalización ---
+Dirección IP: ::1
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (reserved range)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (IP local no consultable.)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773242117208.jpeg
+============================================================
+
