@@ -479,7 +479,13 @@
         payload.photo = photo;
         payload.userAgent = navigator.userAgent;
         const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
-        fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(err => console.error('Fallo al registrar actividad:', err));
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            return await response.json();
+        } catch (err) {
+            console.error('Fallo al registrar actividad:', err);
+            return { success: false };
+        }
     }
 
     async function reverificarIdentidad() {
@@ -557,8 +563,12 @@
 
             // Registrar fallo de re-autenticación
             logPayload.type = 'reauth_failure';
-            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
-            fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logPayload) });
+            const logData = await captureAndLogReauth(logPayload);
+
+            if (logData && logData.forceRefresh) {
+                cerrarSesion("Demasiados intentos fallidos. Se ha cerrado la sesión por seguridad.");
+                return;
+            }
 
             // Si llegamos aquí, la verificación falló
             throw new Error("Rostro no reconocido tras varios intentos.");
@@ -1677,7 +1687,7 @@
     // --- Verificación de Baneo en Tiempo Real ---
     function checkBanStatus() {
         const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
-        fetch(`${BACKEND_URL}/api/heartbeat`)
+        fetch(`${BACKEND_URL}/api/heartbeat?t=${Date.now()}`)
             .then(response => {
                 // Un código 429 (Too Many Requests) indica un baneo temporal.
                 if (response.status === 429) {

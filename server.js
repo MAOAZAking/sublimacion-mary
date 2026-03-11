@@ -39,7 +39,7 @@ const BANNED_IPS_PATH = path.join(__dirname, 'models_rf/img_rf/security/banned-i
 const SECURITY_STATE_PATH = path.join(__dirname, 'models_rf/img_rf/security/security-state.json'); // Ruta para guardar intentos y niveles
 
 const MAX_ATTEMPTS = 5; // Intentos fallidos antes de bloquear
-const BLOCK_DURATION = 1 * 60 * 1000; // 1 minuto de bloqueo para la primera ofensa (para pruebas)
+const BLOCK_DURATION = 5 * 60 * 1000; // 5 minutos de bloqueo para la primera ofensa
 const ATTEMPT_WINDOW = 5 * 60 * 1000; // Ventana de 5 minutos para contar intentos
 
 // --- Funciones de Gestión de Baneos ---
@@ -374,6 +374,7 @@ async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duratio
 function recordFailedAttempt(req, context = "General") {
     const ip = getClientIp(req);
     const now = Date.now();
+    const level = banLevels[ip] || 0;
     const attempt = loginAttempts[ip] || { count: 0, firstAttempt: now };
 
     if (now - attempt.firstAttempt > ATTEMPT_WINDOW) {
@@ -384,13 +385,13 @@ function recordFailedAttempt(req, context = "General") {
     }
 
     loginAttempts[ip] = attempt;
-    console.log(`⚠️  Intento fallido [${context}] desde IP: ${ip}. Intentos: ${attempt.count}/${MAX_ATTEMPTS}`);
+    console.log(`⚠️  Intento fallido [${context}] desde IP: ${ip}. Intentos: ${attempt.count}/${MAX_ATTEMPTS} en Nivel ${level}`);
 
     if (attempt.count >= MAX_ATTEMPTS) {
         banLevels[ip] = (banLevels[ip] || 0) + 1;
-        const level = banLevels[ip];
+        const newLevel = banLevels[ip];
 
-        if (level >= 3) {
+        if (newLevel >= 3) {
             // Baneo Permanente
             console.error(`🚫 Iniciando proceso de BANEO PERMANENTE para IP: ${ip}`);
             sendSecurityAlertEmail({
@@ -399,28 +400,31 @@ function recordFailedAttempt(req, context = "General") {
                 attempts: attempt.count,
                 userAgent: req.headers['user-agent'],
                 duration: 'permanent',
-                level: level
+                level: newLevel
             });
             // ¡ACCIÓN CLAVE! Actualizar la variable de entorno en Render.
             updateBannedIpsInRender(ip);
         } else {
             // Baneo Temporal Progresivo
-            const currentBlockDuration = BLOCK_DURATION * Math.pow(2, level - 1);
+            const currentBlockDuration = BLOCK_DURATION * Math.pow(2, newLevel - 1);
             blockedIPs[ip] = now + currentBlockDuration;
-            console.error(`🚫 IP BLOQUEADA (Nivel ${level}): ${ip} por ${currentBlockDuration / 60000} minutos.`);
+            console.error(`🚫 IP BLOQUEADA (Nivel ${newLevel}): ${ip} por ${currentBlockDuration / 60000} minutos.`);
             sendSecurityAlertEmail({
                 ip: ip,
-                reason: `Múltiples intentos fallidos (Infracción Nivel ${level})`,
+                reason: `Múltiples intentos fallidos (Infracción Nivel ${newLevel})`,
                 attempts: attempt.count,
                 userAgent: req.headers['user-agent'],
                 duration: currentBlockDuration,
-                level: level
+                level: newLevel
             });
         }
         delete loginAttempts[ip];
+        saveSecurityState();
+        return true; // Devolver TRUE para indicar que se acaba de banear
     }
     // Guardar el estado de los intentos y niveles de baneo en cada intento fallido
     saveSecurityState();
+    return false; // Devolver FALSE si no se baneó
 }
 
 // Función auxiliar para enviar notificaciones
@@ -644,7 +648,8 @@ function rateLimiter(req, res, next) {
 
     // 3. Rechazar si aún está en baneo temporal
     if (blockedIPs[ip]) {
-        console.warn(`🚫 IP bloqueada temporalmente intentó acceder: ${ip}`);
+        const level = banLevels[ip] || 1;
+        console.warn(`🚫 IP bloqueada temporalmente (Nivel ${level}) intentó acceder: ${ip}`);
         return res.status(429).json({ error: 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.' });
     }
 
@@ -798,14 +803,14 @@ app.post('/api/login', (req, res) => {
             // Face data is now sent by /api/check-user, no need to send it again here.
             return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
         } else {
-            recordFailedAttempt(req, "Contraseña incorrecta");
-            return res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
+            const banned = recordFailedAttempt(req, "Contraseña incorrecta");
+            return res.status(401).json({ success: false, message: 'Credenciales incorrectas', forceRefresh: banned });
         }
     }
     
     // Si llegamos aquí, el usuario no existe
-    recordFailedAttempt(req, "Usuario no encontrado");
-    res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
+    const banned = recordFailedAttempt(req, "Usuario no encontrado");
+    res.status(401).json({ success: false, message: 'Credenciales incorrectas', forceRefresh: banned });
 });
 
 // Endpoint para completar configuración (Usuario y Contraseña)
@@ -928,6 +933,7 @@ app.get('/api/get-admin-email', (req, res) => {
 app.post('/api/log-activity', async (req, res) => {
     const payload = req.body;
     const ip = getClientIp(req);
+    let banned = false;
 
     // Registrar intento fallido para el rate limiter
     // Corrección: Quitamos 'failed_password' de aquí para evitar que cuente doble (ya lo cuenta /api/login)
@@ -937,7 +943,7 @@ app.post('/api/log-activity', async (req, res) => {
         if (payload.type === 'facial_failure') context = "Validación facial fallida";
         if (payload.type === 'reauth_failure') context = "Re-autenticación facial fallida";
         if (payload.type === 'suspicious_input') context = "Input sospechoso";
-        recordFailedAttempt(req, context);
+        banned = recordFailedAttempt(req, context);
     }
     
     if (!githubClient) {
@@ -1120,11 +1126,11 @@ app.post('/api/log-activity', async (req, res) => {
         });
 
         console.log(`Actividad registrada: ${payload.type}`);
-        res.json({ success: true });
+        res.json({ success: true, forceRefresh: banned });
 
     } catch (error) {
         console.error("Error registrando actividad:", error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: error.message, forceRefresh: banned });
     } finally {
         unlock(); // LIBERAR BLOQUEO GIT SIEMPRE
     }

@@ -997,7 +997,7 @@
         // --- Verificación de Baneo en Tiempo Real ---
         function checkBanStatus() {
             const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
-            fetch(`${BACKEND_URL}/api/heartbeat`)
+            fetch(`${BACKEND_URL}/api/heartbeat?t=${Date.now()}`)
                 .then(response => {
                     // Un código 429 (Too Many Requests) indica un baneo temporal.
                     if (response.status === 429) {

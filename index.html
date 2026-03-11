@@ -482,15 +482,14 @@
 
                 await iniciarVerificacionFacial(data.email);
             } else {
-                // Contraseña incorrecta, registrar intento
-                captureAndLog({
-                    type: 'failed_password',
-                    username: usuarioIngresado,
-                    attemptedPassword: password
-                });
                 errorMsg.textContent = "Credenciales incorrectas.";
                 errorMsg.style.display = 'block';
                 shakeForm();
+                // Si el fallo de contraseña provocó un baneo, recargar.
+                if (data.forceRefresh) {
+                    mostrarMensajeTop("Demasiados intentos fallidos. La página se recargará.", 3000);
+                    setTimeout(() => window.location.reload(), 3100);
+                }
             }
         } catch (e) {
             errorMsg.textContent = "Error de conexión con el servidor.";
@@ -590,8 +589,13 @@
 
             // Registrar fracaso
             logPayload.type = 'facial_failure';
-            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
-            fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logPayload) });
+            const logData = await captureAndLog(logPayload);
+
+            if (logData && logData.forceRefresh) {
+                mostrarMensajeTop("Demasiados intentos fallidos. La página se recargará.", 3000);
+                setTimeout(() => window.location.reload(), 3100);
+                return;
+            }
 
             // Si llegamos aquí, la verificación falló
             throw new Error("No se reconoció el rostro tras varios intentos.");
@@ -631,7 +635,7 @@
     // --- Verificación de Baneo en Tiempo Real ---
     function checkBanStatus() {
         const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
-        fetch(`${BACKEND_URL}/api/heartbeat`)
+        fetch(`${BACKEND_URL}/api/heartbeat?t=${Date.now()}`)
             .then(response => {
                 // Un código 429 (Too Many Requests) indica un baneo temporal.
                 if (response.status === 429) {
