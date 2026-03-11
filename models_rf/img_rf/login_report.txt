@@ -496,11 +496,11 @@ Imagen Capturada: models_rf/img_rf/suspicious_input_1773245595445.jpeg
 ============================================================
 
 ============================================================
-Registro de Entrada: 2026-03-11 16:19:19 UTC
+Registro de Entrada: 2026-03-11 16:19:17 UTC
 Tipo: ENTRADA SOSPECHOSA
 ------------------------------------------------------------
 Estado: ### INTENTO FALLIDO ###
-Usuario Ingresado: "kiolecomova"
+Usuario Ingresado: "kiolecomovas"
 
 --- Datos de Geolocalización ---
 Dirección IP: 127.0.0.1
@@ -512,6 +512,26 @@ Estado: Falló la consulta (reserved range)
 Estado: Falló la consulta o IP no encontrada. (IP local no consultable.)
 ------------------------------------------------------------
 Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
-Imagen Capturada: models_rf/img_rf/suspicious_input_1773245959137.jpeg
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773245957046.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 16:19:21 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "kiolecomov"
+
+--- Datos de Geolocalización ---
+Dirección IP: 127.0.0.1
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (reserved range)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (IP local no consultable.)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773245961456.jpeg
 ============================================================
 
