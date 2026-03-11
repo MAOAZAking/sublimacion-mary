@@ -9,6 +9,7 @@ git reset --hard origin/main
 
 
 ## Forma de enviar commits
+# Nota: El número de parche y numero de correción y mejora estan actualizados
 
 # Correccion N° del parche de seguridad N°
 Security Patch #6 Fix #2
