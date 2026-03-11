@@ -509,7 +509,12 @@ app.get('/api/get-admin-email', (req, res) => {
 // Endpoint para registrar actividad de login
 app.post('/api/log-activity', async (req, res) => {
     const payload = req.body;
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // Si x-forwarded-for es una lista (común en proxies como Render), tomar solo la primera IP.
+    if (ip.includes(',')) {
+        ip = ip.split(',')[0].trim();
+    }
 
     if (!githubClient) {
         console.warn("No se puede registrar actividad: GITHUB_TOKEN no configurado.");
