@@ -555,3 +555,23 @@ Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML
 Imagen Capturada: models_rf/img_rf/suspicious_input_1773245963598.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 16:30:08 UTC
+Tipo: ACCESO FACIAL EXITOSO
+------------------------------------------------------------
+Estado: Exitoso
+Usuario: El usuario del administrador Miguel
+
+--- Datos de Geolocalización ---
+Dirección IP: 127.0.0.1
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (reserved range)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (IP local no consultable.)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/facial_success_1773246608762.jpeg
+============================================================
+
