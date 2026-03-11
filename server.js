@@ -29,56 +29,127 @@ const ATTEMPT_WINDOW = 5 * 60 * 1000; // Ventana de 5 minutos para contar intent
 // --- Funciones de Gestión de Baneos ---
 
 function loadPermanentBans() {
-    if (fs.existsSync(BANNED_IPS_PATH)) {
+    // Prioridad 1: Cargar desde la variable de entorno de Render
+    if (process.env.PERMANENTLY_BANNED_IPS) {
+        const ipsFromEnv = process.env.PERMANENTLY_BANNED_IPS.split(',');
+        ipsFromEnv.forEach(ip => {
+            if (ip.trim()) permanentBans.add(ip.trim());
+        });
+        console.log(`✅ ${permanentBans.size} IPs cargadas desde la variable de entorno PERMANENTLY_BANNED_IPS.`);
+    } 
+    // Prioridad 2: Cargar desde el archivo JSON como respaldo
+    else if (fs.existsSync(BANNED_IPS_PATH)) {
         try {
             const data = fs.readFileSync(BANNED_IPS_PATH, 'utf8');
-            const bannedArray = JSON.parse(data);
-            bannedArray.forEach(ip => permanentBans.add(ip));
-            console.log(`✅ ${permanentBans.size} IPs cargadas desde la lista de baneos permanentes.`);
+            if (data) { // Asegurarse que el archivo no esté vacío
+                const bannedArray = JSON.parse(data);
+                bannedArray.forEach(ip => permanentBans.add(ip));
+                console.log(`✅ ${permanentBans.size} IPs cargadas desde el archivo de respaldo 'banned-ips.json'.`);
+            }
         } catch (err) {
             console.error("❌ Error al cargar 'banned-ips.json':", err);
         }
     }
 }
 
-function savePermanentBans() {
-    try {
-        const bannedArray = Array.from(permanentBans);
-        fs.writeFileSync(BANNED_IPS_PATH, JSON.stringify(bannedArray, null, 4));
-    } catch (err) {
-        console.error("❌ Error al guardar 'banned-ips.json':", err);
-    }
-}
-
 /**
- * Llama al Deploy Hook de Render para forzar un reinicio del servidor.
- * Esto es útil para recargar configuraciones críticas como la lista de baneos.
+ * Actualiza la variable de entorno en Render con la nueva IP baneada.
+ * Si falla, utiliza el Deploy Hook como método de respaldo.
+ * @param {string} newIpToBan La nueva IP a banear.
  */
-function triggerRenderDeploy() {
-    const deployHookUrl = process.env.RENDER_DEPLOY_HOOK_URL;
-    if (!deployHookUrl) {
-        console.log("ℹ️ No se encontró RENDER_DEPLOY_HOOK_URL. Omitiendo reinicio automático del servidor.");
+async function updateBannedIpsInRender(newIpToBan) {
+    const apiKey = process.env.RENDER_API_KEY;
+    const serviceId = process.env.RENDER_SERVICE_ID;
+
+    // --- Función de Respaldo (Fallback) ---
+    const fallbackToDeployHook = () => {
+        console.warn("⚠️ Fallback: Guardando baneo en archivo local y reiniciando con Deploy Hook.");
+        // 1. Guardar en archivo
+        if (!permanentBans.has(newIpToBan)) {
+            permanentBans.add(newIpToBan);
+            try {
+                const bannedArray = Array.from(permanentBans);
+                fs.writeFileSync(BANNED_IPS_PATH, JSON.stringify(bannedArray, null, 4));
+            } catch (err) {
+                console.error("❌ Error al guardar 'banned-ips.json' en fallback:", err);
+            }
+        }
+        // 2. Llamar al Deploy Hook
+        const deployHookUrl = process.env.RENDER_DEPLOY_HOOK_URL;
+        if (!deployHookUrl) {
+            console.log("ℹ️ No se encontró RENDER_DEPLOY_HOOK_URL. No se puede reiniciar el servidor.");
+            return;
+        }
+        console.log("🚀 Desencadenando reinicio del servidor en Render (Fallback)...");
+        try {
+            const url = new URL(deployHookUrl);
+            const req = https.request({
+                hostname: url.hostname, path: url.pathname + url.search, method: 'POST', headers: { 'Content-Length': 0 }
+            }, (res) => console.log(`✅ Solicitud de reinicio enviada a Render. Código de estado: ${res.statusCode}`));
+            req.on('error', (e) => console.error("❌ Error de red al intentar reiniciar (Fallback):", e.message));
+            req.end();
+        } catch (error) {
+            console.error("❌ Error al procesar la URL del Deploy Hook (Fallback):", error.message);
+        }
+    };
+
+    if (!apiKey || !serviceId) {
+        console.warn("⚠️ No se encontró RENDER_API_KEY o RENDER_SERVICE_ID.");
+        fallbackToDeployHook();
         return;
     }
 
-    console.log("🚀 Desencadenando reinicio del servidor en Render para aplicar baneo permanente...");
+    console.log(`🚀 Actualizando variables de entorno en Render para banear permanentemente la IP: ${newIpToBan}`);
 
     try {
-        const url = new URL(deployHookUrl);
-        const options = {
-            hostname: url.hostname,
-            path: url.pathname + url.search,
-            method: 'POST',
-            headers: { 'Content-Length': 0 }
-        };
-
-        const req = https.request(options, (res) => {
-            console.log(`✅ Solicitud de reinicio enviada a Render. Código de estado: ${res.statusCode}`);
+        // 1. Obtener variables de entorno actuales
+        const envVars = await new Promise((resolve, reject) => {
+            const req = https.request({
+                hostname: 'api.render.com', path: `/v1/services/${serviceId}/env-vars`, method: 'GET',
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+            }, res => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => res.statusCode >= 200 && res.statusCode < 300 ? resolve(JSON.parse(data)) : reject(new Error(`Render API (GET) falló con estado ${res.statusCode}: ${data}`)));
+            });
+            req.on('error', reject);
+            req.end();
         });
-        req.on('error', (e) => console.error("❌ Error de red al intentar reiniciar el servidor:", e.message));
-        req.end();
+
+        const bannedIpsVar = envVars.find(v => v.key === 'PERMANENTLY_BANNED_IPS');
+        let currentBannedIps = bannedIpsVar ? bannedIpsVar.value.split(',') : [];
+        currentBannedIps = currentBannedIps.filter(ip => ip.trim() !== '');
+        
+        if (currentBannedIps.includes(newIpToBan)) {
+            console.log(`ℹ️ La IP ${newIpToBan} ya está en la lista de baneos de Render. No se necesita actualización.`);
+            return;
+        }
+        currentBannedIps.push(newIpToBan);
+        const newBannedIpsValue = currentBannedIps.join(',');
+
+        // 2. Actualizar la variable de entorno
+        const patchData = JSON.stringify([{ key: 'PERMANENTLY_BANNED_IPS', value: newBannedIpsValue }]);
+        await new Promise((resolve, reject) => {
+             const req = https.request({
+                hostname: 'api.render.com', path: `/v1/services/${serviceId}/env-vars`, method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json', 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(patchData) }
+            }, res => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => res.statusCode >= 200 && res.statusCode < 300 ? resolve() : reject(new Error(`Render API (PATCH) falló con estado ${res.statusCode}: ${data}`)));
+            });
+            req.on('error', reject);
+            req.write(patchData);
+            req.end();
+        });
+
+        console.log(`✅ Variable de entorno PERMANENTLY_BANNED_IPS actualizada en Render. El servicio se reiniciará automáticamente.`);
+        permanentBans.add(newIpToBan);
+        fs.writeFileSync(BANNED_IPS_PATH, JSON.stringify(Array.from(permanentBans), null, 4));
+
     } catch (error) {
-        console.error("❌ Error al procesar la URL del Deploy Hook:", error.message);
+        console.error("❌ Error al actualizar las variables de entorno de Render:", error.message);
+        fallbackToDeployHook();
     }
 }
 
@@ -253,9 +324,7 @@ function recordFailedAttempt(req, context = "General") {
 
         if (level >= 3) {
             // Baneo Permanente
-            permanentBans.add(ip);
-            savePermanentBans(); // Persistir en archivo
-            console.error(`🚫 IP BANEADA PERMANENTEMENTE: ${ip}`);
+            console.error(`🚫 Iniciando proceso de BANEO PERMANENTE para IP: ${ip}`);
             sendSecurityAlertEmail({
                 ip: ip,
                 reason: `Baneo Permanente por Múltiples Infracciones`,
@@ -263,8 +332,8 @@ function recordFailedAttempt(req, context = "General") {
                 userAgent: req.headers['user-agent'],
                 duration: 'permanent'
             });
-            // ¡ACCIÓN CLAVE! Iniciar el reinicio del servidor.
-            triggerRenderDeploy();
+            // ¡ACCIÓN CLAVE! Actualizar la variable de entorno en Render.
+            updateBannedIpsInRender(ip);
         } else {
             // Baneo Temporal Progresivo
             const currentBlockDuration = BLOCK_DURATION * Math.pow(2, level - 1);
