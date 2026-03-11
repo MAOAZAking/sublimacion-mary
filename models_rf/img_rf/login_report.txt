@@ -936,3 +936,24 @@ Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML
 Imagen Capturada: models_rf/img_rf/suspicious_input_1773262880903.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 21:01:23 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "maria"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773262883899.jpeg
+============================================================
+
