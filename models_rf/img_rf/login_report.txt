@@ -852,3 +852,415 @@ Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML
 Imagen Capturada: models_rf/img_rf/failed_password_1773259892194.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 21:01:09 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "mariajose"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773262869994.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:01:14 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "mariajos"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773262874414.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:01:18 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "mariajo"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773262878307.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:01:20 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "mariaj"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773262880903.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:01:23 UTC
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "maria"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773262883899.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:22:01 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123+"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264121251.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:22:05 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123-"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264125164.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:22:08 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123-+"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264128048.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:22:10 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123-+-"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264130333.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:25:02 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123-+--"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264302203.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:25:09 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123-+---"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264309024.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:25:29 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin1231"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264329918.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:27:40 UTC
+Tipo: FALLO FACIAL
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/facial_failure_1773264460766.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:28:16 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin1231"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264496776.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:28:19 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin12312"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264499734.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:30:30 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123123454"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264630915.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:30:48 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin1231234546"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264648280.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:30:50 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin12312345465"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264650652.jpeg
+============================================================
+
+============================================================
+Registro de Entrada: 2026-03-11 21:30:53 UTC
+Tipo: CONTRASEÑA INCORRECTA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: El usuario de la administradora Mariajose
+Contraseña Intentada: "admin123123454654"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.154.125
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta o IP no encontrada. (Error de red: getaddrinfo ENOTFOUND geolite.info.x-maxmind.com)
+------------------------------------------------------------
+Dispositivo: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Imagen Capturada: models_rf/img_rf/failed_password_1773264653079.jpeg
+============================================================
+
