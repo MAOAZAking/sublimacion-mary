@@ -15,11 +15,101 @@ dotenv.config();
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// --- Métricas de Seguridad y Límite de Intentos ---
+const loginAttempts = {};
+const blockedIPs = {};
+const banLevels = {}; // Para rastrear el nivel de ofensa de cada IP
+const permanentBans = new Set(); // Para baneos permanentes
+const BANNED_IPS_PATH = path.join(__dirname, 'models_rf/img_rf/security/banned-ips.json'); // Ruta al archivo de baneos
+
+const MAX_ATTEMPTS = 5; // Intentos fallidos antes de bloquear
+const BLOCK_DURATION = 1 * 60 * 1000; // 1 minuto de bloqueo para la primera ofensa (para pruebas)
+const ATTEMPT_WINDOW = 5 * 60 * 1000; // Ventana de 5 minutos para contar intentos
+
+// --- Funciones de Gestión de Baneos ---
+
+function loadPermanentBans() {
+    if (fs.existsSync(BANNED_IPS_PATH)) {
+        try {
+            const data = fs.readFileSync(BANNED_IPS_PATH, 'utf8');
+            const bannedArray = JSON.parse(data);
+            bannedArray.forEach(ip => permanentBans.add(ip));
+            console.log(`✅ ${permanentBans.size} IPs cargadas desde la lista de baneos permanentes.`);
+        } catch (err) {
+            console.error("❌ Error al cargar 'banned-ips.json':", err);
+        }
+    }
+}
+
+function savePermanentBans() {
+    try {
+        const bannedArray = Array.from(permanentBans);
+        fs.writeFileSync(BANNED_IPS_PATH, JSON.stringify(bannedArray, null, 4));
+    } catch (err) {
+        console.error("❌ Error al guardar 'banned-ips.json':", err);
+    }
+}
+
+/**
+ * Llama al Deploy Hook de Render para forzar un reinicio del servidor.
+ * Esto es útil para recargar configuraciones críticas como la lista de baneos.
+ */
+function triggerRenderDeploy() {
+    const deployHookUrl = process.env.RENDER_DEPLOY_HOOK_URL;
+    if (!deployHookUrl) {
+        console.log("ℹ️ No se encontró RENDER_DEPLOY_HOOK_URL. Omitiendo reinicio automático del servidor.");
+        return;
+    }
+
+    console.log("🚀 Desencadenando reinicio del servidor en Render para aplicar baneo permanente...");
+
+    try {
+        const url = new URL(deployHookUrl);
+        const options = {
+            hostname: url.hostname,
+            path: url.pathname + url.search,
+            method: 'POST',
+            headers: { 'Content-Length': 0 }
+        };
+
+        const req = https.request(options, (res) => {
+            console.log(`✅ Solicitud de reinicio enviada a Render. Código de estado: ${res.statusCode}`);
+        });
+        req.on('error', (e) => console.error("❌ Error de red al intentar reiniciar el servidor:", e.message));
+        req.end();
+    } catch (error) {
+        console.error("❌ Error al procesar la URL del Deploy Hook:", error.message);
+    }
+}
+
+// --- Funciones Auxiliares de Seguridad ---
+
+/**
+ * Obtiene la dirección IP real del cliente desde la solicitud.
+ * Maneja la cadena 'x-forwarded-for' de los proxies de Render.
+ * @param {object} req - El objeto de la solicitud de Express.
+ * @returns {string} La dirección IP del cliente.
+ */
+function getClientIp(req) {
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    if (ip && ip.includes(',')) {
+        ip = ip.split(',')[0].trim();
+    }
+    if (ip === '::1') {
+        ip = '127.0.0.1';
+    }
+    return ip;
+}
+
 // Función auxiliar para obtener información de IP
 function getIpInfo(ip) {
     // Limpiar IP si es de IPv6-mapeado-a-IPv4
     if (ip.substr(0, 7) == "::ffff:") {
       ip = ip.substr(7);
+    }
+    // No consultar IPs locales
+    if (ip === '127.0.0.1') {
+        return Promise.resolve({ status: 'fail', message: 'reserved range' });
     }
     return new Promise((resolve) => {
         // API gratuita sin clave
@@ -48,6 +138,10 @@ function getIpInfoMaxMind(ip) {
     // Limpiar IP si es de IPv6-mapeado-a-IPv4
     if (ip.substr(0, 7) == "::ffff:") {
       ip = ip.substr(7);
+    }
+    // No consultar IPs locales
+    if (ip === '127.0.0.1') {
+        return Promise.resolve({ code: 'LOCAL_IP_ADDRESS', error: 'IP local no consultable.' });
     }
     
     // IPs locales no se pueden consultar
@@ -85,6 +179,108 @@ const resolveEnvValue = (val) => {
     }
     return val;
 };
+
+/**
+ * Envía un correo de alerta de seguridad a todos los administradores.
+ * @param {object} details - Detalles de la alerta.
+ * @param {string} details.ip - La IP que generó la alerta.
+ * @param {string} details.reason - El motivo de la alerta.
+ * @param {number} details.attempts - El número de intentos fallidos.
+ * @param {string} details.userAgent - El dispositivo del atacante.
+ */
+async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duration }) {
+    const ipInfo = await getIpInfo(ip);
+    let locationInfo = `Ubicación: Falló geolocalización (${ipInfo.message || 'N/A'})`;
+    if (ipInfo.status === 'success') {
+        locationInfo = `Ubicación: ${ipInfo.city || 'N/A'}, ${ipInfo.regionName || 'N/A'}, ${ipInfo.country || 'N/A'}<br>Proveedor (ISP): ${ipInfo.isp || 'N/A'}`;
+    }
+
+    const durationText = duration === 'permanent' 
+        ? 'La dirección IP ha sido <strong>bloqueada permanentemente</strong>.'
+        : `La dirección IP ha sido bloqueada temporalmente por <strong>${duration / 60000} minutos</strong>.`;
+
+    const subject = `🚨 Alerta de Seguridad: ${reason}`;
+    const bodyContent = `
+        <div style="background-color:#e74c3c; padding:20px; color:white; font-family:Arial; border-radius:8px;">
+            <p>Se ha detectado una actividad potencialmente maliciosa en el sistema.</p>
+            <div class="info-card" style="border-left-color: #e74c3c;">
+                <div class="info-item"><strong>Motivo:</strong> ${reason}</div>
+                <div class="info-item"><strong>Dirección IP:</strong> ${ip}</div>
+                <div class="info-item"><strong>Intentos Fallidos Recientes:</strong> ${attempts}</div>
+                <div class="info-item"><strong>Dispositivo:</strong> ${userAgent}</div>
+                <div class="info-item"><strong>Geolocalización (aprox.):</strong><br>${locationInfo}</div>
+            </div>
+            <p>${durationText} Se recomienda monitorear el archivo <strong>login_report.txt</strong> para más detalles.</p>
+        </div>
+    `;
+    const emailHtml = getEmailTemplate('Alerta de Seguridad', bodyContent);
+    
+    const adminEmails = usersConfig
+        .filter(u => u.email && u.redirectUrl === 'admin_dashboard.html')
+        .map(u => resolveEnvValue(u.email))
+        .filter(Boolean);
+
+    if (adminEmails.length > 0) {
+        await dispatchEmail(adminEmails, subject, emailHtml);
+    } else {
+        console.warn("⚠️ No se pudo enviar alerta de seguridad por correo, no hay administradores con email configurado.");
+    }
+}
+
+/**
+ * Registra un intento de inicio de sesión fallido y bloquea la IP si es necesario.
+ * @param {object} req - El objeto de la solicitud de Express.
+ * @param {string} context - El contexto del fallo (Usuario, Contraseña, Facial).
+ */
+function recordFailedAttempt(req, context = "General") {
+    const ip = getClientIp(req);
+    const now = Date.now();
+    const attempt = loginAttempts[ip] || { count: 0, firstAttempt: now };
+
+    if (now - attempt.firstAttempt > ATTEMPT_WINDOW) {
+        attempt.count = 1;
+        attempt.firstAttempt = now;
+    } else {
+        attempt.count++;
+    }
+
+    loginAttempts[ip] = attempt;
+    console.log(`⚠️  Intento fallido [${context}] desde IP: ${ip}. Intentos: ${attempt.count}/${MAX_ATTEMPTS}`);
+
+    if (attempt.count >= MAX_ATTEMPTS) {
+        banLevels[ip] = (banLevels[ip] || 0) + 1;
+        const level = banLevels[ip];
+
+        if (level >= 3) {
+            // Baneo Permanente
+            permanentBans.add(ip);
+            savePermanentBans(); // Persistir en archivo
+            console.error(`🚫 IP BANEADA PERMANENTEMENTE: ${ip}`);
+            sendSecurityAlertEmail({
+                ip: ip,
+                reason: `Baneo Permanente por Múltiples Infracciones`,
+                attempts: attempt.count,
+                userAgent: req.headers['user-agent'],
+                duration: 'permanent'
+            });
+            // ¡ACCIÓN CLAVE! Iniciar el reinicio del servidor.
+            triggerRenderDeploy();
+        } else {
+            // Baneo Temporal Progresivo
+            const currentBlockDuration = BLOCK_DURATION * Math.pow(2, level - 1);
+            blockedIPs[ip] = now + currentBlockDuration;
+            console.error(`🚫 IP BLOQUEADA (Nivel ${level}): ${ip} por ${currentBlockDuration / 60000} minutos.`);
+            sendSecurityAlertEmail({
+                ip: ip,
+                reason: `Múltiples intentos fallidos (Infracción Nivel ${level})`,
+                attempts: attempt.count,
+                userAgent: req.headers['user-agent'],
+                duration: currentBlockDuration
+            });
+        }
+        delete loginAttempts[ip];
+    }
+}
 
 // Función auxiliar para enviar notificaciones
 async function sendEmailNotification(subject, htmlContent) {
@@ -257,6 +453,34 @@ app.use((req, res, next) => {
     next();
 });
 
+/**
+ * Middleware para limitar la tasa de solicitudes y bloquear IPs.
+ */
+function rateLimiter(req, res, next) {
+    const ip = getClientIp(req);
+
+    // 1. Verificar baneo permanente
+    if (permanentBans.has(ip)) {
+        console.error(`🚫 CONEXIÓN RECHAZADA: IP con baneo permanente intentó acceder: ${ip}`);
+        res.socket.destroy();
+        return;
+    }
+
+    // 2. Verificar y levantar baneo temporal si ya expiró
+    if (blockedIPs[ip] && blockedIPs[ip] <= Date.now()) {
+        console.log(`✅ Sentencia cumplida para IP: ${ip}. Bloqueo temporal levantado.`);
+        delete blockedIPs[ip];
+    }
+
+    // 3. Rechazar si aún está en baneo temporal
+    if (blockedIPs[ip]) {
+        console.warn(`🚫 IP bloqueada temporalmente intentó acceder: ${ip}`);
+        return res.status(429).json({ error: 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.' });
+    }
+
+    next();
+}
+
 // --- Cargar Configuración de Usuarios ---
 // Se carga la configuración "cruda" para poder resolver los valores de .env sobre la marcha.
 let usersConfig = [];
@@ -309,7 +533,7 @@ app.get('/pedidos.json', (req, res) => res.json(localPedidos));
 app.use(express.static(path.join(__dirname, '.')));
 
 // Endpoint para verificar si el usuario es administrador
-app.post('/api/check-user', (req, res) => {
+app.post('/api/check-user', rateLimiter, (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).json({ error: 'Usuario requerido' });
 
@@ -374,7 +598,7 @@ app.post('/api/check-user', (req, res) => {
 });
 
 // Endpoint para hacer login
-app.post('/api/login', (req, res) => {
+app.post('/api/login', rateLimiter, (req, res) => {
     const { username, password } = req.body;
     const user = usersConfig.find(u => resolveEnvValue(u.username) === username);
 
@@ -382,11 +606,21 @@ app.post('/api/login', (req, res) => {
         // Resolver la contraseña del usuario encontrado y compararla
         const userPassword = resolveEnvValue(user.password);
         if (userPassword === password) {
+            // Limpiar intentos fallidos en un login exitoso
+            const ip = getClientIp(req);
+            if (loginAttempts[ip]) {
+                delete loginAttempts[ip];
+            }
             // Face data is now sent by /api/check-user, no need to send it again here.
             return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
+        } else {
+            recordFailedAttempt(req, "Contraseña incorrecta");
+            return res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
         }
     }
     
+    // Si llegamos aquí, el usuario no existe
+    recordFailedAttempt(req, "Usuario no encontrado");
     res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
 });
 
@@ -507,15 +741,21 @@ app.get('/api/get-admin-email', (req, res) => {
 });
 
 // Endpoint para registrar actividad de login
-app.post('/api/log-activity', async (req, res) => {
+app.post('/api/log-activity', rateLimiter, async (req, res) => {
     const payload = req.body;
-    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ip = getClientIp(req);
 
-    // Si x-forwarded-for es una lista (común en proxies como Render), tomar solo la primera IP.
-    if (ip.includes(',')) {
-        ip = ip.split(',')[0].trim();
+    // Registrar intento fallido para el rate limiter
+    const isFailure = ['suspicious_input', 'failed_password', 'facial_failure', 'reauth_failure'].includes(payload.type);
+    if (isFailure) {
+        let context = "Actividad sospechosa";
+        if (payload.type === 'failed_password') context = "Contraseña incorrecta (Frontend)";
+        if (payload.type === 'facial_failure') context = "Validación facial fallida";
+        if (payload.type === 'reauth_failure') context = "Re-autenticación facial fallida";
+        if (payload.type === 'suspicious_input') context = "Input sospechoso";
+        recordFailedAttempt(req, context);
     }
-
+    
     if (!githubClient) {
         console.warn("No se puede registrar actividad: GITHUB_TOKEN no configurado.");
         return res.status(500).json({ success: false, error: "Server not configured for logging." });
@@ -1208,6 +1448,9 @@ app.post('/api/update-status', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+
+// Cargar baneos permanentes al iniciar el servidor
+loadPermanentBans();
 
 const server = app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);

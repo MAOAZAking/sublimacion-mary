@@ -440,12 +440,12 @@
             const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
             if (isMobile) {
                 if (window.innerHeight > window.innerWidth) {
-                    bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
+                    bg.style.backgroundSize = "90vw auto"; // Vertical: 90% del ancho
                 } else {
-                    bg.style.backgroundSize = "auto 60vh"; // Horizontal: 60% del alto
+                    bg.style.backgroundSize = "auto 90vh"; // Horizontal: 90% del alto
                 }
             } else {
-                bg.style.backgroundSize = "auto 85vh"; // Escritorio: 85% del alto
+                bg.style.backgroundSize = "auto 90vh"; // Escritorio: 90% del alto
             }
         }
         updateBg();
