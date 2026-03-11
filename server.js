@@ -471,16 +471,6 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
 
     // Aplicar estilos de seguridad según el nivel
     if (type === 'security') {
-        headerTitle = '🚨 Alerta de Seguridad 🚨'; // Común para nivel 1 y 2
-        if (level === 1) {
-            infoCardBorder = '#e74c3c'; // Borde rojo para la tarjeta de información
-        }
-        if (level === 2) {
-            infoCardBorder = '#e74c3c'; // Mantiene el borde rojo
-            headerBg = '#c0392b'; // Fondo rojo oscuro
-            footerBg = '#c0392b'; // Fondo rojo oscuro
-        }
-        if (level >= 3) {
         if (level >= 3) { // Baneo permanente
             bodyBg = '#c0392b'; // Fondo rojo oscuro para todo el correo
             headerBg = '#c0392b'; // Fondo rojo oscuro
@@ -1564,4 +1554,3 @@ const server = app.listen(PORT, () => {
 
 // Desactivar timeout para permitir subidas grandes y lentas sin que se corte la conexión
 server.timeout = 0;
-}
