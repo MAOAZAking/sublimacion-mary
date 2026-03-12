@@ -41,7 +41,6 @@ const BANNED_IPS_PATH = path.join(__dirname, 'models_rf/img_rf/security/banned-i
 const SECURITY_STATE_PATH = path.join(__dirname, 'models_rf/img_rf/security/security-state.json'); // Ruta para guardar intentos y niveles
 
 const MAX_ATTEMPTS = 5; // Intentos fallidos antes de bloquear
-const BLOCK_DURATION = 5 * 60 * 1000; // 5 minutos de bloqueo para la primera ofensa
 const ATTEMPT_WINDOW = 5 * 60 * 1000; // Ventana de 5 minutos para contar intentos
 
 // --- Funciones de Gestión de Baneos ---
@@ -437,7 +436,14 @@ function recordFailedAttempt(req, context = "General") {
             updateBannedIpsInRender(ip);
         } else {
             // Baneo Temporal Progresivo
-            const currentBlockDuration = BLOCK_DURATION * Math.pow(2, newLevel - 1);
+            // Leer duraciones de bloqueo por nivel desde variables de entorno (ej: "5,10" para 5 min en Nivel 1, 10 min en Nivel 2)
+            const blockDurationsMinutes = (process.env.BLOCK_DURATIONS_MINUTES || "5,10").split(',').map(Number);
+            
+            // El índice del array es `newLevel - 1` (Nivel 1 -> índice 0)
+            // Si el nivel es mayor a las duraciones definidas, usa la última duración como castigo máximo.
+            const durationInMinutes = blockDurationsMinutes[newLevel - 1] || blockDurationsMinutes[blockDurationsMinutes.length - 1];
+            
+            const currentBlockDuration = durationInMinutes * 60 * 1000;
             blockedIPs[ip] = now + currentBlockDuration;
             console.error(`🚫 IP BLOQUEADA (Nivel ${newLevel}): ${ip} por ${currentBlockDuration / 60000} minutos.`);
             sendSecurityAlertEmail({

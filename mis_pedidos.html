@@ -804,7 +804,7 @@
                 gorra: {
                     frontal: { 
                         // Ya no usamos warp porque la lámina es una geometría perfecta
-                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: 0.3
+                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.3 // Negativo para que la parte superior sea más ancha (trapecio invertido)
                     }
                 }
             },
@@ -842,7 +842,7 @@
                 gorra: {
                     frontal: { 
                         // Configuración simple para la lámina flotante
-                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: 0.3
+                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.3 // Negativo para que la parte superior sea más ancha (trapecio invertido)
                     }
                 }
             }
@@ -1030,7 +1030,7 @@
                     // Creamos un segmento de cilindro curvo que simula el frente de la gorra
                     const laminaHeight = size.y * 0.035; // Altura reducida (aprox 6% de la altura total)
                     const laminaRadius = size.y * 0.06; // Radio basado en la altura (aprox tamaño cabeza)
-                    const arcLength = Math.PI / 3; // Arco más estrecho (60 grados)
+                    const arcLength = Math.PI / 2.7; // Un poco más ancho para mejor cobertura
 
                     // Obtener inclinación de la configuración actual
                     const settings = textureSettings[gender].gorra.frontal;
@@ -1050,8 +1050,8 @@
                     
                     const laminaMesh = new THREE.Mesh(laminaGeo, laminaMat);
                     // Posicionar en el centro de la cabeza, ajustando altura a la frente
-                    // Subimos la posición (menos resta en Y) y ajustamos Z si es necesario
-                    laminaMesh.position.set(center.x, box.max.y - size.y * 0.02, center.z);
+                    // Lo movemos un poco hacia atrás para que esté más cerca del modelo.
+                    laminaMesh.position.set(center.x, box.max.y - size.y * 0.02, center.z - 0.017);
                     
                     scene.add(laminaMesh);
                 }
