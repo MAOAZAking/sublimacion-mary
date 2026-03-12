@@ -1633,3 +1633,28 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/suspicious_input_1773279821848.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 21:23:30 (Hora de Colombia)
+(UTC: 2026-03-12 02:23:30)
+Tipo: ACCESO FACIAL EXITOSO
+------------------------------------------------------------
+Estado: Exitoso
+Usuario: El usuario de la administradora Mariajose
+
+--- Datos de Geolocalización ---
+Dirección IP: 127.0.0.1
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (reserved range)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (IP local no consultable.)
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Windows 10
+Navegador: Chrome 145.0.0.0
+Tipo de Dispositivo: Escritorio
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/facial_success_1773282210343.jpeg
+============================================================
+
