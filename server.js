@@ -437,7 +437,7 @@ function recordFailedAttempt(req, context = "General") {
         } else {
             // Baneo Temporal Progresivo
             // Leer duraciones de bloqueo por nivel desde variables de entorno (ej: "5,10" para 5 min en Nivel 1, 10 min en Nivel 2)
-            const blockDurationsMinutes = (process.env.BLOCK_DURATIONS_MINUTES || "5,10").split(',').map(Number);
+            const blockDurationsMinutes = (process.env.BLOCK_DURATIONS_MINUTES || "1,2").split(',').map(Number);
             
             // El índice del array es `newLevel - 1` (Nivel 1 -> índice 0)
             // Si el nivel es mayor a las duraciones definidas, usa la última duración como castigo máximo.

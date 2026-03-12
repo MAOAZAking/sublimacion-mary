@@ -804,7 +804,7 @@
                 gorra: {
                     frontal: { 
                         // Ya no usamos warp porque la lámina es una geometría perfecta
-                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.3 // Negativo para que la parte superior sea más ancha (trapecio invertido)
+                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.2 // Negativo para que la parte superior sea más ancha (trapecio invertido)
                     }
                 }
             },
@@ -842,7 +842,7 @@
                 gorra: {
                     frontal: { 
                         // Configuración simple para la lámina flotante
-                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.3 // Negativo para que la parte superior sea más ancha (trapecio invertido)
+                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.2 // Negativo para que la parte superior sea más ancha (trapecio invertido)
                     }
                 }
             }
@@ -1051,7 +1051,10 @@
                     const laminaMesh = new THREE.Mesh(laminaGeo, laminaMat);
                     // Posicionar en el centro de la cabeza, ajustando altura a la frente
                     // Lo movemos un poco hacia atrás para que esté más cerca del modelo.
-                    laminaMesh.position.set(center.x, box.max.y - size.y * 0.02, center.z - 0.017);
+                    laminaMesh.position.set(center.x, box.max.y - size.y * 0.077, center.z + 0.015);
+
+                    // Inclinar la lámina hacia atrás para que siga la forma de la gorra
+                    laminaMesh.rotation.x = -1; // Pequeña inclinación en radianes
                     
                     scene.add(laminaMesh);
                 }
