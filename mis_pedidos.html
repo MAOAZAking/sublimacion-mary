@@ -804,7 +804,7 @@
                 gorra: {
                     frontal: { 
                         // Ya no usamos warp porque la lámina es una geometría perfecta
-                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.2 // Trapecio con puntas más cerradas
+                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.1 // Trapecio con puntas más cerradas
                     }
                 }
             },
@@ -842,7 +842,7 @@
                 gorra: {
                     frontal: { 
                         // Configuración simple para la lámina flotante
-                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.2 // Trapecio con puntas más cerradas
+                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.1 // Trapecio con puntas más cerradas
                     }
                 }
             }
@@ -1051,10 +1051,16 @@
                     const laminaMesh = new THREE.Mesh(laminaGeo, laminaMat);
                     // Posicionar en el centro de la cabeza, ajustando altura a la frente
                     // Ajustar posición para evitar que se meta en la gorra
-                    laminaMesh.position.set(center.x, box.max.y - size.y * 0.02, center.z - 0.017);
+
+                    // EXPLICACION DE POSICIONAMIENTO:
+                    // En la seccion (box.max.y - size.y * 0.06) entre mayor sea el número mas hacia abjo se pone la lamina
+                    // En la seccion (center.z - 0.017,) entre mayor sea el número de la resta mas hacia adentro se pone la lamina
+
+                    laminaMesh.position.set(center.x, box.max.y - size.y * 0.064, center.z - 0.006,);
 
                     // Inclinar la lámina hacia atrás para que siga la forma de la gorra
-                    laminaMesh.rotation.x = 0.15; // Inclinación hacia atrás
+                    // Explicacion de posicionamiento, entre menor sea el numero mas se inclina hacia atras
+                    laminaMesh.rotation.x = -0.8; // Inclinación hacia atrás
                     
                     scene.add(laminaMesh);
                 }
