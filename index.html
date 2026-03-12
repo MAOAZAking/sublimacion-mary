@@ -241,13 +241,25 @@
             stream.getTracks().forEach(track => track.stop());
         } catch (err) {
             console.error("Error capturando foto:", err);
+            // Informar al usuario que la cámara falló pero el intento se registrará
+            mostrarMensajeTop("No se pudo acceder a la cámara, pero el intento será registrado.", 4000);
         }
 
         payload.photo = photo;
         payload.userAgent = navigator.userAgent;
 
         const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
-        fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(err => console.error('Fallo al registrar actividad:', err));
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/log-activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) {
+                console.error('Error en el servidor al registrar actividad:', response.status, response.statusText);
+                return { success: false, forceRefresh: false };
+            }
+            return await response.json();
+        } catch (err) {
+            console.error('Fallo de red al registrar actividad:', err);
+            return { success: false, forceRefresh: false };
+        }
     }
 
     async function verificarEntrada() {
@@ -312,13 +324,20 @@
                 loader.style.opacity = '1';
             }
             
-            // Capturar y registrar en segundo plano
-            await captureAndLog({
+            // ¡CLAVE! Ahora esperamos la respuesta completa del servidor
+            const logData = await captureAndLog({
                 type: 'suspicious_input',
                 value: input
             });
 
-            // Ocultar el loader y mostrar el error
+            // Si el intento resultó en un baneo, el servidor nos lo dirá.
+            if (logData && logData.forceRefresh) {
+                mostrarMensajeTop("Demasiados intentos fallidos. La página se recargará.", 3000);
+                setTimeout(() => window.location.reload(), 3100);
+                return; // Detenemos la ejecución para que la página se recargue
+            }
+
+            // Si no hubo baneo, mostramos el error normal.
             if (loader) {
                 loader.style.opacity = '0';
                 setTimeout(() => { loader.style.display = 'none'; }, 500);

@@ -985,6 +985,8 @@ app.post('/api/log-activity', async (req, res) => {
     // INICIO DEL BLOQUEO GIT (Mutex)
     const unlock = await gitMutex.lock();
 
+    let logSuccess = false;
+
     try {
         const [ipApiInfo, maxMindInfo] = await Promise.all([
             getIpInfo(ip),
@@ -1176,15 +1178,22 @@ app.post('/api/log-activity', async (req, res) => {
             owner: GITHUB_OWNER, repo: GITHUB_REPO, ref: `heads/${branch}`, sha: newCommit.sha
         });
 
-        console.log(`Actividad registrada: ${payload.type}`);
-        res.json({ success: true, forceRefresh: banned });
+        logSuccess = true;
 
     } catch (error) {
-        console.error("Error registrando actividad:", error);
-        res.status(500).json({ success: false, error: error.message, forceRefresh: banned });
+        // FIX: Handle GitHub API errors gracefully without crashing.
+        // The "Unicorn" page is a 5xx error from GitHub's side.
+        if (error.status && error.status >= 500) {
+            console.warn(`⚠️  ADVERTENCIA: Falló el registro de actividad en GitHub (Error ${error.status}). Es un problema temporal de GitHub. La actividad de seguridad local SÍ fue registrada.`);
+        } else {
+            console.error("❌ Error registrando actividad en GitHub:", error);
+        }
     } finally {
         unlock(); // LIBERAR BLOQUEO GIT SIEMPRE
     }
+
+    if (logSuccess) console.log(`✅ Actividad registrada en GitHub: ${payload.type}`);
+    res.json({ success: true, forceRefresh: banned });
 });
 
 // Endpoint para guardar un nuevo pedido con archivos
