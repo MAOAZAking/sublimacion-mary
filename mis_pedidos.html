@@ -804,7 +804,7 @@
                 gorra: {
                     frontal: { 
                         // Ya no usamos warp porque la lámina es una geometría perfecta
-                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.1 // Trapecio con puntas más cerradas
+                        x: 0, y: 100, scale: 5.5, angle: 0, flipX: true, inclination: -0.1 // Trapecio con puntas más cerradas
                     }
                 }
             },
@@ -842,7 +842,7 @@
                 gorra: {
                     frontal: { 
                         // Configuración simple para la lámina flotante
-                        x: 0, y: 100, scale: 5.5, angle: 180, flipX: true, inclination: -0.1 // Trapecio con puntas más cerradas
+                        x: 0, y: 100, scale: 5.5, angle: 0, flipX: true, inclination: -0.1 // Trapecio con puntas más cerradas
                     }
                 }
             }
@@ -963,7 +963,7 @@
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
         const gltfLoader = new GLTFLoader();
-        let currentModel;
+        let currentModel, currentLamina;
 
         const loadModel = (gender) => {
             if (loaderElement) { loaderElement.style.display = 'flex'; loaderElement.style.opacity = '1'; }
@@ -977,6 +977,11 @@
             gltfLoader.load(modelPath, (gltf) => {
                 if (currentModel) {
                     scene.remove(currentModel);
+                }
+                // Remover la lámina anterior si existe para evitar duplicados
+                if (currentLamina) {
+                    scene.remove(currentLamina);
+                    currentLamina = null;
                 }
                 currentModel = gltf.scene;
 
@@ -1024,12 +1029,17 @@
                 // Calcular posición del foco (Pecho para ropa, Cabeza para gorras)
                 let focusY = box.min.y + (size.y * 0.75); // Por defecto pecho
                 if (tipoProducto === 'gorra') {
-                    focusY = box.max.y - (size.y * 0.1); // Foco en la cabeza
+                    focusY = box.max.y - (size.y * 0.06); // Foco en la gorra
+                    // Hacer zoom en el modelo 3D para gorras
+                    camera.zoom = 1.8; // mayor = más cerca
+                    camera.updateProjectionMatrix();
+                    
+
 
                     // --- CREAR LÁMINA FLOTANTE PARA LA GORRA ---
                     // Creamos un segmento de cilindro curvo que simula el frente de la gorra
-                    const laminaHeight = size.y * 0.035; // Altura reducida (aprox 6% de la altura total)
-                    const laminaRadius = size.y * 0.06; // Radio basado en la altura
+                    const laminaHeight = size.y * 0.037; // Aumentado para que la imagen sea más alta
+                    const laminaRadius = size.y * 0.077; // Radio basado en la altura
                     const arcLength = Math.PI / 3.2; // Arco más estrecho para cerrar las puntas superiores
 
                     // Obtener inclinación de la configuración actual
@@ -1038,31 +1048,93 @@
                     const radiusTop = laminaRadius * (1 - inclination); // Reducir radio superior para inclinar hacia atrás
                     
                     const laminaGeo = new THREE.CylinderGeometry(radiusTop, laminaRadius, laminaHeight, 64, 1, true, -arcLength/2, arcLength);
-                    // Eliminamos rotación para que mire al frente (+Z) por defecto
-                    
-                    const laminaMat = new THREE.MeshBasicMaterial({ 
-                        map: texture, 
+
+                    // --- DEFORMACIÓN PARA CREAR PLIEGUE FRONTAL Y CORREGIR ARCO ---
+                    const positions = laminaGeo.attributes.position.array;
+
+                    // Definir cuánto sale el pliegue según el género
+                    let maxPush;
+                    if (gender === 'hombre') {
+                        maxPush = laminaRadius * 0.11;
+                    } else if (gender === 'mujer') {
+                        maxPush = laminaRadius * 0.09;
+                    }
+
+                    for (let i = 0; i < positions.length; i += 3) {
+                        const x = positions[i];
+                        const z = positions[i + 2];
+
+                        // Calcular el ángulo theta para saber qué tan al centro está el punto
+                        const theta = Math.atan2(x, z);
+                        const factor = Math.cos(theta * (Math.PI / arcLength)); // 1 en el centro, 0 en los bordes
+
+                        // 1. Empujar hacia adelante (eje Z) para crear el pliegue
+                        const zOffset = maxPush * factor;
+                        positions[i + 2] += zOffset;
+                        
+                        // 2. Tirar hacia abajo (eje Y) para contrarrestar el arco visual que se forma
+                        const yPull = zOffset * 0.5; // Tirar hacia abajo un 50% de lo que se empuja hacia adelante
+                        positions[i + 1] -= yPull;
+                    }
+                    laminaGeo.attributes.position.needsUpdate = true;
+                    laminaGeo.computeVertexNormals();
+
+                    // Crear una textura dedicada para la lámina de la gorra para que ocupe el 100%
+                    const capTexture = new THREE.TextureLoader().load(urls.frontal, (tex) => {
+                        tex.colorSpace = THREE.SRGBColorSpace;
+                        tex.center.set(0.5, 0.5);
+                        // Este calculo hace que la imagen quede con la base abajo
+                        tex.rotation = Math.PI * 2;
+                        // Este calculo hace una rotyacion en espejo para que se vea fiel la imagen
+                        tex.rotation.x = Math.PI;
+                        tex.wrapS = THREE.RepeatWrapping;
+                        tex.repeat.x = -1; // Replicar flipX
+                    });
+                    const laminaMat = new THREE.MeshBasicMaterial({
+                        map: capTexture,
                         transparent: true, 
+                        alphaTest: 0.5, // Hace transparentes las partes no visibles de la imagen
                         side: THREE.DoubleSide,
                         depthTest: true,
                         depthWrite: true
                     });
-                    
                     const laminaMesh = new THREE.Mesh(laminaGeo, laminaMat);
-                    // Posicionar en el centro de la cabeza, ajustando altura a la frente
-                    // Ajustar posición para evitar que se meta en la gorra
 
-                    // EXPLICACION DE POSICIONAMIENTO:
-                    // En la seccion (box.max.y - size.y * 0.06) entre mayor sea el número mas hacia abjo se pone la lamina
-                    // En la seccion (center.z - 0.017,) entre mayor sea el número de la resta mas hacia adentro se pone la lamina
+                    // --- Posicionamiento y Rotación por Género ---
+                    let laminaRotationX, laminaPositionZOffset;
 
-                    laminaMesh.position.set(center.x, box.max.y - size.y * 0.064, center.z - 0.006,);
+                    if (gender === 'hombre') {
+                        // Inclinar la lámina hacia atrás para que siga la forma de la gorra
+                        // Explicacion de posicionamiento, entre menor sea el numero mas se inclina hacia atras
+                        laminaRotationX = -0.85;
 
-                    // Inclinar la lámina hacia atrás para que siga la forma de la gorra
-                    // Explicacion de posicionamiento, entre menor sea el numero mas se inclina hacia atras
-                    laminaMesh.rotation.x = -0.8; // Inclinación hacia atrás
+                        // EXPLICACIÓN DEL POSICIONAMIENTO:
+                        // Entre menor sea el número la lamina se mete mas hacia el centro osea dentro del modelo 3D
+                        laminaPositionZOffset = -0.037;
+
+                        // EXPLICACION DE POSICIONAMIENTO:
+                        // En la seccion (box.max.y - size.y * 0.08) entre mayor sea el número mas hacia abjo se pone la lamina
+                        // En la seccion (center.z - 0.045,) entre mayor sea el número de la resta mas hacia adentro se pone la lamina
+                        laminaMesh.position.set(center.x, box.max.y - size.y * 0.085, center.z + laminaPositionZOffset);
+                    } else if (gender === 'mujer'){
+                        // Inclinar la lámina hacia atrás para que siga la forma de la gorra
+                        // Explicacion de posicionamiento, entre menor sea el numero mas se inclina hacia atras
+                        laminaRotationX = -0.83; // Menos inclinación
+
+                        // EXPLICACIÓN DEL POSICIONAMIENTO:
+                        // Entre menor sea el número la lamina se mete mas hacia el centro osea dentro del modelo 3D
+                        laminaPositionZOffset = -0.0315; // Más hacia adelante
+
+                        // EXPLICACION DE POSICIONAMIENTO:
+                        // En la seccion (box.max.y - size.y * 0.08) entre mayor sea el número mas hacia abjo se pone la lamina
+                        // En la seccion (center.z - 0.045,) entre mayor sea el número de la resta mas hacia adentro se pone la lamina
+                        laminaMesh.position.set(center.x, box.max.y - size.y * 0.085, center.z + laminaPositionZOffset);
+                    }
+
+                    laminaMesh.rotation.x = laminaRotationX;
                     
-                    scene.add(laminaMesh);
+                    currentLamina = laminaMesh; // Guardar referencia a la lámina actual
+                    scene.add(currentLamina);
                 }
 
                 controls.target.set(center.x, focusY, center.z);
