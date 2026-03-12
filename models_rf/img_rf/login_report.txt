@@ -2485,3 +2485,30 @@ Tipo de Dispositivo: mobile
 Imagen Capturada: models_rf/img_rf/suspicious_input_1773285927128.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-11 22:38:38 (Hora de Colombia)
+(UTC: 2026-03-12 03:38:38)
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "Mary"
+
+--- Datos de Geolocalización ---
+Dirección IP: 191.106.187.85
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Colombia Telecomunicaciones S.a. ESP BIC (Colombia Telecomunicaciones S.a. ESP BIC)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (Error de red: queryAaaa ENOTFOUND geolite.info.x-maxmind.com)
+Nota: El error 'ENOTFOUND' usualmente indica un problema de DNS en el servidor (Render), no un problema de la API de MaxMind.
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Android 15
+Navegador: Android Browser 4.0
+Tipo de Dispositivo: Xiaomi 23100RN82L
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773286718264.jpeg
+============================================================
+
