@@ -404,7 +404,18 @@ async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duratio
 function recordFailedAttempt(req, context = "General") {
     const ip = getClientIp(req);
     const now = Date.now();
-    const level = banLevels[ip] || 0;
+    const BAN_LEVEL_DECAY_HOURS = 24;
+    const BAN_LEVEL_DECAY_MS = BAN_LEVEL_DECAY_HOURS * 60 * 60 * 1000;
+
+    // Cargar estado de baneo de la IP. Ahora es un objeto.
+    const ipBanStatus = banLevels[ip] || { level: 0, lastOffense: 0 };
+
+    // Reiniciar nivel de baneo si la última ofensa fue hace más de 24 horas
+    if (now - ipBanStatus.lastOffense > BAN_LEVEL_DECAY_MS) {
+        console.log(`[Security] El nivel de baneo para la IP ${ip} ha sido reiniciado por inactividad.`);
+        ipBanStatus.level = 0;
+    }
+
     const attempt = loginAttempts[ip] || { count: 0, firstAttempt: now };
 
     if (now - attempt.firstAttempt > ATTEMPT_WINDOW) {
@@ -415,11 +426,13 @@ function recordFailedAttempt(req, context = "General") {
     }
 
     loginAttempts[ip] = attempt;
-    console.log(`⚠️  Intento fallido [${context}] desde IP: ${ip}. Intentos: ${attempt.count}/${MAX_ATTEMPTS} en Nivel ${level}`);
+    console.log(`⚠️  Intento fallido [${context}] desde IP: ${ip}. Intentos: ${attempt.count}/${MAX_ATTEMPTS} en Nivel ${ipBanStatus.level}`);
 
     if (attempt.count >= MAX_ATTEMPTS) {
-        banLevels[ip] = (banLevels[ip] || 0) + 1;
-        const newLevel = banLevels[ip];
+        ipBanStatus.level++;
+        ipBanStatus.lastOffense = now;
+        banLevels[ip] = ipBanStatus;
+        const newLevel = ipBanStatus.level;
 
         if (newLevel >= 3) {
             // Baneo Permanente
@@ -688,7 +701,7 @@ function rateLimiter(req, res, next) {
 
     // 3. Rechazar si aún está en baneo temporal
     if (blockedIPs[ip]) {
-        const level = banLevels[ip] || 1;
+        const level = (banLevels[ip] && banLevels[ip].level) || 1;
         console.warn(`🚫 IP bloqueada temporalmente (Nivel ${level}) intentó acceder: ${ip}`);
         return res.status(429).json({ error: 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.' });
     }
