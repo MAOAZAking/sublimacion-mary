@@ -1320,10 +1320,21 @@
             img.onerror = () => { console.error("Error cargando imagen:", src); resolve(null); };
         });
 
-        const [frontImg, backImg] = await Promise.all([
-            loadImage(urls.frontal),
-            loadImage(urls.espaldar)
-        ]);
+        let tshirtFrontImg, tshirtBackImg;
+
+        if (tipoProducto === 'gorra') {
+            // Para las gorras, cargamos los logos de la empresa para la camiseta del maniquí
+            [tshirtFrontImg, tshirtBackImg] = await Promise.all([
+                loadImage('img/logo_sin_fondo.png'),
+                loadImage('img/logo_con_fondo.png')
+            ]);
+        } else {
+            // Para otros productos (camisetas, sacos), usamos las imágenes del pedido
+            [tshirtFrontImg, tshirtBackImg] = await Promise.all([
+                loadImage(urls.frontal),
+                loadImage(urls.espaldar)
+            ]);
+        }
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -1455,15 +1466,21 @@
             ctx.fillStyle = 'rgb(255, 255, 255)';
             ctx.fillRect(0, 0, size, size);
 
-            const settings = textureSettings[gender][tipoProducto] || textureSettings[gender].camiseta;
-
-            if (frontImg && settings.frontal) {
-                const s = settings.frontal;
-                drawImageOnCanvas(frontImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
+            let settings;
+            if (tipoProducto === 'gorra') {
+                // Para la gorra, el maniquí usa una camiseta. Usamos la configuración de la camiseta para los logos.
+                settings = textureSettings[gender].camiseta;
+            } else {
+                settings = textureSettings[gender][tipoProducto] || textureSettings[gender].camiseta;
             }
-            if (backImg && settings.espaldar) {
+
+            if (tshirtFrontImg && settings.frontal) {
+                const s = settings.frontal;
+                drawImageOnCanvas(tshirtFrontImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
+            }
+            if (tshirtBackImg && settings.espaldar) {
                 const s = settings.espaldar;
-                drawImageOnCanvas(backImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
+                drawImageOnCanvas(tshirtBackImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
             }
             if (texture) texture.needsUpdate = true;
         };
@@ -1500,17 +1517,17 @@
 
                 currentModel.traverse((child) => {
                     let isTarget = false;
+                    // Lógica combinada: se aplica a todos los productos textiles
                     if (tipoProducto === 'gorra') {
-                        // Para gorras, buscamos la malla del accesorio de cabeza
+                        // Para gorras, buscamos la malla del accesorio de cabeza y la ponemos blanca
                         if (child.isMesh && child.material && (child.material.name.includes('Headwear') || child.material.name.includes('Cap') || child.name.includes('Headwear'))) {
                             child.material.color.setHex(0xffffff);
                             child.material.map = null;
                             child.material.needsUpdate = true;
                         }
-                    } else {
-                        // Para camisetas y sacos
-                        if (child.isMesh && child.material && (child.material.name === 'Wolf3D_Outfit_Top' || child.material.name.includes('Fabric') || child.material.name.includes('Material'))) isTarget = true;
                     }
+                    // La textura de la camiseta/saco se aplica siempre
+                    if (child.isMesh && child.material && (child.material.name === 'Wolf3D_Outfit_Top' || child.material.name.includes('Fabric') || child.material.name.includes('Material'))) isTarget = true;
 
                     if (isTarget) {
                         const material = child.material;
