@@ -224,6 +224,64 @@ async function updateBannedIpsInRender(newIpToBan) {
     }
 }
 
+/**
+ * Actualiza las credenciales de un administrador en las variables de entorno de Render.
+ * @param {string} newUsername - El nuevo nombre de usuario.
+ * @param {string} newPassword - La nueva contraseña.
+ * @param {string} newEmail - El nuevo correo electrónico.
+ */
+async function updateAdminCredentialsInRender(newUsername, newPassword, newEmail) {
+    const apiKey = process.env.RENDER_API_KEY;
+    const serviceId = process.env.RENDER_SERVICE_ID;
+
+    const logManualUpdate = () => {
+        console.error("❌ FALLÓ LA ACTUALIZACIÓN AUTOMÁTICA EN RENDER.");
+        console.error("Por favor, actualiza manualmente las siguientes variables de entorno en tu servicio de Render:");
+        console.error(`- ADMIN_USER_MARIAJOSE: ${newUsername}`);
+        console.error(`- ADMIN_PASS_MARIAJOSE: ${newPassword}`);
+        console.error(`- ADMIN_EMAIL_MARIAJOSE: ${newEmail}`);
+    };
+
+    if (!apiKey || !serviceId) {
+        console.warn("⚠️ No se encontró RENDER_API_KEY o RENDER_SERVICE_ID para actualizar credenciales.");
+        logManualUpdate();
+        return; // Continuar ejecución, pero registrar el paso manual.
+    }
+
+    console.log(`🚀 Actualizando credenciales de administrador en Render...`);
+
+    const updates = [
+        { key: "ADMIN_USER_MARIAJOSE", value: newUsername },
+        { key: "ADMIN_PASS_MARIAJOSE", value: newPassword },
+        { key: "ADMIN_EMAIL_MARIAJOSE", value: newEmail }
+    ];
+
+    try {
+        const patchData = JSON.stringify(updates);
+        await new Promise((resolve, reject) => {
+            const req = https.request({
+                hostname: 'api.render.com', path: `/v1/services/${serviceId}/env-vars`, method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json',
+                    'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(patchData)
+                }
+            }, res => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => res.statusCode >= 200 && res.statusCode < 300 ? resolve() : reject(new Error(`Render API (PATCH) falló con estado ${res.statusCode}: ${data}`)));
+            });
+            req.on('error', reject);
+            req.write(patchData);
+            req.end();
+        });
+
+        console.log(`✅ Variables de entorno de administrador actualizadas en Render. El servicio se reiniciará automáticamente.`);
+    } catch (error) {
+        console.error("❌ Error al actualizar las variables de entorno de Render:", error.message);
+        logManualUpdate();
+    }
+}
+
 // --- Funciones Auxiliares de Seguridad ---
 
 /**
@@ -930,18 +988,22 @@ app.post('/api/complete-setup', async (req, res) => {
 
     // 4. Crear y añadir el nuevo objeto de usuario para Majo
     const newUserMajo = {
-        "username": newUsername,
-        "password": newPassword,
-        "email": newEmail,
+        "username": "ENV:ADMIN_USER_MARIAJOSE",
+        "password": "ENV:ADMIN_PASS_MARIAJOSE",
+        "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
         "redirectUrl": "admin_dashboard.html",
         "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
         "gender": "mujer",
         "name": "Mariajose"
     };
     cleanedUsersConfig.push(newUserMajo);
+    
+    // 5. Actualizar las variables de entorno en Render ANTES de commitear a GitHub.
+    // Esto es importante para que, cuando Render se reinicie por el commit, ya tenga las nuevas credenciales.
+    await updateAdminCredentialsInRender(newUsername, newPassword, newEmail);
 
-    // 5. Guardar localmente y en GitHub
-    // 2. Guardar en GitHub (Persistencia real)
+
+    // 6. Guardar la configuración de usuarios (usuarios.json) en GitHub
     if (githubClient && GITHUB_OWNER && GITHUB_REPO) {
         try {
             // Obtener SHA actual del archivo en GitHub
