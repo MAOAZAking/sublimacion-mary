@@ -2693,3 +2693,28 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/reauth_success_1773526964572.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-14 17:22:53 (Hora de Colombia)
+(UTC: 2026-03-14 22:22:53)
+Tipo: FALLO RE-AUTENTICACIÓN
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: null
+
+--- Datos de Geolocalización ---
+Dirección IP: 127.0.0.1
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (reserved range)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (IP local no consultable.)
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Windows 10
+Navegador: Chrome 145.0.0.0
+Tipo de Dispositivo: Escritorio
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/reauth_failure_1773526973181.jpeg
+============================================================
+
