@@ -866,6 +866,38 @@ app.post('/api/login', (req, res) => {
     res.status(401).json({ success: false, message: 'Credenciales incorrectas', forceRefresh: banned });
 });
 
+// Endpoint para verificar disponibilidad de nombre de usuario
+app.post('/api/check-username-availability', (req, res) => {
+    const { username, currentUsername } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ available: false, message: 'Nombre de usuario no proporcionado.' });
+    }
+
+    // Comprobamos si el nombre de usuario está en uso por otro administrador que no sea el placeholder actual
+    // o la cuenta final de Majo (que será reemplazada).
+    const isTaken = usersConfig.some(u => {
+        const resolvedUsername = resolveEnvValue(u.username);
+        
+        // Ignorar el usuario placeholder que se está configurando
+        if (resolvedUsername === currentUsername) {
+            return false;
+        }
+        // Ignorar la cuenta de destino de Majo, ya que se va a sobreescribir/crear
+        if (u.username === 'ENV:ADMIN_USER_MARIAJOSE') {
+            return false;
+        }
+        
+        return resolvedUsername.toLowerCase() === username.toLowerCase();
+    });
+
+    if (isTaken) {
+        return res.json({ available: false, message: 'El nombre de usuario ya está en uso.' });
+    }
+
+    return res.json({ available: true });
+});
+
 // Endpoint para completar configuración (Usuario y Contraseña)
 app.post('/api/complete-setup', async (req, res) => {
     const { currentUsername, newUsername, newPassword, newEmail } = req.body;
@@ -879,33 +911,34 @@ app.post('/api/complete-setup', async (req, res) => {
         return res.status(500).json({ success: false, error: 'No se pudo leer la configuración de usuarios.' });
     }
 
-    // 2. Encontrar el índice del usuario placeholder
-    const setupUserIndex = currentUsersConfig.findIndex(u => resolveEnvValue(u.username) === currentUsername);
-
-    if (setupUserIndex === -1) {
-        return res.status(404).json({ success: false, error: 'No se encontró el usuario de configuración.' });
+    // 2. Validar si el nuevo nombre de usuario ya está en uso por otro administrador (ej: Miguel)
+    // Esta es una segunda validación, la primera está en el frontend.
+    const isTaken = currentUsersConfig.some(u =>
+        resolveEnvValue(u.username) !== currentUsername &&
+        u.username !== "ENV:ADMIN_USER_MARIAJOSE" &&
+        resolveEnvValue(u.username).toLowerCase() === newUsername.toLowerCase()
+    );
+    if (isTaken) {
+        return res.status(400).json({ success: false, error: 'El nombre de usuario ya está en uso.' });
     }
 
-    // 3. Validar si el nuevo nombre de usuario ya está en uso por otro usuario
-    const isTaken = currentUsersConfig.some((u, index) => 
-        index !== setupUserIndex && resolveEnvValue(u.username).toLowerCase() === newUsername.toLowerCase()
+    // 3. Filtrar para eliminar el placeholder y cualquier versión anterior de la cuenta de Majo
+    const cleanedUsersConfig = currentUsersConfig.filter(u =>
+        u.username !== "ENV:ADMIN_USER_MARIAJOSE" &&
+        resolveEnvValue(u.username) !== currentUsername
     );
 
-    if (isTaken) {
-         return res.status(400).json({ success: false, error: 'El nombre de usuario ya está en uso.' });
-    }
-
-    // 4. Actualizar el objeto del usuario con los nuevos placeholders
-    currentUsersConfig[setupUserIndex] = {
-        ...currentUsersConfig[setupUserIndex], // Mantener name, gender, etc.
-        "username": "ENV:ADMIN_USER_MARIAJOSE",
-        "password": "ENV:ADMIN_PASS_MARIAJOSE",
-        "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
+    // 4. Crear y añadir el nuevo objeto de usuario para Majo
+    const newUserMajo = {
+        "username": newUsername,
+        "password": newPassword,
+        "email": newEmail,
         "redirectUrl": "admin_dashboard.html",
         "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
         "gender": "mujer",
         "name": "Mariajose"
     };
+    cleanedUsersConfig.push(newUserMajo);
 
     // 5. Guardar localmente y en GitHub
     // 2. Guardar en GitHub (Persistencia real)
@@ -930,7 +963,7 @@ app.post('/api/complete-setup', async (req, res) => {
                 repo: GITHUB_REPO,
                 path: 'usuarios.json',
                 message: `Setup completed for Majo [skip render]`,
-                content: Buffer.from(JSON.stringify(currentUsersConfig, null, 4)).toString('base64'),
+                content: Buffer.from(JSON.stringify(cleanedUsersConfig, null, 4)).toString('base64'),
                 sha: sha
             });
         } catch (ghErr) {
@@ -964,7 +997,7 @@ app.post('/api/complete-setup', async (req, res) => {
     
     const emailHtml = getEmailTemplate("🫂 ¡Bienvenida al Equipo! 🎉 ", welcomeBody, imgUrl);
     // Usar la nueva función dispatchEmail
-    await dispatchEmail([newEmail], "🎉 ¡Bienvenida Mariajose! 🤗 Configuración Exitosa - Support Team Sublimación Mary", emailHtml);
+    await dispatchEmail([newEmail], "🎉 ¡Bienvenida Majo! 🤗 Configuración De Derfil Exitosa - Support Team Sublimación Mary", emailHtml);
 
     res.json({ success: true });
 });

@@ -9,7 +9,12 @@
     <meta name="theme-color" content="#1a1a1a">
     <script>
         // SEGURIDAD: Verificar si el usuario inició sesión
-        if (!sessionStorage.getItem('adminLogueado')) {
+        const isAdmin = sessionStorage.getItem('adminLogueado') === 'true';
+        const currentUser = sessionStorage.getItem('currentUser');
+        const setupUser = '3209287029';
+
+        // Solo permitir el acceso si se ha iniciado sesión Y el usuario es el que necesita configuración.
+        if (!isAdmin || currentUser !== setupUser) {
             window.location.href = 'index.html';
         }
     </script>
@@ -579,11 +584,12 @@
             document.getElementById('newUsername').focus();
         }
 
-        function irPaso2() {
+        async function irPaso2() {
             const user = document.getElementById('newUsername').value.trim();
             const pass = document.getElementById('newPassword').value;
             const email = document.getElementById('newEmail').value.trim();
             const errorDiv = document.getElementById('errorMsg');
+            errorDiv.style.display = 'none'; // Ocultar errores previos
 
             if (!user) {
                 errorDiv.textContent = 'No puedes dejar el usuario vacío.';
@@ -605,6 +611,33 @@
                 shakeModal();
                 return;
             }
+
+            // --- VALIDACIÓN DE USUARIO EN TIEMPO REAL ---
+            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/check-username-availability`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: user,
+                        currentUsername: sessionStorage.getItem('currentUser') || '3209287029'
+                    })
+                });
+                const data = await response.json();
+                if (!data.available) {
+                    errorDiv.textContent = data.message || 'El nombre de usuario ya está en uso.';
+                    errorDiv.style.display = 'block';
+                    shakeModal();
+                    return;
+                }
+            } catch (e) {
+                errorDiv.textContent = 'Error de red al verificar el usuario. Inténtalo de nuevo.';
+                errorDiv.style.display = 'block';
+                shakeModal();
+                console.error(e);
+                return;
+            }
+            // --- FIN DE VALIDACIÓN ---
 
             tempUser = user;
             tempPass = pass;
