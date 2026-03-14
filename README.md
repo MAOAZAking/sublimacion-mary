@@ -15,3 +15,5 @@ git reset --hard origin/main
 Security Patch #8 Fix #
 # Mejora N° del parche de seguridad N°
 Security Patch #8 Enhancement #
+# Parche de automatización N°
+Automation Patch #1: Automate saving information in render variables
