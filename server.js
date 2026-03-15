@@ -988,9 +988,9 @@ app.post('/api/complete-setup', async (req, res) => {
 
     // 4. Crear y añadir el nuevo objeto de usuario para Majo
     const newUserMajo = {
-        "username": "ENV:ADMIN_USER_MARIAJOSE",
-        "password": "ENV:ADMIN_PASS_MARIAJOSE",
-        "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
+        "username": newUsername,
+        "password": newPassword,
+        "email": newEmail,
         "redirectUrl": "admin_dashboard.html",
         "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
         "gender": "mujer",

@@ -1,5 +1,14 @@
 [
     {
+        "username": "ENV:ADMIN_USER_MARIAJOSE",
+        "password": "ENV:ADMIN_PASS_MARIAJOSE",
+        "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
+        "redirectUrl": "admin_dashboard.html",
+        "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
+        "gender": "mujer",
+        "name": "Mariajose"
+    },
+    {
         "username": "ENV:ADMIN_USER_MIGUEL",
         "password": "ENV:ADMIN_PASS_MIGUEL",
         "email": "ENV:ADMIN_EMAIL_MIGUEL",
@@ -9,11 +18,11 @@
         "name": "Miguel"
     },
     {
-        "username": "ENV:ADMIN_USER_MARIAJOSE",
-        "password": "ENV:ADMIN_PASS_MARIAJOSE",
-        "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
-        "redirectUrl": "admin_dashboard.html",
-        "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
+        "username": "3209287029",
+        "password": "",
+        "email": "",
+        "redirectUrl": "bienvenida_majo.html",
+        "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
         "gender": "mujer",
         "name": "Mariajose"
     }
