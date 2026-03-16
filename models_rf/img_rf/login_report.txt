@@ -2930,3 +2930,28 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/reauth_success_1773675348899.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-16 10:36:05 (Hora de Colombia)
+(UTC: 2026-03-16 15:36:05)
+Tipo: FALLO RE-AUTENTICACIÓN
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario: null
+
+--- Datos de Geolocalización ---
+Dirección IP: 127.0.0.1
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (reserved range)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (IP local no consultable.)
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: iOS 18.5
+Navegador: Mobile Safari 18.5
+Tipo de Dispositivo: Apple iPhone
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/reauth_failure_1773675365623.jpeg
+============================================================
+
