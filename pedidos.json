@@ -31,10 +31,11 @@
         "s_n": "MUGS_0003",
         "telefono": "3167000443",
         "producto": "Mug Personalizado",
-        "fecha": "14/01/2026 14:34:16",
-        "estado": "Creando diseño",
+        "fecha": "16/03/2026 10:37:12",
+        "estado": "Revisión del cliente",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg",
-        "tipo_mug": "clasico"
+        "tipo_mug": "color interno",
+        "color_mug": "negro"
     },
     {
         "s_n": "MUGS_0004",
