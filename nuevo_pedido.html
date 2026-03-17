@@ -42,6 +42,14 @@
         .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .back-link { display: block; text-align: center; margin-top: 15px; color: #aaa; text-decoration: none; font-size: 0.9rem; }
 
+        .footer-copy {
+            position: static; /* Anular posicionamiento absoluto */
+            text-align: center;
+            width: 100%;
+            padding: 20px 0;
+            margin-top: 20px; /* Espacio sobre el footer */
+            color: #666;
+        }
         /* Estilos para opciones de color */
         .color-options { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
         .color-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 2px solid #333; border-radius: 20px; cursor: pointer; transition: all 0.3s; background: #2d2d2d; }
@@ -188,6 +196,12 @@
 <script>
     // Bandera para navegación interna
     let isInternalNavigation = false;
+
+    // Función para navegar internamente con token
+    function navigateTo(url) {
+        sessionStorage.setItem('safeNavigationToken', 'true');
+        window.location.href = url;
+    }
 
     // Función inteligente para cargar modelos
     async function cargarModelosSmart() {

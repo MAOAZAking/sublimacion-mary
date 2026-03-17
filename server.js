@@ -256,30 +256,31 @@ async function updateAdminCredentialsInRender(newUsername, newPassword, newEmail
         { key: "ADMIN_EMAIL_MARIAJOSE", value: newEmail }
     ];
 
-    try {
-        const patchData = JSON.stringify(updates);
-        await new Promise((resolve, reject) => {
-            const req = https.request({
-                hostname: 'api.render.com', path: `/v1/services/${serviceId}/env-vars`, method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json',
-                    'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(patchData)
-                }
-            }, res => {
-                let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => res.statusCode >= 200 && res.statusCode < 300 ? resolve() : reject(new Error(`Render API (PATCH) falló con estado ${res.statusCode}: ${data}`)));
+    // Actualizar una por una usando PUT para evitar error 405 Method Not Allowed
+    for (const update of updates) {
+        try {
+            const putData = JSON.stringify({ value: update.value });
+            await new Promise((resolve, reject) => {
+                const req = https.request({
+                    hostname: 'api.render.com', 
+                    path: `/v1/services/${serviceId}/env-vars/${update.key}`, 
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json', 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(putData) }
+                }, res => {
+                    res.on('data', () => {}); // Consumir respuesta
+                    res.on('end', () => res.statusCode >= 200 && res.statusCode < 300 ? resolve() : reject(new Error(`Status ${res.statusCode}`)));
+                });
+                req.on('error', reject);
+                req.write(putData);
+                req.end();
             });
-            req.on('error', reject);
-            req.write(patchData);
-            req.end();
-        });
-
-        console.log(`✅ Variables de entorno de administrador actualizadas en Render. El servicio se reiniciará automáticamente.`);
-    } catch (error) {
-        console.error("❌ Error al actualizar las variables de entorno de Render:", error.message);
-        logManualUpdate();
+        } catch (error) {
+            console.error(`❌ Error actualizando ${update.key} en Render:`, error.message);
+            logManualUpdate();
+            return;
+        }
     }
+    console.log(`✅ Credenciales de administrador actualizadas en Render.`);
 }
 
 // --- Funciones Auxiliares de Seguridad ---
@@ -542,7 +543,7 @@ function recordFailedAttempt(req, context = "General") {
 async function sendEmailNotification(subject, htmlContent) {
     // Lógica de destinatario: Enviar a TODOS los administradores.
     // Un administrador es un usuario con redirectUrl a 'admin_dashboard.html' y un email configurado.
-    const adminEmails = users
+    const adminEmails = usersConfig
         .filter(u => u.email && u.redirectUrl === 'admin_dashboard.html')
         .map(u => resolveEnvValue(u.email))
         .filter(email => email); // Filtra correos vacíos después de resolverlos

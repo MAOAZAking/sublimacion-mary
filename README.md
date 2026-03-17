@@ -12,7 +12,7 @@ git reset --hard origin/main
 # Nota: El número de parche y numero de correción y mejora estan actualizados
 
 # Correccion N° del parche de seguridad N°
-Security Patch #8 Fix #
+Security Patch #8 Fix #1
 # Mejora N° del parche de seguridad N°
 Security Patch #8 Enhancement #
 # Parche de automatización N°

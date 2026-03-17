@@ -386,6 +386,13 @@
             if (loaderText) loaderText.innerText = "Ya casi terminamos, espera un momento más";
         }
 
+        // VERIFICACIÓN POR TOKEN DE NAVEGACIÓN INTERNA (Nuevo/Editar Pedido)
+        // Si venimos de una página interna segura, validamos sin reconocimiento facial
+        if (sessionStorage.getItem('safeNavigationToken') === 'true') {
+            sessionStorage.removeItem('safeNavigationToken'); // Eliminar token inmediatamente (un solo uso)
+            sessionStorage.setItem('adminFacialVerified', 'true'); // Marcar sesión como verificada
+        }
+
         // El loader ya está visible. Iniciamos la re-verificación facial.
         // El loader ya está visible.
         document.documentElement.style.display = 'block'; // Mostramos el body para que el loader sea visible
