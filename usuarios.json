@@ -9,8 +9,8 @@
         "name": "Miguel"
     },
     {
-        "username": "marijo",
-        "password": "admin123+",
+        "username": "mary",
+        "password": "admin123",
         "email": "maoazar13579@gmail.com",
         "redirectUrl": "admin_dashboard.html",
         "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
