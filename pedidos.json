@@ -14,7 +14,7 @@
         "telefono": "3123456789",
         "producto": "Mug Personalizado",
         "fecha": "15/02/2026 12:34:21",
-        "estado": "Listo para sublimar",
+        "estado": "Revisión del cliente",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768416606/qrrgfej0mv0iui82qctb.jpg",
         "tipo_mug": "color interno",
         "color_mug": "verde"
@@ -42,7 +42,7 @@
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 15:34:16",
-        "estado": "Creando diseño",
+        "estado": "Revisión del cliente",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768434621/qfls8nm931umeclvfkdo.jpg",
         "tipo_mug": "clasico"
     },
@@ -51,7 +51,7 @@
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
         "fecha": "14/01/2026 16:34:16",
-        "estado": "Creando diseño",
+        "estado": "Revisión del cliente",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768433716/sgjijna5fl9udra4d2rj.jpg",
         "tipo_mug": "clasico"
     },

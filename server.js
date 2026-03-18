@@ -999,6 +999,12 @@ app.post('/api/complete-setup', async (req, res) => {
     };
     cleanedUsersConfig.push(newUserMajo);
     
+    // --- ACTUALIZACIÓN INMEDIATA (HOT-FIX) ---
+    // 1. Actualizar la memoria del servidor para bloquear el acceso por número INSTANTÁNEAMENTE
+    usersConfig = cleanedUsersConfig; 
+    // 2. Escribir en el disco local (aunque sea efímero en Render) para persistir hasta el reinicio
+    try { fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(cleanedUsersConfig, null, 4)); } catch(e) {}
+
     // 5. Actualizar las variables de entorno en Render ANTES de commitear a GitHub.
     // Esto es importante para que, cuando Render se reinicie por el commit, ya tenga las nuevas credenciales.
     await updateAdminCredentialsInRender(newUsername, newPassword, newEmail);
@@ -1025,7 +1031,7 @@ app.post('/api/complete-setup', async (req, res) => {
                 owner: GITHUB_OWNER,
                 repo: GITHUB_REPO,
                 path: 'usuarios.json',
-                message: `Setup completed for Majo [skip render]`,
+                message: `Setup completed for Majo`, // Quitamos [skip render] para forzar que Render tome los cambios
                 content: Buffer.from(JSON.stringify(cleanedUsersConfig, null, 4)).toString('base64'),
                 sha: sha
             });
