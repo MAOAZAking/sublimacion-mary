@@ -3252,3 +3252,30 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/suspicious_input_1773794158056.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-17 19:37:55 (Hora de Colombia)
+(UTC: 2026-03-18 00:37:55)
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "perreo1"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.155.189
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (Error de red: queryAaaa ENOTFOUND geolite.info.x-maxmind.com)
+Nota: El error 'ENOTFOUND' usualmente indica un problema de DNS en el servidor (Render), no un problema de la API de MaxMind.
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Windows 10
+Navegador: Chrome 146.0.0.0
+Tipo de Dispositivo: Escritorio
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/suspicious_input_1773794275769.jpeg
+============================================================
+
