@@ -995,10 +995,35 @@
                 const indexGlobal = todosLosPedidos.findIndex(p => p.s_n === pedido.s_n);
                 if (indexGlobal > -1) todosLosPedidos[indexGlobal].estado = 'Producto terminado';
                 
-                // Re-filtrar y re-renderizar para que el item desaparezca de la vista actual
-                pedidosFiltrados = todosLosPedidos.filter(p => (p.estado || '').toLowerCase().startsWith('listo para'));
-                aplicarOrdenamiento();
-                renderGallery(pedidosFiltrados);
+                // 1. SALIR DEL MODO TERMINADO INMEDIATAMENTE (Selección única)
+                toggleFinishMode(); 
+
+                // 2. Redirigir a WhatsApp con mensaje e imagen inteligente
+                const telefono = (pedido.telefono || pedido.teléfono || '').replace(/\D/g, '');
+                
+                if (telefono) {
+                    const sn = pedido.s_n || 'N/A';
+                    let imgUrl = pedido.imagen_url; // Por defecto para Mugs, Gorras o si no hay más info
+                    
+                    // Lógica para Textiles (Saco, Camiseta): Preferir frontal, sino espaldar, sino mantener la que hay
+                    const prodLower = (pedido.producto || '').toLowerCase();
+                    if (prodLower.includes('camiseta') || prodLower.includes('saco')) {
+                        if (pedido.imagenes) {
+                            if (pedido.imagenes.frontal) {
+                                imgUrl = pedido.imagenes.frontal;
+                            } else if (pedido.imagenes.espaldar || pedido.imagenes.trasera) {
+                                imgUrl = pedido.imagenes.espaldar || pedido.imagenes.trasera;
+                            }
+                        }
+                    }
+
+                    const mensaje = `👋 ¡Hola! Un saludo del equipo de soporte de *Sublimación Mary*.\n\n✅ Tu pedido con S/N: *${sn}* ya está *LISTO* y fabricado.\n\n🛍️ Ya puedes pasar a recogerlo.\n\n👇 Foto del pedido:\n${imgUrl}`;
+                    const numeroWhatsApp = telefono.length === 10 ? `57${telefono}` : telefono;
+                    
+                    window.location.href = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+                } else {
+                    alert('Pedido marcado como terminado, pero no tiene número para redirigir a WhatsApp.');
+                }
             } else {
                 alert('Error al actualizar el estado: ' + (data.message || 'Error desconocido'));
             }
