@@ -1,9 +1,2 @@
 {
-  "loginAttempts": {
-    "127.0.0.1": {
-      "count": 1,
-      "firstAttempt": 1773675365615
-    }
-  },
-  "banLevels": {}
 }
