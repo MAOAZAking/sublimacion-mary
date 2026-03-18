@@ -1843,6 +1843,46 @@ app.post('/api/update-status', async (req, res) => {
     }
 });
 
+// Endpoint para generar vista previa de WhatsApp (Open Graph)
+app.get('/api/preview', (req, res) => {
+    const { img, sn } = req.query;
+    // Si no hay imagen, redirigir al home o mostrar error
+    if (!img) return res.status(404).send("Imagen no encontrada");
+
+    // HTML dinámico con Open Graph Tags para que WhatsApp muestre la tarjeta
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>¡Tu Pedido está Listo!</title>
+    <meta property="og:site_name" content="Sublimación Mary">
+    <meta property="og:title" content="✅ Pedido Listo (S/N: ${sn || 'N/A'})">
+    <meta property="og:description" content="👋 ¡Hola! Tu producto personalizado ya fue fabricado y está listo para entrega. Toca aquí para ver la foto.">
+    <meta property="og:image" content="${img}">
+    <meta property="og:image:width" content="800">
+    <meta property="og:image:height" content="800">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#9b59b6">
+    <style>
+        body { margin: 0; background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; text-align: center; }
+        .container { padding: 20px; max-width: 600px; }
+        h1 { color: #e0aaff; margin-bottom: 10px; }
+        img { width: 100%; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin: 20px 0; border: 2px solid #333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>¡Tu pedido está listo! 🎉</h1>
+        <p>Referencia S/N: ${sn || 'N/A'}</p>
+        <img src="${img}" alt="Foto del Pedido">
+        <p>Ya puedes pasar a recogerlo en nuestro local.</p>
+    </div>
+</body>
+</html>`;
+    res.send(html);
+});
+
 // Cargar baneos permanentes al iniciar el servidor
 loadPermanentBans();
 loadSecurityState(); // Cargar estado de intentos y niveles de baneo

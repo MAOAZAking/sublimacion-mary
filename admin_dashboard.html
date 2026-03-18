@@ -1017,8 +1017,15 @@
                         }
                     }
 
-                    const mensaje = `👋 ¡Hola! Un saludo del equipo de soporte de *Sublimación Mary*.\n\n✅ Tu pedido con S/N: *${sn}* ya está *LISTO* y fabricado.\n\n🛍️ Ya puedes pasar a recogerlo.\n\n👇 Foto del pedido:\n${imgUrl}`;
-                    const numeroWhatsApp = telefono.length === 10 ? `57${telefono}` : telefono;
+                    // Usamos la URL pública de producción para asegurar que el cliente pueda abrir el link
+                    // aunque nosotros estemos trabajando en localhost.
+                    const publicServerUrl = 'https://sublimacion-mary.onrender.com';
+                    const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(imgUrl)}&sn=${sn}`;
+
+                    // Usamos códigos Unicode para los emojis para evitar errores de codificación (rombos)
+                    // 👋 = \uD83D\uDC4B | ✅ = \u2705 | 🛍️ = \uD83D\uDECD\uFE0F | 👇 = \uD83D\uDC47
+                    const mensaje = `\uD83D\uDC4B ¡Hola! Un saludo de *Sublimación Mary*.\n\n\u2705 Tu pedido con S/N: *${sn}* ya está *LISTO* y fabricado.\n\n\uD83D\uDECD\uFE0F Ya puedes pasar a recogerlo.\n\n\uD83D\uDC47 Mira la foto aquí:\n${previewUrl}`;
+                    const numeroWhatsApp = telefono.length === 10 ? `+57${telefono}` : telefono;
                     
                     window.location.href = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
                 } else {
