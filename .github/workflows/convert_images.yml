@@ -1,0 +1,38 @@
+name: Convert PNG to JPG Previews
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'img/**.png' # Se activa solo cuando se suben archivos PNG a cualquier subcarpeta de 'img/'
+
+jobs:
+  convert_images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Obtener todo el historial para una comparación de archivos adecuada
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Pillow
+        run: pip install Pillow
+
+      - name: Run PNG to JPG conversion script
+        id: conversion_script
+        run: python convert_to_jpg.py img/
+
+      - name: Check for changes and commit
+        id: git_status
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add img/**/*.jpg # Añadir todos los nuevos JPG generados
+          git diff-index --quiet HEAD || git commit -m "Add JPG previews for new/updated PNGs [skip ci]"
+          git push || echo "No changes to commit or push" # Push solo si hay cambios, y no fallar si no hay

@@ -1017,10 +1017,16 @@
                         }
                     }
 
+                    // Construir la URL potencial de la imagen de previsualización JPG
+                    let finalImgForPreview = imgUrl;
+                    if (imgUrl.toLowerCase().endsWith('.png')) {
+                        finalImgForPreview = imgUrl.replace(/\.png$/i, '_preview.jpg');
+                    }
+
                     // Usamos la URL pública de producción para asegurar que el cliente pueda abrir el link
                     // aunque nosotros estemos trabajando en localhost.
                     const publicServerUrl = 'https://sublimacion-mary.onrender.com';
-                    const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(imgUrl)}&sn=${sn}`;
+                    const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&sn=${sn}`;
 
                     // Usamos códigos Unicode para los emojis para evitar errores de codificación (rombos)
                     // 👋 = \uD83D\uDC4B | ✅ = \u2705 | 🛍️ = \uD83D\uDECD\uFE0F | 👇 = \uD83D\uDC47
