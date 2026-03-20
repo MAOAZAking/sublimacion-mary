@@ -1474,6 +1474,10 @@ app.post('/api/pedidos', upload.fields([
                 const name = `lamina_frontal_${tipoProducto}_${nextNum}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_frontal[0].path) });
+                
+                // DUPLICAR PARA PREVIEW (Misma extensión, GitHub Actions lo convertirá si es necesario)
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.lamina_frontal[0].path) });
+                
                 urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 mainImageUrl = urlFrontal;
             }
@@ -1482,6 +1486,10 @@ app.post('/api/pedidos', upload.fields([
                 const name = `lamina_espaldar_${tipoProducto}_${nextNum}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_espaldar[0].path) });
+                
+                // DUPLICAR PARA PREVIEW
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.lamina_espaldar[0].path) });
+                
                 urlespaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 if (!mainImageUrl) mainImageUrl = urlespaldar;
             }
@@ -1498,6 +1506,10 @@ app.post('/api/pedidos', upload.fields([
             const relativeImgPath = `img/${tipoProducto}/${folderName}/${imagenName}`;
             const relativeTemplatePath = `img/${tipoProducto}/${folderName}/${plantillaName}`;
             uploads.push({ path: relativeImgPath, content: fs.readFileSync(files.imagen[0].path) });
+            
+            // DUPLICAR PARA PREVIEW
+            uploads.push({ path: relativeImgPath.replace(imagenExt, `_preview${imagenExt}`), content: fs.readFileSync(files.imagen[0].path) });
+            
             uploads.push({ path: relativeTemplatePath, content: fs.readFileSync(files.plantilla[0].path) });
             mainImageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativeImgPath}`;
         }
@@ -1507,6 +1519,10 @@ app.post('/api/pedidos', upload.fields([
             const name = `foto_usada_en_${tipoProducto}_${nextNum}${ext}`;
             const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
             uploads.push({ path: relativePath, content: fs.readFileSync(files.foto_diseno[0].path) });
+            
+            // DUPLICAR PARA PREVIEW (Opcional, pero útil si se usa como referencia visual)
+            uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.foto_diseno[0].path) });
+            
             urlFotoDiseno = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
         }
 
@@ -1665,6 +1681,10 @@ app.post('/api/pedidos/edit', upload.fields([
                 const name = `lamina_frontal_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_frontal[0].path) });
+                
+                // DUPLICAR PARA PREVIEW (Edición)
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.lamina_frontal[0].path) });
+                
                 urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 mainImageUrl = urlFrontal;
             }
@@ -1673,6 +1693,10 @@ app.post('/api/pedidos/edit', upload.fields([
                 const name = `lamina_espaldar_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_espaldar[0].path) });
+                
+                // DUPLICAR PARA PREVIEW (Edición)
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.lamina_espaldar[0].path) });
+                
                 urlespaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 if (!mainImageUrl) mainImageUrl = urlespaldar;
             }
@@ -1687,6 +1711,10 @@ app.post('/api/pedidos/edit', upload.fields([
                 const name = `lamina_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.imagen[0].path) });
+                
+                // DUPLICAR PARA PREVIEW (Edición)
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.imagen[0].path) });
+                
                 mainImageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
             }
             if (files.plantilla) {
