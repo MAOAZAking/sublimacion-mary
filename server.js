@@ -1470,7 +1470,7 @@ app.post('/api/pedidos', upload.fields([
 
         if (['camiseta', 'saco', 'gorra'].includes(tipoProducto)) {
             if (files.lamina_frontal) {
-                const ext = path.extname(files.lamina_frontal[0].originalname);
+                const ext = path.extname(files.lamina_frontal[0].originalname).toLowerCase();
                 const name = `lamina_frontal_${tipoProducto}_${nextNum}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_frontal[0].path) });
@@ -1478,7 +1478,7 @@ app.post('/api/pedidos', upload.fields([
                 mainImageUrl = urlFrontal;
             }
             if (files.lamina_espaldar && tipoProducto !== 'gorra') {
-                const ext = path.extname(files.lamina_espaldar[0].originalname);
+                const ext = path.extname(files.lamina_espaldar[0].originalname).toLowerCase();
                 const name = `lamina_espaldar_${tipoProducto}_${nextNum}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_espaldar[0].path) });
@@ -1486,13 +1486,13 @@ app.post('/api/pedidos', upload.fields([
                 if (!mainImageUrl) mainImageUrl = urlespaldar;
             }
             if (files.plantilla) {
-                const ext = path.extname(files.plantilla[0].originalname);
+                const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
                 const name = `plantilla_${tipoProducto}_${nextNum}${ext}`;
                 uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
             }
         } else {
-            const imagenExt = path.extname(files.imagen[0].originalname);
-            const plantillaExt = path.extname(files.plantilla[0].originalname);
+            const imagenExt = path.extname(files.imagen[0].originalname).toLowerCase();
+            const plantillaExt = path.extname(files.plantilla[0].originalname).toLowerCase();
             const imagenName = `lamina_${tipoProducto}_${nextNum}${imagenExt}`;
             const plantillaName = `plantilla_${tipoProducto}_${nextNum}${plantillaExt}`;
             const relativeImgPath = `img/${tipoProducto}/${folderName}/${imagenName}`;
@@ -1503,7 +1503,7 @@ app.post('/api/pedidos', upload.fields([
         }
 
         if (files.foto_diseno) {
-            const ext = path.extname(files.foto_diseno[0].originalname);
+            const ext = path.extname(files.foto_diseno[0].originalname).toLowerCase();
             const name = `foto_usada_en_${tipoProducto}_${nextNum}${ext}`;
             const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
             uploads.push({ path: relativePath, content: fs.readFileSync(files.foto_diseno[0].path) });
@@ -1661,7 +1661,7 @@ app.post('/api/pedidos/edit', upload.fields([
 
         if (['camiseta', 'saco', 'gorra'].includes(tipoProducto)) {
              if (files.lamina_frontal) {
-                const ext = path.extname(files.lamina_frontal[0].originalname);
+                const ext = path.extname(files.lamina_frontal[0].originalname).toLowerCase();
                 const name = `lamina_frontal_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_frontal[0].path) });
@@ -1669,7 +1669,7 @@ app.post('/api/pedidos/edit', upload.fields([
                 mainImageUrl = urlFrontal;
             }
             if (files.lamina_espaldar && tipoProducto !== 'gorra') {
-                const ext = path.extname(files.lamina_espaldar[0].originalname);
+                const ext = path.extname(files.lamina_espaldar[0].originalname).toLowerCase();
                 const name = `lamina_espaldar_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_espaldar[0].path) });
@@ -1677,20 +1677,20 @@ app.post('/api/pedidos/edit', upload.fields([
                 if (!mainImageUrl) mainImageUrl = urlespaldar;
             }
             if (files.plantilla) {
-                const ext = path.extname(files.plantilla[0].originalname);
+                const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
                 const name = `plantilla_${Date.now()}${ext}`;
                 uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
             }
         } else {
             if (files.imagen) {
-                const ext = path.extname(files.imagen[0].originalname);
+                const ext = path.extname(files.imagen[0].originalname).toLowerCase();
                 const name = `lamina_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
                 uploads.push({ path: relativePath, content: fs.readFileSync(files.imagen[0].path) });
                 mainImageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
             }
             if (files.plantilla) {
-                const ext = path.extname(files.plantilla[0].originalname);
+                const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
                 const name = `plantilla_${Date.now()}${ext}`;
                 uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
             }

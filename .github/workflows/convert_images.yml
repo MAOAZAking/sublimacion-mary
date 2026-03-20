@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'img/**.png' # Se activa solo cuando se suben archivos PNG a cualquier subcarpeta de 'img/'
+      - 'img/**' # Se activa con cualquier cambio en img/ para asegurar que detecte .PNG, .png, etc.
 
 jobs:
   convert_images:
