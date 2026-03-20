@@ -156,5 +156,18 @@
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png"
         }
+    },
+    {
+        "s_n": "SACO_0002",
+        "telefono": "3169445092",
+        "producto": "Saco Estampado",
+        "fecha": "19/03/2026 22:19:47",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_2/lamina_frontal_saco_2.png",
+        "imagenes": {
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_2/lamina_frontal_saco_2.png",
+            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_2/lamina_espaldar_saco_2.png"
+        },
+        "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_2/foto_usada_en_saco_2.png"
     }
 ]
