@@ -2,8 +2,8 @@
   "loginAttempts": {},
   "banLevels": {
     "190.99.146.175": {
-      "level": 1,
-      "lastOffense": 1774115375748
+      "level": 2,
+      "lastOffense": 1774115560597
     },
     "191.106.135.223": {
       "level": 1,
