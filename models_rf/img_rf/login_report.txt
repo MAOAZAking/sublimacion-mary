@@ -767,3 +767,29 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/suspicious_input_1774110775985.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-21 11:33:01 (Hora de Colombia)
+(UTC: 2026-03-21 16:33:01)
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "hola134"
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.146.175
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (Invalid JSON response)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (Error de red: queryAaaa ENOTFOUND geolite.info.x-maxmind.com)
+Nota: El error 'ENOTFOUND' usualmente indica un problema de DNS en el servidor (Render), no un problema de la API de MaxMind.
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Windows 10
+Navegador: Chrome 146.0.0.0
+Tipo de Dispositivo: Escritorio
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/suspicious_input_1774110781008.jpeg
+============================================================
+
