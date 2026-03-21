@@ -514,7 +514,7 @@
             let urls = { frontal: null, espaldar: null };
             if (pedido.imagenes) {
                 urls = {
-                    frontal: pedido.imagenes.frontal ? pedido.imagenes.frontal.trim() : null,
+                    frontal: (pedido.imagenes.lamina || pedido.imagenes.frontal) ? (pedido.imagenes.lamina || pedido.imagenes.frontal).trim() : null,
                     espaldar: (pedido.imagenes.espaldar || pedido.imagenes.trasera) ? (pedido.imagenes.espaldar || pedido.imagenes.trasera).trim() : null
                 };
             } else {

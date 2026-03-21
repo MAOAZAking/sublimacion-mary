@@ -1,4 +1,4 @@
-name: Convert PNG to JPG Previews
+name: Process Images and Docs
 
 on:
   push:
@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - 'img/**' # Se activa con cualquier cambio en img/ para asegurar que detecte .PNG, .png, etc.
+
+permissions:
+  contents: write # Permiso vital para que el bot pueda guardar los cambios (push)
 
 jobs:
   convert_images:
@@ -21,12 +24,16 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install Pillow
-        run: pip install Pillow
+      - name: Install Dependencies
+        run: |
+          pip install Pillow
+          pip install python-docx
 
-      - name: Run PNG to JPG conversion script
-        id: conversion_script
-        run: python convert_to_jpg.py img/
+      - name: Run Processing Scripts
+        id: processing_scripts
+        run: |
+          python convert_to_jpg.py img/
+          python generate_word.py
 
       - name: Check for changes and commit
         id: git_status
@@ -34,5 +41,5 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add img/ # Stage all new files, modifications, and deletions in the img folder
-          git diff-index --quiet HEAD || git commit -m "Chore: Convert image previews to JPG [skip ci]"
+          git diff-index --quiet HEAD || git commit -m "Auto: Generate previews and Word docs [skip ci]"
           git push || echo "No changes to commit or push" # Push solo si hay cambios, y no fallar si no hay

@@ -1481,7 +1481,7 @@ app.post('/api/pedidos', upload.fields([
         const uploads = [];
         let mainImageUrl = '', urlFrontal = null, urlespaldar = null, urlFotoDiseno = null;
 
-        if (['camiseta', 'saco', 'gorra'].includes(tipoProducto)) {
+        if (['camiseta', 'saco'].includes(tipoProducto)) {
             if (files.lamina_frontal) {
                 const ext = path.extname(files.lamina_frontal[0].originalname).toLowerCase();
                 const name = `lamina_frontal_${tipoProducto}_${nextNum}${ext}`;
@@ -1494,7 +1494,7 @@ app.post('/api/pedidos', upload.fields([
                 urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 mainImageUrl = urlFrontal;
             }
-            if (files.lamina_espaldar && tipoProducto !== 'gorra') {
+            if (files.lamina_espaldar) {
                 const ext = path.extname(files.lamina_espaldar[0].originalname).toLowerCase();
                 const name = `lamina_espaldar_${tipoProducto}_${nextNum}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
@@ -1509,6 +1509,23 @@ app.post('/api/pedidos', upload.fields([
             if (files.plantilla) {
                 const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
                 const name = `plantilla_${tipoProducto}_${nextNum}${ext}`;
+                uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
+            }
+        } else if (tipoProducto === 'gorra') {
+            if (files.lamina_frontal) { // Se recibe desde el input 'lamina_frontal' pero se guarda como 'lamina_gorra'
+                const ext = path.extname(files.lamina_frontal[0].originalname).toLowerCase();
+                const name = `lamina_gorra_${nextNum}${ext}`; // NOMBRE ESTANDARIZADO
+                const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
+                uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_frontal[0].path) });
+                
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.lamina_frontal[0].path) });
+                
+                urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+                mainImageUrl = urlFrontal;
+            }
+            if (files.plantilla) {
+                const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
+                const name = `plantilla_gorra_${nextNum}${ext}`;
                 uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
             }
         } else {
@@ -1585,7 +1602,9 @@ app.post('/api/pedidos', upload.fields([
             s_n: nextId,
             telefono, producto, fecha, estado, tipo_mug, color_mug,
             imagen_url: mainImageUrl,
-            imagenes: { frontal: urlFrontal, espaldar: urlespaldar },
+            imagenes: (tipoProducto === 'gorra') 
+                ? { lamina: urlFrontal } // GORRA: Solo propiedad 'lamina'
+                : { frontal: urlFrontal, espaldar: urlespaldar }, // TEXTIL: Propiedades estandar
             foto_diseno_url: urlFotoDiseno
         };
         pedidos.push(nuevoPedido);
@@ -1688,7 +1707,7 @@ app.post('/api/pedidos/edit', upload.fields([
         let urlFrontal = pedido.imagenes ? pedido.imagenes.frontal : null;
         let urlespaldar = pedido.imagenes ? pedido.imagenes.espaldar : null;
 
-        if (['camiseta', 'saco', 'gorra'].includes(tipoProducto)) {
+        if (['camiseta', 'saco'].includes(tipoProducto)) {
              if (files.lamina_frontal) {
                 const ext = path.extname(files.lamina_frontal[0].originalname).toLowerCase();
                 const name = `lamina_frontal_${Date.now()}${ext}`;
@@ -1702,7 +1721,7 @@ app.post('/api/pedidos/edit', upload.fields([
                 urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 mainImageUrl = urlFrontal;
             }
-            if (files.lamina_espaldar && tipoProducto !== 'gorra') {
+            if (files.lamina_espaldar) {
                 const ext = path.extname(files.lamina_espaldar[0].originalname).toLowerCase();
                 const name = `lamina_espaldar_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
@@ -1717,6 +1736,23 @@ app.post('/api/pedidos/edit', upload.fields([
             if (files.plantilla) {
                 const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
                 const name = `plantilla_${Date.now()}${ext}`;
+                uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, filePath: files.plantilla[0].path });
+            }
+        } else if (tipoProducto === 'gorra') {
+             if (files.lamina_frontal) {
+                const ext = path.extname(files.lamina_frontal[0].originalname).toLowerCase();
+                const name = `lamina_gorra_${Date.now()}${ext}`; // NOMBRE ESTANDARIZADO
+                const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
+                uploads.push({ path: relativePath, filePath: files.lamina_frontal[0].path });
+                
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), filePath: files.lamina_frontal[0].path });
+                
+                urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+                mainImageUrl = urlFrontal;
+            }
+            if (files.plantilla) {
+                const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
+                const name = `plantilla_gorra_${Date.now()}${ext}`;
                 uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, filePath: files.plantilla[0].path });
             }
         } else {
@@ -1761,7 +1797,10 @@ app.post('/api/pedidos/edit', upload.fields([
         if (tipoProducto === 'mug') {
             pedido.tipo_mug = tipo_mug;
             pedido.color_mug = color_mug;
-        } else if (['camiseta', 'saco', 'gorra'].includes(tipoProducto)) {
+        } else if (tipoProducto === 'gorra') {
+            if (!pedido.imagenes) pedido.imagenes = {};
+            pedido.imagenes.lamina = urlFrontal; // GORRA: Guardar en 'lamina'
+        } else if (['camiseta', 'saco'].includes(tipoProducto)) {
             if (!pedido.imagenes) pedido.imagenes = {};
             pedido.imagenes.frontal = urlFrontal;
             pedido.imagenes.espaldar = urlespaldar;

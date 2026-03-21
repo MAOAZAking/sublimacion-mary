@@ -382,11 +382,11 @@
                 </div>
             `;
         } else if (esGorra) {
-            let urlFrontal = pedido.imagenes ? pedido.imagenes.frontal : (pedido.imagen_url || '');
+            let urlFrontal = pedido.imagenes ? (pedido.imagenes.lamina || pedido.imagenes.frontal) : (pedido.imagen_url || '');
             
             dynamicFiles.innerHTML = `
                 <div class="form-group">
-                    <label for="lamina_frontal">Subir NUEVA Lámina Frontal (Opcional):</label>
+                    <label for="lamina_frontal">Subir NUEVA Lámina (Opcional):</label>
                     <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png">
                     <p class="file-info">Archivo actual: <strong>${getFileNameFromUrl(urlFrontal)}</strong><br>Si no sube un archivo, se conservará el actual.</p>
                 </div>

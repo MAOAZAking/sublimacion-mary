@@ -1014,9 +1014,12 @@
 
                     // Construir la URL potencial de la imagen de previsualización JPG
                     let finalImgForPreview = imgUrl;
-                    if (imgUrl.toLowerCase().endsWith('.png')) {
-                        finalImgForPreview = imgUrl.replace(/\.png$/i, '_preview.jpg');
-                    }
+                    // El sistema (Server + Python) genera siempre un _preview.jpg para PNG y JPEG.
+                    // Para JPG originales, el servidor crea una copia _preview.jpg.
+                    // Así que siempre podemos apuntar a _preview.jpg reemplazando la extensión original.
+                    // Esto asegura compatibilidad total y menor peso para WhatsApp.
+                    finalImgForPreview = imgUrl.replace(/\.(png|jpeg|jpg)$/i, '_preview.jpg');
+
 
                     // Usamos la URL pública de producción para asegurar que el cliente pueda abrir el link
                     // aunque nosotros estemos trabajando en localhost.
@@ -1075,7 +1078,7 @@
             let urls = { frontal: null, espaldar: null };
             if (pedido.imagenes) {
                 urls = {
-                    frontal: pedido.imagenes.frontal ? pedido.imagenes.frontal.trim() : null,
+                    frontal: (pedido.imagenes.lamina || pedido.imagenes.frontal) ? (pedido.imagenes.lamina || pedido.imagenes.frontal).trim() : null,
                     espaldar: (pedido.imagenes.espaldar || pedido.imagenes.trasera) ? (pedido.imagenes.espaldar || pedido.imagenes.trasera).trim() : null
                 };
             } else {

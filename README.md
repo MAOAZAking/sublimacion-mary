@@ -16,4 +16,4 @@ Security Patch #8 Fix #2
 # Mejora N° del parche de seguridad N°
 Security Patch #8 Enhancement #
 # Parche de automatización N°
-Automation Patch #1: Automate saving information in render variables
+Automation #2 Patch #1: Automate saving information in render variables
