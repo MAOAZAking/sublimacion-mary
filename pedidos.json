@@ -71,21 +71,20 @@
         "s_n": "MUGS_0006",
         "telefono": "3002052842",
         "producto": "Mug Personalizado",
-        "fecha": "12/02/2026 09:23:18",
-        "estado": "Creando diseño",
+        "fecha": "21/03/2026 06:21:05",
+        "estado": "Revisión del cliente",
         "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768484056/jgpyuhwmf2sirfp3qkxf.png ",
-        "tipo_mug": "color interno",
-        "color_mug": "rojo"
+        "tipo_mug": "clasico"
     },
     {
         "s_n": "MUGS_0007",
         "telefono": "3152214070",
         "producto": "Mug Personalizado",
-        "fecha": "01/03/2026 12:32:12",
-        "estado": "Creando diseño",
+        "fecha": "21/03/2026 06:20:43",
+        "estado": "Revisión del cliente",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/mug/mug_1/lamina_mug_1.png",
         "tipo_mug": "color interno",
-        "color_mug": "naranja"
+        "color_mug": "amarillo"
     },
     {
         "s_n": "MUGS_0008",
@@ -169,5 +168,31 @@
             "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_2/lamina_espaldar_saco_2.png"
         },
         "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_2/foto_usada_en_saco_2.png"
+    },
+    {
+        "s_n": "GORR_0002",
+        "telefono": "3169445092",
+        "producto": "Gorra Estampada",
+        "fecha": "21/03/2026 06:09:21",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_2/lamina_frontal_gorra_2.jpeg",
+        "imagenes": {
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_2/lamina_frontal_gorra_2.jpeg",
+            "espaldar": null
+        },
+        "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_2/foto_usada_en_gorra_2.jpeg"
+    },
+    {
+        "s_n": "SACO_0003",
+        "telefono": "3169445092",
+        "producto": "Saco Estampado",
+        "fecha": "21/03/2026 06:19:35",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_3/lamina_frontal_saco_3.png",
+        "imagenes": {
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_3/lamina_frontal_saco_3.png",
+            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_3/lamina_espaldar_saco_3.png"
+        },
+        "foto_diseno_url": null
     }
 ]
