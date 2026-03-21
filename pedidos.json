@@ -194,5 +194,18 @@
             "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/saco/saco_3/lamina_espaldar_saco_3.png"
         },
         "foto_diseno_url": null
+    },
+    {
+        "s_n": "GORR_0003",
+        "telefono": "3169445092",
+        "producto": "Gorra Estampada",
+        "fecha": "21/03/2026 08:55:37",
+        "estado": "Revisión del cliente",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_3/lamina_frontal_gorra_3.png",
+        "imagenes": {
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_3/lamina_frontal_gorra_3.png",
+            "espaldar": null
+        },
+        "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_3/foto_usada_en_gorra_3.png"
     }
 ]
