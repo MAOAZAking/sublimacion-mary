@@ -33,6 +33,6 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add img/**/*.jpg # Añadir todos los nuevos JPG generados
-          git diff-index --quiet HEAD || git commit -m "Add JPG previews for new/updated PNGs [skip ci]"
+          git add img/ # Stage all new files, modifications, and deletions in the img folder
+          git diff-index --quiet HEAD || git commit -m "Chore: Convert image previews to JPG [skip ci]"
           git push || echo "No changes to commit or push" # Push solo si hay cambios, y no fallar si no hay

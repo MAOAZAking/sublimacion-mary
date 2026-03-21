@@ -25,7 +25,7 @@
     <style>
         html { display: none; } /* Ocultar todo el sitio por defecto hasta verificar sesión */
         body { 
-            font-family: 'Poppins', sans-serif; background-color: #121212; display: flex; justify-content: center; align-items: center; min-height: 100vh; min-height: 100dvh; margin: 0; color: white;
+            font-family: 'Poppins', sans-serif; background-color: #121212; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; min-height: 100dvh; margin: 0; color: white;
             padding: 20px;
             padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
         }
@@ -37,9 +37,6 @@
         input:focus, select:focus { border-color: #8e44ad; background: #333; outline: none; }
         button { width: 100%; padding: 15px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(142, 68, 173, 0.3); margin-top: 10px; -webkit-appearance: none; }
         button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(142, 68, 173, 0.4); }
-        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
-        .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .back-link { display: block; text-align: center; margin-top: 15px; color: #aaa; text-decoration: none; font-size: 0.9rem; }
 
         .footer-copy {
@@ -137,6 +134,27 @@
             background-position: center; background-repeat: no-repeat;
             opacity: 0.1;
         }
+
+        /* Estilos para el Toast Flotante */
+        .toast {
+            position: fixed;
+            top: -100px; /* Empezar fuera de la pantalla */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2d2d2d;
+            color: white;
+            padding: 16px 30px;
+            border-radius: 50px;
+            border: 1px solid #444;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            z-index: 10000;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: top 0.5s ease-in-out, background-color 0.3s;
+        }
+        .toast.show {
+            top: 20px; /* Deslizar hacia adentro */
+        }
     </style>
 </head>
 </head>
@@ -154,17 +172,11 @@
     <h3 style="margin: 20px 20px 0; text-align: center;">Estamos preparando ¡LA MEJOR EXPERIENCIA PARA TI!</h3>
 </div>
 
+<div id="floating-toast" class="toast"></div>
+
 <div class="container">
     <h2>Crear Nuevo Pedido</h2>
-
-    <div id="mensajeAlert" class="alert"></div>
-
-    <form id="pedidoForm" action="https://formsubmit.co/378c29d9d55d65ab60b67264f0d7b6d8" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="_subject" value="Nuevo Pedido de Sublimación">
-        <input type="hidden" name="_cc" id="cc_email" value="maoaza13579@gmail.com">
-        <input type="hidden" name="_captcha" value="false">
-        <input type="hidden" name="_template" value="table">
-
+    <form id="pedidoForm">
         <div class="form-group">
             <label for="producto">Tipo de Producto:</label>
             <select name="producto" id="producto" required>
@@ -420,7 +432,7 @@
 
         const producto = document.getElementById('producto').value;
         const telefono = document.getElementById('telefono').value;
-        const alertBox = document.getElementById('mensajeAlert');
+        const toast = document.getElementById('floating-toast');
 
         // Validaciones específicas
         let valid = false;
@@ -456,11 +468,9 @@
 
         if (producto && telefono && valid) {
             
-            alertBox.textContent = "Subiendo archivos a GitHub y actualizando base de datos... Por favor espere.";
-            alertBox.className = 'alert';
-            alertBox.style.display = 'block';
-            alertBox.style.backgroundColor = '#fff3cd';
-            alertBox.style.color = '#856404';
+            toast.textContent = "Estamos creando el pedido, por favor espere...";
+            toast.classList.add('show');
+            btnSubmit.disabled = true;
             
             // 1. Generar datos básicos
             const now = new Date();
@@ -527,30 +537,27 @@
                 return data;
             })
             .then(data => {
-                // El backend nos devuelve el objeto del pedido creado
-                const nuevoPedido = data.pedido;
-
-                // 4. Enviar correo de notificación
-                const formDataEmail = new FormData();
-                formDataEmail.append('_subject', 'Nuevo Pedido JSON');
-                const adminEmail = sessionStorage.getItem('adminEmail') || 'maoaza13579@gmail.com';
-                formDataEmail.append('_cc', adminEmail);
-                formDataEmail.append('_captcha', 'false');
-                formDataEmail.append('_template', 'table');
-                formDataEmail.append('datos_pedido', JSON.stringify(nuevoPedido, null, 4));
-
-                return fetch("https://formsubmit.co/ajax/378c29d9d55d65ab60b67264f0d7b6d8", { method: "POST", body: formDataEmail });
+                // La notificación por correo ahora se maneja en el backend (server.js)
+                return Promise.resolve();
             })
             .then(() => {
-                alertBox.textContent = `¡Pedido creado con éxito!`;
-                alertBox.className = 'alert success';
-                alertBox.style.display = 'block';
-                document.getElementById('pedidoForm').reset();
+                toast.textContent = '¡Pedido creado con éxito! Redirigiendo...';
+                toast.style.backgroundColor = '#27ae60'; // Verde para éxito
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    navigateTo('admin_dashboard.html'); // Redirigir automáticamente
+                }, 2000);
             })
             .catch(error => {
-                alertBox.textContent = "Error: " + error.message;
-                alertBox.className = 'alert error';
-                alertBox.style.display = 'block';
+                toast.textContent = "Error: " + error.message;
+                toast.style.backgroundColor = '#c0392b'; // Rojo para error
+                btnSubmit.disabled = false;
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    // Resetear color para la próxima vez
+                    setTimeout(() => { toast.style.backgroundColor = '#2d2d2d'; }, 500);
+                }, 6000);
             });
         }
     });

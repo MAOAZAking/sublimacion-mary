@@ -19,7 +19,7 @@
     </script>
     <style>
         html { display: none; }
-        body { font-family: 'Poppins', sans-serif; background-color: #121212; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; color: white; }
+        body { font-family: 'Poppins', sans-serif; background-color: #121212; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; color: white; }
         .container { background: #1e1e1e; padding: 2.5rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); width: 100%; max-width: 450px; border: 1px solid #333; }
         h2 { text-align: center; color: rgb(255, 255, 255); margin-bottom: 10px; }
         .subtitle { text-align: center; color: #b0b0b0; margin-bottom: 25px; font-size: 0.9rem; }
@@ -29,9 +29,6 @@
         input:focus, select:focus { border-color: #8e44ad; background: #333; outline: none; }
         button { width: 100%; padding: 15px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(142, 68, 173, 0.3); margin-top: 10px; -webkit-appearance: none; }
         button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(142, 68, 173, 0.4); }
-        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
-        .alert.error { background-color: #f8d7da; color: #721c24; }
-        .alert.success { background-color: #d4edda; color: #155724; }
         .back-link { display: block; text-align: center; margin-top: 15px; color: #aaa; text-decoration: none; font-size: 0.9rem; }
         .file-info { font-size: 0.8rem; color: #888; margin-top: 5px; }
 
@@ -122,6 +119,27 @@
             95% { transform: translateX(calc(var(--uib-size) * 0.235)) scale(0.789472); opacity: 0.72; }
             100% { transform: translateX(calc(var(--uib-size) * 0.25)) scale(0.73684); opacity: 0.65; }
         }
+
+        /* Estilos para el Toast Flotante */
+        .toast {
+            position: fixed;
+            top: -100px; /* Empezar fuera de la pantalla */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2d2d2d;
+            color: white;
+            padding: 16px 30px;
+            border-radius: 50px;
+            border: 1px solid #444;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            z-index: 10000;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: top 0.5s ease-in-out, background-color 0.3s;
+        }
+        .toast.show {
+            top: 20px; /* Deslizar hacia adentro */
+        }
     </style>
 </head>
 <body>
@@ -138,11 +156,11 @@
     <h3 style="margin: 20px 20px 0; text-align: center;">Estamos preparando ¡LA MEJOR EXPERIENCIA PARA TI!</h3>
 </div>
 
+<div id="floating-toast" class="toast"></div>
+
 <div class="container">
     <h2>Editar Pedido</h2>
     <p id="subtitle" class="subtitle">Cargando datos del pedido...</p>
-
-    <div id="mensajeAlert" class="alert"></div>
 
     <form id="pedidoForm" style="display: none;">
         <!-- Identificador del pedido original -->
@@ -405,7 +423,7 @@
     document.getElementById('pedidoForm').addEventListener('submit', function(e) {
         e.preventDefault(); 
 
-        const alertBox = document.getElementById('mensajeAlert');
+        const toast = document.getElementById('floating-toast');
         const telefono = document.getElementById('telefono').value;
         const productoTipo = document.getElementById('producto_tipo').value;
         const originalUrl = document.getElementById('original_imagen_url').value;
@@ -443,11 +461,8 @@
             return;
         }
 
-        alertBox.textContent = "Actualizando pedido en GitHub... Por favor espere, esto puede tardar.";
-        alertBox.className = 'alert';
-        alertBox.style.display = 'block';
-        alertBox.style.backgroundColor = '#fff3cd';
-        alertBox.style.color = '#856404';
+        toast.textContent = "Estamos actualizando el pedido, por favor espere...";
+        toast.classList.add('show');
         document.getElementById('btnSubmit').disabled = true;
         
         // 1. Generar nueva fecha
@@ -510,26 +525,26 @@
             return data;
         })
         .then(data => {
-            const pedidoActualizado = data.pedido;
-
             // La notificación por correo ahora se maneja automáticamente en el servidor (server.js)
             return Promise.resolve();
         })
         .then(() => {
-            alertBox.textContent = `¡Pedido actualizado con éxito! Redirigiendo al panel...`;
-            alertBox.className = 'alert success';
-            alertBox.style.display = 'block';
+            toast.textContent = '¡Pedido actualizado con éxito! Redirigiendo...';
+            toast.style.backgroundColor = '#27ae60';
             
             setTimeout(() => {
-                isInternalNavigation = true; // Permitir redirección sin cerrar sesión
-                window.location.href = 'admin_dashboard.html';
-            }, 3000);
+                toast.classList.remove('show');
+                volverAlDashboard(); // Redirigir automáticamente con token
+            }, 2000);
         })
         .catch(error => {
-            alertBox.textContent = "Error: " + error.message;
-            alertBox.className = 'alert error';
-            alertBox.style.display = 'block';
+            toast.textContent = "Error: " + error.message;
+            toast.style.backgroundColor = '#c0392b';
             document.getElementById('btnSubmit').disabled = false;
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => { toast.style.backgroundColor = '#2d2d2d'; }, 500);
+            }, 6000);
         });
     });
 

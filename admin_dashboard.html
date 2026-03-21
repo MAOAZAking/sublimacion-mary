@@ -386,27 +386,22 @@
             if (loaderText) loaderText.innerText = "Ya casi terminamos, espera un momento más";
         }
 
-        // VERIFICACIÓN POR TOKEN DE NAVEGACIÓN INTERNA (Nuevo/Editar Pedido)
-        // Si venimos de una página interna segura, validamos sin reconocimiento facial
         if (sessionStorage.getItem('safeNavigationToken') === 'true') {
             sessionStorage.removeItem('safeNavigationToken'); // Eliminar token inmediatamente (un solo uso)
             sessionStorage.setItem('adminFacialVerified', 'true'); // Marcar sesión como verificada
         }
 
-        // El loader ya está visible. Iniciamos la re-verificación facial.
-        // El loader ya está visible.
         document.documentElement.style.display = 'block'; // Mostramos el body para que el loader sea visible
-        reverificarIdentidad();
 
         // Verificar si ya se realizó la validación facial en esta sesión
         if (sessionStorage.getItem('adminFacialVerified') === 'true') {
             const loaderText = document.getElementById('loader-text');
             if (loaderText) loaderText.innerText = "Sesión verificada. Cargando panel...";
-            inicializarDashboard();
+            inicializarDashboard(); // Saltar verificación facial
         } else {
             const loaderText = document.getElementById('loader-text');
-            if (loaderText) loaderText.innerText = "Ya esta terminando la carga, por favor espera...";
-            reverificarIdentidad();
+            if (loaderText) loaderText.innerText = "Se requiere verificación facial para continuar...";
+            reverificarIdentidad(); // Proceder con la verificación facial
         }
 
         // --- LÓGICA DE INACTIVIDAD ROBUSTA ---
