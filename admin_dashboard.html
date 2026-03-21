@@ -1399,23 +1399,25 @@
                 gorra: {
                     frontal: { 
                         // Configuración para gorra hombre
-                        x: 0, y: 100, scale: 5.5, angle: 0, flipX: true, inclination: -0.2 // Trapecio con puntas más cerradas
+                        x: 0, y: 100, scale: 5.5, angle: 0, flipX: true, inclination: -0.1 // Trapecio con puntas más cerradas
                     }
                 }
             },
             mujer: {
                 camiseta: {
-                    frontal: { x: -240, y: 230, scale: 1.5, angle: 0 },
+                    // Y aumentado para bajar el estampado y que no quede muy pegado al cuello
+                    frontal: { x: -240, y: 230, scale: 1.5, angle: 0 }, 
                     espaldar: { x: 270, y: 230, scale: 1.5, angle: 0 }
                 },
                 saco: {
-                    frontal: { x: 40, y: 260, scale: 0.9, angle: 0 },
+                    // SCALE disminuido para que no quede la imagen sobre los bolsillos
+                    frontal: { x: 40, y: 260, scale: 0.9, angle: 0 }, 
                     espaldar: { x: -320, y: 260, scale: 0.9, angle: 0 }
                 },
                 gorra: {
                     frontal: { 
                         // Configuración para gorra mujer
-                        x: 0, y: 100, scale: 5.5, angle: 0, flipX: true, inclination: -0.2 // Trapecio con puntas más cerradas
+                        x: 0, y: 100, scale: 5.5, angle: 0, flipX: true, inclination: -0.1 // Trapecio con puntas más cerradas
                     }
                 }
             }
@@ -1438,17 +1440,22 @@
                 ctx.restore();
             };
             const w = img.width, h = img.height;
-            const s = { tl:{x:0,y:0}, tm:{x:w/2,y:0}, tr:{x:w,y:0}, ml:{x:0,y:h/2}, mm:{x:w/2,y:h/2}, mr:{x:w,y:h/2}, bl:{x:0,y:h}, bm:{x:w/2,y:h}, br:{x:w,y:h} };
+            const s = {
+                tl: {x:0, y:0}, tm: {x:w/2, y:0}, tr: {x:w, y:0},
+                ml: {x:0, y:h/2}, mm: {x:w/2, y:h/2}, mr: {x:w, y:h/2},
+                bl: {x:0, y:h}, bm: {x:w/2, y:h}, br: {x:w, y:h}
+            };
             const p = points;
             const c = { x: (p.tm.x + p.bm.x + p.lm.x + p.rm.x) / 4, y: (p.tm.y + p.bm.y + p.lm.y + p.rm.y) / 4 };
-            drawTriangle(s.tl.x, s.tl.y, s.tm.x, s.tm.y, s.mm.x, s.mm.y, p.tl.x, p.tl.y, p.tm.x, p.tm.y, c.x, c.y);
-            drawTriangle(s.tm.x, s.tm.y, s.tr.x, s.tr.y, s.mm.x, s.mm.y, p.tm.x, p.tm.y, p.tr.x, p.tr.y, c.x, c.y);
-            drawTriangle(s.tr.x, s.tr.y, s.mr.x, s.mr.y, s.mm.x, s.mm.y, p.tr.x, p.tr.y, p.rm.x, p.rm.y, c.x, c.y);
-            drawTriangle(s.mr.x, s.mr.y, s.br.x, s.br.y, s.mm.x, s.mm.y, p.rm.x, p.rm.y, p.br.x, p.br.y, c.x, c.y);
-            drawTriangle(s.br.x, s.br.y, s.bm.x, s.bm.y, s.mm.x, s.mm.y, p.br.x, p.br.y, p.bm.x, p.bm.y, c.x, c.y);
-            drawTriangle(s.bm.x, s.bm.y, s.bl.x, s.bl.y, s.mm.x, s.mm.y, p.bm.x, p.bm.y, p.bl.x, p.bl.y, c.x, c.y);
-            drawTriangle(s.bl.x, s.bl.y, s.ml.x, s.ml.y, s.mm.x, s.mm.y, p.bl.x, p.bl.y, p.lm.x, p.lm.y, c.x, c.y);
-            drawTriangle(s.ml.x, s.ml.y, s.tl.x, s.tl.y, s.mm.x, s.mm.y, p.lm.x, p.lm.y, p.tl.x, p.tl.y, c.x, c.y);
+            
+            drawTriangle(s.tl.x, s.tl.y, s.tm.x, s.tm.y, s.mm.x, s.mm.y,  p.tl.x, p.tl.y, p.tm.x, p.tm.y, c.x, c.y); // TL-TM-Center
+            drawTriangle(s.tm.x, s.tm.y, s.tr.x, s.tr.y, s.mm.x, s.mm.y,  p.tm.x, p.tm.y, p.tr.x, p.tr.y, c.x, c.y); // TM-TR-Center
+            drawTriangle(s.tr.x, s.tr.y, s.mr.x, s.mr.y, s.mm.x, s.mm.y,  p.tr.x, p.tr.y, p.rm.x, p.rm.y, c.x, c.y); // TR-RM-Center
+            drawTriangle(s.mr.x, s.mr.y, s.br.x, s.br.y, s.mm.x, s.mm.y,  p.rm.x, p.rm.y, p.br.x, p.br.y, c.x, c.y); // RM-BR-Center
+            drawTriangle(s.br.x, s.br.y, s.bm.x, s.bm.y, s.mm.x, s.mm.y,  p.br.x, p.br.y, p.bm.x, p.bm.y, c.x, c.y); // BR-BM-Center
+            drawTriangle(s.bm.x, s.bm.y, s.bl.x, s.bl.y, s.mm.x, s.mm.y,  p.bm.x, p.bm.y, p.bl.x, p.bl.y, c.x, c.y); // BM-BL-Center
+            drawTriangle(s.bl.x, s.bl.y, s.ml.x, s.ml.y, s.mm.x, s.mm.y,  p.bl.x, p.bl.y, p.lm.x, p.lm.y, c.x, c.y); // BL-LM-Center
+            drawTriangle(s.ml.x, s.ml.y, s.tl.x, s.tl.y, s.mm.x, s.mm.y,  p.lm.x, p.lm.y, p.tl.x, p.tl.y, c.x, c.y); // LM-TL-Center
         };
 
         const drawImageOnCanvas = (img, offsetX, offsetY, scaleFactor, rotationDeg, curvature = 0, warpSettings = null) => {
@@ -1486,10 +1493,11 @@
                 for (let i = 0; i < slices; i++) {
                     // Normalizar x de -1 a 1
                     const nx = (i / (slices - 1)) * 2 - 1; 
-                    // Desplazamiento parabólico: y = k * x^2 (Sube los lados)
+                    // Desplazamiento parabólico: y = k * x^2 (Sube los lados) 
                     const yShift = curvature * (nx * nx); 
                     
                     // Dibujar franja desplazada
+                    // Se agrega +1.5 al ancho destino para evitar líneas blancas entre cortes
                     ctx.drawImage(img, i * imgSliceWidth, 0, imgSliceWidth, img.height, 
                                  -drawWidth / 2 + i * sliceWidth, -drawHeight / 2 - yShift, sliceWidth + 1.5, drawHeight);
                 }
@@ -1561,7 +1569,7 @@
                     if (tipoProducto === 'gorra') {
                         // Para gorras, buscamos la malla del accesorio de cabeza y la ponemos blanca
                         if (child.isMesh && child.material && (child.material.name.includes('Headwear') || child.material.name.includes('Cap') || child.name.includes('Headwear'))) {
-                            child.material.color.setHex(0xffffff);
+                            child.material.color.setHex(0xffffff); // Gorra blanca base
                             child.material.map = null;
                             child.material.needsUpdate = true;
                         }
@@ -1596,11 +1604,11 @@
                 // Calcular posición del foco (Pecho para ropa, Cabeza para gorras)
                 let focusY = box.min.y + (size.y * 0.75); // Por defecto pecho
                 if (tipoProducto === 'gorra') {
-                    focusY = box.max.y - (size.y * 0.06); // Foco en la cabeza
+                    focusY = box.max.y - (size.y * 0.06); // Foco en la gorra
                     // Hacer zoom en el modelo 3D para gorras
                     camera.zoom = 1.8; // mayor = más cerca
                     camera.updateProjectionMatrix();
-                
+                    
 
                     // --- CREAR LÁMINA FLOTANTE PARA LA GORRA ---
                     // Creamos un segmento de cilindro curvo que simula el frente de la gorra
@@ -1621,9 +1629,9 @@
                     // Definir cuánto sale el pliegue según el género
                     let maxPush;
                     if (gender === 'hombre') {
-                        maxPush = laminaRadius * 0.11;
+                        maxPush = laminaRadius * 0.11; // 0.11
                     } else if (gender === 'mujer') {
-                        maxPush = laminaRadius * 0.09;
+                        maxPush = laminaRadius * 0.09; // 0.09
                     }
 
                     for (let i = 0; i < positions.length; i += 3) {

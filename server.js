@@ -648,27 +648,40 @@ function sendEmailViaBrevo(recipientsArray, subject, htmlContent) {
 const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
     const { type, level } = options;
     // URL pública de la imagen de presentación en tu repositorio
-    const footerImage = "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/presentacion_email.png";
+    const repoBaseUrl = "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/";
+    let footerImage = `${repoBaseUrl}presentacion_email.png`;
     const year = new Date().getFullYear();
     
     // Estilos por defecto
     let bodyBg = '#f4f4f4';
+    let containerBg = '#ffffff';
     let headerBg = '#121212';
     let footerBg = '#121212';
+    let textColor = '#555';
+    let titleColor = '#121212';
     let headerTitle = 'Support Sublimación Mary';
     let containerBorder = 'none';
     let infoCardBorder = '#8e44ad'; // Morado por defecto
+    let infoCardBg = '#f8f9fa';
+    let strongColor = '#333';
 
     // Aplicar estilos de seguridad según el nivel
     if (type === 'security') {
         if (level >= 3) { // Baneo permanente
+            footerImage = `${repoBaseUrl}presentacion_email_baneo.png`;
             bodyBg = '#c0392b'; // Fondo rojo oscuro para todo el correo
+            containerBg = '#c0392b'; // Fondo del contenedor rojo
             headerBg = '#c0392b'; // Fondo rojo oscuro
             footerBg = '#c0392b'; // Fondo rojo oscuro
+            textColor = '#ffffff'; // Texto blanco
+            titleColor = '#ffffff'; // Títulos blancos
             containerBorder = '2px solid white'; // Borde blanco para el contenedor principal
             headerTitle = '🚨☠️ Alerta de Seguridad ☠️🚨';
-            infoCardBorder = '#e74c3c'; // Asegurar que la tarjeta también tenga borde rojo
+            infoCardBorder = '#ffffff'; // Linea blanca
+            infoCardBg = 'rgba(0,0,0,0.1)'; // Fondo tarjeta sutil
+            strongColor = '#ffffff'; // Negritas en blanco
         } else if (level === 2) { // Segunda infracción
+            footerImage = `${repoBaseUrl}presentacion_email_rojo.png`;
             headerTitle = '🚨 Alerta de Seguridad 🚨';
             infoCardBorder = '#e74c3c'; // Mantiene el borde rojo
             headerBg = '#c0392b'; // Fondo rojo oscuro
@@ -686,18 +699,18 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: ${bodyBg}; margin: 0; padding: 0; color: #333; }
-            .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: ${containerBorder}; }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: ${bodyBg}; margin: 0; padding: 0; color: ${textColor}; }
+            .email-container { max-width: 600px; margin: 20px auto; background-color: ${containerBg}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: ${containerBorder}; }
             .header { background-color: ${headerBg}; padding: 30px 20px; text-align: center; }
             .header h1 { color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
-            .content { padding: 40px 30px; line-height: 1.6; font-size: 16px; color: #555; }
-            .content h2 { color: #121212; font-size: 22px; margin-top: 0; margin-bottom: 20px; font-weight: 600; }
-            .info-card { background-color: #f8f9fa; border-left: 5px solid ${infoCardBorder}; padding: 20px; margin: 25px 0; border-radius: 4px; }
+            .content { padding: 40px 30px; line-height: 1.6; font-size: 16px; color: ${textColor}; }
+            .content h2 { color: ${titleColor}; font-size: 22px; margin-top: 0; margin-bottom: 20px; font-weight: 600; }
+            .info-card { background-color: ${infoCardBg}; border-left: 5px solid ${infoCardBorder}; padding: 20px; margin: 25px 0; border-radius: 4px; }
             .info-item { margin-bottom: 10px; }
-            .info-item strong { color: #333; display: inline-block; width: 120px; }
+            .info-item strong { color: ${strongColor}; display: inline-block; width: 120px; }
             .btn { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #ffffff !important; text-decoration: none; border-radius: 50px; font-weight: bold; margin-top: 25px; text-align: center; box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3); }
             .footer-image { width: 100%; display: block; border-top: 1px solid #eee; }
-            .footer { background-color: ${footerBg}; padding: 20px; text-align: center; color: #aaa; font-size: 13px; }
+            .footer { background-color: ${footerBg}; padding: 20px; text-align: center; color: ${level >= 3 ? '#e0e0e0' : '#aaa'}; font-size: 13px; }
             .footer p { margin: 5px 0; }
         </style>
     </head>
@@ -1680,10 +1693,11 @@ app.post('/api/pedidos/edit', upload.fields([
                 const ext = path.extname(files.lamina_frontal[0].originalname).toLowerCase();
                 const name = `lamina_frontal_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
-                uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_frontal[0].path) });
+                // MEMORY FIX: No leer el archivo todavía (fs.readFileSync). Guardamos la ruta y leemos uno a uno.
+                uploads.push({ path: relativePath, filePath: files.lamina_frontal[0].path });
                 
                 // DUPLICAR PARA PREVIEW (Edición)
-                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.lamina_frontal[0].path) });
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), filePath: files.lamina_frontal[0].path });
                 
                 urlFrontal = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 mainImageUrl = urlFrontal;
@@ -1692,10 +1706,10 @@ app.post('/api/pedidos/edit', upload.fields([
                 const ext = path.extname(files.lamina_espaldar[0].originalname).toLowerCase();
                 const name = `lamina_espaldar_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
-                uploads.push({ path: relativePath, content: fs.readFileSync(files.lamina_espaldar[0].path) });
+                uploads.push({ path: relativePath, filePath: files.lamina_espaldar[0].path });
                 
                 // DUPLICAR PARA PREVIEW (Edición)
-                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.lamina_espaldar[0].path) });
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), filePath: files.lamina_espaldar[0].path });
                 
                 urlespaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
                 if (!mainImageUrl) mainImageUrl = urlespaldar;
@@ -1703,33 +1717,40 @@ app.post('/api/pedidos/edit', upload.fields([
             if (files.plantilla) {
                 const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
                 const name = `plantilla_${Date.now()}${ext}`;
-                uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
+                uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, filePath: files.plantilla[0].path });
             }
         } else {
             if (files.imagen) {
                 const ext = path.extname(files.imagen[0].originalname).toLowerCase();
                 const name = `lamina_${Date.now()}${ext}`;
                 const relativePath = `img/${tipoProducto}/${folderName}/${name}`;
-                uploads.push({ path: relativePath, content: fs.readFileSync(files.imagen[0].path) });
+                uploads.push({ path: relativePath, filePath: files.imagen[0].path });
                 
                 // DUPLICAR PARA PREVIEW (Edición)
-                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.imagen[0].path) });
+                uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), filePath: files.imagen[0].path });
                 
                 mainImageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
             }
             if (files.plantilla) {
                 const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
                 const name = `plantilla_${Date.now()}${ext}`;
-                uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, content: fs.readFileSync(files.plantilla[0].path) });
+                uploads.push({ path: `img/${tipoProducto}/${folderName}/${name}`, filePath: files.plantilla[0].path });
             }
         }
 
         const treeItems = [];
         for (const up of uploads) {
+            // MEMORY FIX: Leemos el archivo AQUÍ, lo subimos y dejamos que el Garbage Collector lo limpie
+            // antes de leer el siguiente. Esto mantiene el uso de RAM bajo.
+            const fileContent = fs.readFileSync(up.filePath);
+            
             const { data: blobData } = await githubClient.git.createBlob({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: up.content.toString('base64'), encoding: 'base64'
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: fileContent.toString('base64'), encoding: 'base64'
             });
             treeItems.push({ path: up.path, mode: '100644', type: 'blob', sha: blobData.sha });
+            
+            // Pequeña pausa para dar tiempo al sistema de liberar memoria si es necesario
+            await delay(200); 
         }
 
         pedido.telefono = telefono;
