@@ -39,6 +39,8 @@ const banLevels = {}; // Para rastrear el nivel de ofensa de cada IP
 const permanentBans = new Set(); // Para baneos permanentes
 const BANNED_IPS_PATH = path.join(__dirname, 'models_rf/img_rf/security/banned-ips.json'); // Ruta al archivo de baneos
 const SECURITY_STATE_PATH = path.join(__dirname, 'models_rf/img_rf/security/security-state.json'); // Ruta para guardar intentos y niveles
+const CLIENTES_PATH = path.join(__dirname, 'clientes.json'); // Nueva base de datos de clientes
+
 
 const MAX_ATTEMPTS = 5; // Intentos fallidos antes de bloquear
 const ATTEMPT_WINDOW = 5 * 60 * 1000; // Ventana de 5 minutos para contar intentos
@@ -904,6 +906,30 @@ try {
     console.error("Error cargando pedidos.json local:", err.message);
 }
 
+// --- CACHE DE CLIENTES (CRM) ---
+let localClientes = [];
+try {
+    if (fs.existsSync(CLIENTES_PATH)) {
+        localClientes = JSON.parse(fs.readFileSync(CLIENTES_PATH, 'utf8'));
+        console.log(`✅ Base de datos de clientes cargada: ${localClientes.length} registros.`);
+    } else if (localPedidos.length > 0) {
+        // ALIMENTACIÓN INICIAL: Extraer clientes de pedidos existentes
+        console.log("ℹ️ clientes.json no existe. Creando base de datos inicial desde pedidos...");
+        const mapClientes = new Map();
+        localPedidos.forEach(p => {
+            const tel = p.telefono || p.teléfono;
+            if (tel && !mapClientes.has(tel)) {
+                mapClientes.set(tel, { telefono: tel, email: null, nombre: null, genero: null, fecha_registro: new Date().toISOString() });
+            }
+        });
+        localClientes = Array.from(mapClientes.values());
+        fs.writeFileSync(CLIENTES_PATH, JSON.stringify(localClientes, null, 4));
+        console.log(`✅ Base de datos de clientes creada con ${localClientes.length} números importados.`);
+    }
+} catch (err) {
+    console.error("Error inicializando clientes.json:", err.message);
+}
+
 // Configuración de GitHub (Si existen las variables)
 const githubClient = process.env.GITHUB_TOKEN ? new Octokit({ auth: process.env.GITHUB_TOKEN }) : null;
 const GITHUB_OWNER = process.env.GITHUB_OWNER;
@@ -1055,6 +1081,13 @@ app.post('/api/check-username-availability', (req, res) => {
     }
 
     return res.json({ available: true });
+});
+
+// Endpoint para buscar información de un cliente por teléfono
+app.get('/api/clientes/search', (req, res) => {
+    const { telefono } = req.query;
+    const cliente = localClientes.find(c => c.telefono === telefono);
+    res.json({ found: !!cliente, cliente });
 });
 
 // Endpoint para completar configuración (Usuario y Contraseña)
@@ -1428,7 +1461,7 @@ app.post('/api/pedidos', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { producto, telefono, fecha, estado, tipo_mug, color_mug } = req.body;
+    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente } = req.body;
     const files = req.files || {};
 
     // 1. Determinar tipo de producto
@@ -1695,6 +1728,71 @@ app.post('/api/pedidos', upload.fields([
             foto_diseno_url: urlFotoDiseno
         };
         pedidos.push(nuevoPedido);
+
+        // --- GESTIÓN DE CLIENTES (CRM) ---
+        let clienteActualizado = false;
+        let alertaCambioEmail = false;
+        let emailAnterior = null;
+
+        let clienteIndex = localClientes.findIndex(c => c.telefono === telefono);
+        
+        if (clienteIndex >= 0) {
+            // Cliente existente: Actualizar si hay datos nuevos
+            const cliente = localClientes[clienteIndex];
+            
+            // Detectar cambio de correo para alerta
+            if (email_cliente && cliente.email && cliente.email !== email_cliente) {
+                alertaCambioEmail = true;
+                emailAnterior = cliente.email;
+            }
+
+            // Actualizar datos si vienen en el formulario (prioridad a lo nuevo)
+            if (email_cliente) cliente.email = email_cliente;
+            // Solo actualizar nombre/género si estaban vacíos o si se fuerzan (en este flujo, si existe el cliente, estos campos suelen venir vacíos del front a menos que se habilite edición completa, asumiremos actualización si hay dato)
+            if (nombre_cliente) cliente.nombre = nombre_cliente;
+            if (genero_cliente) cliente.genero = genero_cliente;
+            
+            localClientes[clienteIndex] = cliente;
+            clienteActualizado = true;
+        } else {
+            // Cliente Nuevo
+            const nuevoCliente = {
+                telefono,
+                email: email_cliente || null,
+                nombre: nombre_cliente || null,
+                genero: genero_cliente || null,
+                fecha_registro: new Date().toISOString()
+            };
+            localClientes.push(nuevoCliente);
+            clienteActualizado = true;
+        }
+
+        // Añadir clientes.json al commit si hubo cambios
+        if (clienteActualizado) {
+            // Guardar localmente
+            try { fs.writeFileSync(CLIENTES_PATH, JSON.stringify(localClientes, null, 4)); } catch(e){}
+
+            const { data: jsonClientesBlob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: Buffer.from(JSON.stringify(localClientes, null, 4)).toString('base64'), encoding: 'base64'
+            });
+            treeItems.push({ path: 'clientes.json', mode: '100644', type: 'blob', sha: jsonClientesBlob.sha });
+        }
+
+        // Enviar alerta a admins si hubo cambio de correo
+        if (alertaCambioEmail) {
+            const asuntoAlerta = `⚠️ Alerta de Datos: Cambio de Correo en Cliente ${telefono}`;
+            const cuerpoAlerta = `
+                <p>El sistema ha detectado un cambio de correo electrónico para un cliente existente durante la creación de un pedido.</p>
+                <div class="info-card" style="border-left-color: #f39c12;">
+                    <div class="info-item"><strong>Cliente:</strong> ${telefono}</div>
+                    <div class="info-item"><strong>Correo Anterior:</strong> ${emailAnterior}</div>
+                    <div class="info-item"><strong>Nuevo Correo:</strong> ${email_cliente}</div>
+                </div>
+                <p>Se ha actualizado el perfil del cliente con el nuevo correo. Por favor verificar si es correcto.</p>
+            `;
+            sendEmailNotification(asuntoAlerta, getEmailTemplate('Cambio de Datos Detectado', cuerpoAlerta));
+        }
+        // ---------------------------------
 
         localPedidos = pedidos;
         const { data: jsonBlob } = await githubClient.git.createBlob({

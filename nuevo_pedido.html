@@ -155,6 +155,23 @@
         .toast.show {
             top: 20px; /* Deslizar hacia adentro */
         }
+
+        /* Estilos Perfil Cliente */
+        .client-profile-section {
+            background: #252525;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border-left: 4px solid #9b59b6;
+            animation: fadeIn 0.5s ease;
+        }
+        .client-profile-section h3 {
+            margin-top: 0;
+            color: #e0aaff;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        .hidden { display: none; }
     </style>
 </head>
 </head>
@@ -192,7 +209,36 @@
 
         <div class="form-group">
             <label for="telefono">Número Celular (Cliente):</label>
-            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+" disabled>
+            <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+" disabled autocomplete="off">
+        </div>
+
+        <!-- SECCIÓN PERFIL DE CLIENTE -->
+        <div id="email-only-section" class="form-group hidden">
+            <label for="email_cliente_existente">Correo Electrónico (Confirmar/Actualizar):</label>
+            <input type="email" name="email_cliente_existente" id="email_cliente_existente" placeholder="cliente@email.com">
+            <p style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">* Cliente registrado. Solo confirma el correo.</p>
+        </div>
+
+        <div id="new-client-section" class="client-profile-section hidden">
+            <h3>Crear Perfil del Cliente</h3>
+            <p style="font-size: 0.9rem; color: #ccc; margin-bottom: 15px;">Rellena los datos para registrar al nuevo cliente en la base de datos.</p>
+            
+            <div class="form-group">
+                <label for="nombre_cliente">Nombre Completo:</label>
+                <input type="text" name="nombre_cliente" id="nombre_cliente" placeholder="Nombre del cliente">
+            </div>
+            <div class="form-group">
+                <label for="genero_cliente">Género:</label>
+                <select name="genero_cliente" id="genero_cliente">
+                    <option value="" disabled selected>Seleccionar</option>
+                    <option value="hombre">Hombre</option>
+                    <option value="mujer">Mujer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="email_cliente_nuevo">Correo Electrónico:</label>
+                <input type="email" name="email_cliente_nuevo" id="email_cliente_nuevo" placeholder="cliente@email.com">
+            </div>
         </div>
 
         <button type="submit" id="btnSubmit" disabled>Guardar Pedido</button>
@@ -427,6 +473,64 @@
         element.classList.add('selected');
     };
 
+    // LÓGICA DE BÚSQUEDA DE CLIENTE
+    let searchTimeout;
+    telefonoInput.addEventListener('input', function() {
+        const tel = this.value.trim();
+        const emailExistenteSection = document.getElementById('email-only-section');
+        const newClientSection = document.getElementById('new-client-section');
+        
+        // Resetear visibilidad
+        emailExistenteSection.classList.add('hidden');
+        newClientSection.classList.add('hidden');
+
+        // Quitar obligatoriedad temporalmente
+        document.getElementById('email_cliente_existente').required = false;
+        document.getElementById('email_cliente_nuevo').required = false;
+        document.getElementById('nombre_cliente').required = false;
+        document.getElementById('genero_cliente').required = false;
+
+        if (tel.length < 7) return; // Esperar a tener un número decente
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            // Determinar URL del backend
+            const BACKEND_URL = window.location.hostname.includes('github.io') 
+                ? 'https://sublimacion-mary.onrender.com' 
+                : '';
+
+            fetch(`${BACKEND_URL}/api/clientes/search?telefono=${tel}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.found) {
+                        // CLIENTE EXISTENTE
+                        emailExistenteSection.classList.remove('hidden');
+                        const emailInput = document.getElementById('email_cliente_existente');
+                        emailInput.value = data.cliente.email || '';
+                        emailInput.required = true; // El correo es obligatorio para el pedido
+                        
+                        // Rellenar ocultos si es necesario, o dejar que el backend mantenga lo que tiene
+                        console.log("Cliente encontrado:", data.cliente.nombre);
+                    } else {
+                        // CLIENTE NUEVO
+                        newClientSection.classList.remove('hidden');
+                        document.getElementById('nombre_cliente').required = true;
+                        document.getElementById('genero_cliente').required = true;
+                        document.getElementById('email_cliente_nuevo').required = true;
+                        
+                        // Limpiar campos
+                        document.getElementById('nombre_cliente').value = '';
+                        document.getElementById('genero_cliente').value = '';
+                        document.getElementById('email_cliente_nuevo').value = '';
+                    }
+                })
+                .catch(err => console.error("Error buscando cliente:", err));
+        }, 500); // Debounce de 500ms
+    });
+
+    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
     document.getElementById('pedidoForm').addEventListener('submit', function(e) {
         e.preventDefault(); 
 
@@ -467,7 +571,9 @@
         }
 
         if (producto && telefono && valid) {
-            
+            const form = document.getElementById('pedidoForm');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+
             toast.textContent = "Estamos creando el pedido, por favor espere...";
             toast.classList.add('show');
             btnSubmit.disabled = true;
@@ -489,6 +595,18 @@
             formData.append('telefono', telefono);
             formData.append('fecha', fechaCompleta);
             formData.append('estado', estadoInicial);
+
+            // Datos del cliente
+            const isNewClient = !document.getElementById('new-client-section').classList.contains('hidden');
+            if (isNewClient) {
+                formData.append('nombre_cliente', document.getElementById('nombre_cliente').value);
+                formData.append('genero_cliente', document.getElementById('genero_cliente').value);
+                formData.append('email_cliente', document.getElementById('email_cliente_nuevo').value);
+            } else {
+                // Cliente existente (solo email puede haber cambiado)
+                const emailVal = document.getElementById('email_cliente_existente').value;
+                if(emailVal) formData.append('email_cliente', emailVal);
+            }
             
             // Sanitizar nombres de archivo (reemplazar espacios por guiones) antes de enviar
             if (producto === 'Mug Personalizado') {
