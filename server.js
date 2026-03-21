@@ -107,6 +107,58 @@ function loadPermanentBans() {
     }
 }
 
+// --- FUNCIONES DE SINCRONIZACIÓN DE SEGURIDAD CON GITHUB ---
+async function syncSecurityStateFromGitHub() {
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) return;
+    console.log("📥 Sincronizando historial de seguridad desde GitHub...");
+    
+    // Usar mutex para evitar conflictos de lectura/escritura
+    const unlock = await gitMutex.lock();
+    try {
+        const { data: fileData } = await githubClient.repos.getContent({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'models_rf/img_rf/security/security-state.json'
+        });
+        const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
+        const state = JSON.parse(content);
+        
+        // Restaurar niveles de baneo (Lo más crítico)
+        if (state.banLevels) {
+            Object.assign(banLevels, state.banLevels);
+            console.log(`✅ Seguridad restaurada de la nube: ${Object.keys(banLevels).length} perfiles de riesgo.`);
+        }
+    } catch (e) {
+        if(e.status !== 404) console.error("⚠️ No se pudo cargar seguridad de GitHub:", e.message);
+    } finally {
+        unlock();
+    }
+}
+
+async function syncSecurityStateToGitHub() {
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) return;
+    
+    // Ejecutar en segundo plano con bloqueo
+    const unlock = await gitMutex.lock();
+    try {
+        let sha;
+        try {
+            const { data: fileData } = await githubClient.repos.getContent({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'models_rf/img_rf/security/security-state.json'
+            });
+            sha = fileData.sha;
+        } catch(e) {}
+
+        const content = JSON.stringify({ loginAttempts, banLevels }, null, 2);
+        await githubClient.repos.createOrUpdateFileContents({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO,
+            path: 'models_rf/img_rf/security/security-state.json',
+            message: 'Security state update [skip render]', // Evitar reinicios infinitos
+            content: Buffer.from(content).toString('base64'),
+            sha: sha
+        });
+        console.log("☁️ Estado de seguridad respaldado en GitHub.");
+    } catch (e) { console.error("❌ Error respaldando seguridad:", e.message); } finally { unlock(); }
+}
+
 /**
  * Actualiza la variable de entorno en Render con la nueva IP baneada.
  * Si falla, utiliza el Deploy Hook como método de respaldo.
@@ -458,9 +510,16 @@ async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duratio
 /**
  * Registra un intento de inicio de sesión fallido y bloquea la IP si es necesario.
  * @param {object} req - El objeto de la solicitud de Express.
+ * @param {object} res - El objeto de respuesta (para establecer cookies de seguridad).
  * @param {string} context - El contexto del fallo (Usuario, Contraseña, Facial).
  */
-function recordFailedAttempt(req, context = "General") {
+function recordFailedAttempt(req, res, context = "General") {
+    // Compatibilidad para llamadas antiguas que no pasaban 'res'
+    if (typeof res === 'string') {
+        context = res;
+        res = null;
+    }
+
     const ip = getClientIp(req);
     const now = Date.now();
     const BAN_LEVEL_DECAY_HOURS = 24;
@@ -485,6 +544,11 @@ function recordFailedAttempt(req, context = "General") {
     }
 
     loginAttempts[ip] = attempt;
+
+    // PERSISTENCIA EN NAVEGADOR: Actualizar cookie de nivel
+    if (res && typeof res.cookie === 'function') {
+        res.cookie('sl', ipBanStatus.level, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
+    }
     console.log(`⚠️  Intento fallido [${context}] desde IP: ${ip}. Intentos: ${attempt.count}/${MAX_ATTEMPTS} en Nivel ${ipBanStatus.level}`);
 
     if (attempt.count >= MAX_ATTEMPTS) {
@@ -492,6 +556,11 @@ function recordFailedAttempt(req, context = "General") {
         ipBanStatus.lastOffense = now;
         banLevels[ip] = ipBanStatus;
         const newLevel = ipBanStatus.level;
+
+        // Actualizar cookie con el NUEVO nivel inmediatamente
+        if (res && typeof res.cookie === 'function') {
+            res.cookie('sl', newLevel, { maxAge: 72 * 60 * 60 * 1000, httpOnly: true }); // 3 días
+        }
 
         if (newLevel >= 3) {
             // Baneo Permanente
@@ -532,6 +601,8 @@ function recordFailedAttempt(req, context = "General") {
         }
         delete loginAttempts[ip];
         saveSecurityState();
+        // RESPALDO EN LA NUBE: Guardar el nuevo nivel en GitHub para que sobreviva reinicios
+        syncSecurityStateToGitHub(); 
         return true; // Devolver TRUE para indicar que se acaba de banear
     }
     // Guardar el estado de los intentos y niveles de baneo en cada intento fallido
@@ -758,6 +829,22 @@ app.use((req, res, next) => {
 function rateLimiter(req, res, next) {
     const ip = getClientIp(req);
 
+    // 0. RECUPERACIÓN DE ESTADO DESDE EL NAVEGADOR (Anti-Amnesia del Servidor)
+    // Si el servidor se reinició y olvidó el nivel, la cookie 'sl' (Security Level) se lo recordará.
+    if (req.headers.cookie) {
+        const match = req.headers.cookie.match(/sl=(\d+)/);
+        if (match) {
+            const clientLevel = parseInt(match[1]);
+            const serverLevel = banLevels[ip] ? banLevels[ip].level : 0;
+            
+            if (clientLevel > serverLevel) {
+                console.log(`🔄 Sync: Restaurando nivel ${clientLevel} para IP ${ip} usando información del navegador.`);
+                // Restaurar nivel y refrescar timestamp para evitar que la lógica de "decay" lo borre inmediatamente
+                banLevels[ip] = { level: clientLevel, lastOffense: Date.now() }; 
+            }
+        }
+    }
+
     // 1. Verificar baneo permanente
     if (permanentBans.has(ip)) {
         console.error(`🚫 CONEXIÓN RECHAZADA: IP con baneo permanente intentó acceder: ${ip}`);
@@ -928,13 +1015,13 @@ app.post('/api/login', (req, res) => {
             // Face data is now sent by /api/check-user, no need to send it again here.
             return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
         } else {
-            const banned = recordFailedAttempt(req, "Contraseña incorrecta");
+            const banned = recordFailedAttempt(req, res, "Contraseña incorrecta");
             return res.status(401).json({ success: false, message: 'Credenciales incorrectas', forceRefresh: banned });
         }
     }
     
     // Si llegamos aquí, el usuario no existe
-    const banned = recordFailedAttempt(req, "Usuario no encontrado");
+    const banned = recordFailedAttempt(req, res, "Usuario no encontrado");
     res.status(401).json({ success: false, message: 'Credenciales incorrectas', forceRefresh: banned });
 });
 
@@ -1111,7 +1198,7 @@ app.post('/api/log-activity', async (req, res) => {
         if (payload.type === 'facial_failure') context = "Validación facial fallida";
         if (payload.type === 'reauth_failure') context = "Re-autenticación facial fallida";
         if (payload.type === 'suspicious_input') context = "Input sospechoso";
-        banned = recordFailedAttempt(req, context);
+        banned = recordFailedAttempt(req, res, context);
     }
     
     if (!githubClient) {
@@ -1974,6 +2061,7 @@ app.get('/api/preview', (req, res) => {
 // Cargar baneos permanentes al iniciar el servidor
 loadPermanentBans();
 loadSecurityState(); // Cargar estado de intentos y niveles de baneo
+syncSecurityStateFromGitHub(); // Intentar recuperar historial de la nube
 
 const server = app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
