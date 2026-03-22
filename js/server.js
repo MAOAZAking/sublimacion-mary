@@ -12,7 +12,8 @@ const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
 const archiver = require('archiver'); // Para crear archivos ZIP
 const dotenv = require('dotenv');
 const UAParser = require('ua-parser-js'); // Para analizar el User-Agent
-dotenv.config();
+// Cargar .env desde la raíz (un nivel arriba)
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -37,9 +38,10 @@ const loginAttempts = {};
 const blockedIPs = {};
 const banLevels = {}; // Para rastrear el nivel de ofensa de cada IP
 const permanentBans = new Set(); // Para baneos permanentes
-const BANNED_IPS_PATH = path.join(__dirname, 'models_rf/img_rf/security/banned-ips.json'); // Ruta al archivo de baneos
-const SECURITY_STATE_PATH = path.join(__dirname, 'models_rf/img_rf/security/security-state.json'); // Ruta para guardar intentos y niveles
-const CLIENTES_PATH = path.join(__dirname, 'clientes.json'); // Nueva base de datos de clientes
+// RUTAS ACTUALIZADAS: Usamos '../' para salir de la carpeta 'js/' y buscar en la raíz o carpetas hermanas
+const BANNED_IPS_PATH = path.join(__dirname, '../models_rf/img_rf/security/banned-ips.json');
+const SECURITY_STATE_PATH = path.join(__dirname, '../models_rf/img_rf/security/security-state.json');
+const CLIENTES_PATH = path.join(__dirname, '../json/clientes.json'); // Base de datos en carpeta json
 
 
 const MAX_ATTEMPTS = 5; // Intentos fallidos antes de bloquear
@@ -959,7 +961,7 @@ app.use(rateLimiter);
 // Se carga la configuración "cruda" para poder resolver los valores de .env sobre la marcha.
 let usersConfig = [];
 try {
-    const usersPath = path.join(__dirname, 'usuarios.json');
+    const usersPath = path.join(__dirname, '../json/usuarios.json'); // Ruta actualizada a json/usuarios.json
     if (fs.existsSync(usersPath)) {
         const usersData = fs.readFileSync(usersPath, 'utf8');
         usersConfig = JSON.parse(usersData);
@@ -971,7 +973,7 @@ try {
 
 // Configuración de Multer para almacenamiento temporal
 const upload = multer({ 
-    dest: 'temp_uploads/',
+    dest: path.join(__dirname, '../temp_uploads/'), // Ruta actualizada a raíz/temp_uploads
     limits: { fileSize: Infinity }
 });
 
@@ -979,7 +981,7 @@ const upload = multer({
 // Cargar pedidos en memoria al iniciar para servir cambios inmediatos sin esperar a GitHub/Render
 let localPedidos = [];
 try {
-    const pedidosPath = path.join(__dirname, 'pedidos.json');
+    const pedidosPath = path.join(__dirname, '../json/pedidos.json'); // Ruta actualizada a json/pedidos.json
     if (fs.existsSync(pedidosPath)) {
         localPedidos = JSON.parse(fs.readFileSync(pedidosPath, 'utf8'));
     }
@@ -1025,10 +1027,12 @@ if (!process.env.GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
 }
 
 // Endpoint prioritario para servir pedidos desde memoria (intercepta la petición al archivo estático)
-app.get('/pedidos.json', (req, res) => res.json(localPedidos));
+// Actualizado para interceptar la nueva ruta /json/pedidos.json
+app.get('/json/pedidos.json', (req, res) => res.json(localPedidos));
 
 // Servir archivos estáticos (HTML, CSS, JS, Imágenes)
-app.use(express.static(path.join(__dirname, '.')));
+// IMPORTANTE: Servir desde '../' (la raíz) para que encuentre index.html, img/, css/, etc.
+app.use(express.static(path.join(__dirname, '../')));
 
 // Endpoint para el "heartbeat" del cliente, para forzar recarga si está baneado
 app.get('/api/heartbeat', (req, res) => {
@@ -1066,9 +1070,9 @@ app.post('/api/check-user', (req, res) => {
         }
 
         // 2. Si falló o no existe, y estamos en local, intentar leer .env manualmente (Soporte multilínea sin comillas)
-        if (!faceData && fs.existsSync(path.join(__dirname, '.env'))) {
+        if (!faceData && fs.existsSync(path.join(__dirname, '../.env'))) {
             try {
-                const envContent = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+                const envContent = fs.readFileSync(path.join(__dirname, '../.env'), 'utf8');
                 // Busca: NOMBRE_VAR={...} capturando todo el bloque JSON hasta el cierre }
                 const regex = new RegExp(`^${envVarName}\\s*=\\s*({[\\s\\S]*?})`, 'm');
                 const match = envContent.match(regex);
@@ -1178,7 +1182,7 @@ app.post('/api/complete-setup', async (req, res) => {
     // 1. Cargar la configuración cruda para modificarla
     let currentUsersConfig = [];
     try {
-        const usersPath = path.join(__dirname, 'usuarios.json');
+        const usersPath = path.join(__dirname, '../json/usuarios.json');
         currentUsersConfig = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
     } catch (e) {
         return res.status(500).json({ success: false, error: 'No se pudo leer la configuración de usuarios.' });
@@ -1217,7 +1221,7 @@ app.post('/api/complete-setup', async (req, res) => {
     // 1. Actualizar la memoria del servidor para bloquear el acceso por número INSTANTÁNEAMENTE
     usersConfig = cleanedUsersConfig; 
     // 2. Escribir en el disco local (aunque sea efímero en Render) para persistir hasta el reinicio
-    try { fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(cleanedUsersConfig, null, 4)); } catch(e) {}
+    try { fs.writeFileSync(path.join(__dirname, '../json/usuarios.json'), JSON.stringify(cleanedUsersConfig, null, 4)); } catch(e) {}
 
     // 5. Actualizar las variables de entorno en Render ANTES de commitear a GitHub.
     // Esto es importante para que, cuando Render se reinicie por el commit, ya tenga las nuevas credenciales.
@@ -1233,7 +1237,7 @@ app.post('/api/complete-setup', async (req, res) => {
                 const { data: fileData } = await githubClient.repos.getContent({
                     owner: GITHUB_OWNER,
                     repo: GITHUB_REPO,
-                    path: 'usuarios.json'
+                    path: 'json/usuarios.json' // Ruta en GitHub actualizada
                 });
                 sha = fileData.sha;
             } catch (e) {
@@ -1244,7 +1248,7 @@ app.post('/api/complete-setup', async (req, res) => {
             await githubClient.repos.createOrUpdateFileContents({
                 owner: GITHUB_OWNER,
                 repo: GITHUB_REPO,
-                path: 'usuarios.json',
+                path: 'json/usuarios.json', // Ruta en GitHub actualizada
                 message: `Setup completed for Majo`, // Quitamos [skip render] para forzar que Render tome los cambios
                 content: Buffer.from(JSON.stringify(cleanedUsersConfig, null, 4)).toString('base64'),
                 sha: sha
@@ -1773,7 +1777,7 @@ app.post('/api/pedidos', upload.fields([
 
         let pedidos = [];
         try {
-            const { data: jsonFile } = await githubClient.repos.getContent({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json', ref: branch });
+            const { data: jsonFile } = await githubClient.repos.getContent({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'json/pedidos.json', ref: branch });
             pedidos = JSON.parse(Buffer.from(jsonFile.content, 'base64').toString('utf-8'));
         } catch (error) {
             if (error.status !== 404) console.warn("pedidos.json no encontrado, creando nuevo.");
@@ -1856,7 +1860,7 @@ app.post('/api/pedidos', upload.fields([
             const { data: jsonClientesBlob } = await githubClient.git.createBlob({
                 owner: GITHUB_OWNER, repo: GITHUB_REPO, content: Buffer.from(JSON.stringify(localClientes, null, 4)).toString('base64'), encoding: 'base64'
             });
-            treeItems.push({ path: 'clientes.json', mode: '100644', type: 'blob', sha: jsonClientesBlob.sha });
+            treeItems.push({ path: 'json/clientes.json', mode: '100644', type: 'blob', sha: jsonClientesBlob.sha });
         }
 
         // Enviar alerta a admins si hubo cambio de correo
@@ -1879,7 +1883,7 @@ app.post('/api/pedidos', upload.fields([
         const { data: jsonBlob } = await githubClient.git.createBlob({
             owner: GITHUB_OWNER, repo: GITHUB_REPO, content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'), encoding: 'base64'
         });
-        treeItems.push({ path: 'pedidos.json', mode: '100644', type: 'blob', sha: jsonBlob.sha });
+        treeItems.push({ path: 'json/pedidos.json', mode: '100644', type: 'blob', sha: jsonBlob.sha });
 
         const { data: newTree } = await githubClient.git.createTree({ owner: GITHUB_OWNER, repo: GITHUB_REPO, base_tree: baseTreeSha, tree: treeItems });
         const { data: newCommit } = await githubClient.git.createCommit({
@@ -1940,7 +1944,7 @@ app.post('/api/pedidos/edit', upload.fields([
         const branch = repoData.default_branch;
 
         const { data: jsonFile } = await githubClient.repos.getContent({
-            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json', ref: branch
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'json/pedidos.json', ref: branch
         });
         let pedidos = JSON.parse(Buffer.from(jsonFile.content, 'base64').toString('utf-8'));
 
@@ -2077,7 +2081,7 @@ app.post('/api/pedidos/edit', upload.fields([
             owner: GITHUB_OWNER, repo: GITHUB_REPO,
             content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'), encoding: 'base64'
         });
-        treeItems.push({ path: 'pedidos.json', mode: '100644', type: 'blob', sha: jsonBlob.sha });
+        treeItems.push({ path: 'json/pedidos.json', mode: '100644', type: 'blob', sha: jsonBlob.sha });
 
         const { data: refData } = await githubClient.git.getRef({ owner: GITHUB_OWNER, repo: GITHUB_REPO, ref: `heads/${branch}` });
         const latestCommitSha = refData.object.sha;
@@ -2157,7 +2161,7 @@ app.post('/api/update-status', async (req, res) => {
 
     try {
         const { data: jsonFile } = await githubClient.repos.getContent({
-            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json'
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'json/pedidos.json'
         });
         let pedidos = JSON.parse(Buffer.from(jsonFile.content, 'base64').toString('utf-8'));
 
@@ -2176,7 +2180,7 @@ app.post('/api/update-status', async (req, res) => {
 
         localPedidos = pedidos;
         await githubClient.repos.createOrUpdateFileContents({
-            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'pedidos.json',
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'json/pedidos.json',
             message: `Update status to ${nuevo_estado} [skip render]`,
             content: Buffer.from(JSON.stringify(pedidos, null, 4)).toString('base64'),
             sha: jsonFile.sha
