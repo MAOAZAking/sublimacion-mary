@@ -5,6 +5,7 @@ async function main() {
     const recipients = process.env.INPUT_RECIPIENTS;
     const subject = process.env.INPUT_SUBJECT;
     const htmlBase64 = process.env.INPUT_HTML_BASE64;
+    const attachmentsJson = process.env.INPUT_ATTACHMENTS;
     
     if (!recipients || !subject || !htmlBase64) {
         console.error("❌ Faltan datos de entrada.");
@@ -13,6 +14,13 @@ async function main() {
 
     // Decodificar el HTML que viene en Base64 para que no se rompa
     const htmlContent = Buffer.from(htmlBase64, 'base64').toString('utf-8');
+
+    // Decodificar adjuntos si existen
+    let attachments = [];
+    if (attachmentsJson) {
+        try { attachments = JSON.parse(attachmentsJson); }
+        catch (e) { console.warn("Error parseando adjuntos:", e); }
+    }
 
     const transporter = nodemailer.createTransport({
         service: 'gmail', // Aquí sí funciona el service: 'gmail' nativo porque corre en GitHub, no en Render
@@ -27,7 +35,8 @@ async function main() {
             from: `"Sublimación Mary" <${process.env.EMAIL_USER}>`,
             to: recipients,
             subject: subject,
-            html: htmlContent
+            html: htmlContent,
+            attachments: attachments // Array de { filename, path }
         });
         console.log("✅ Correo enviado exitosamente desde GitHub Runner (Gmail Nativo).");
     } catch (error) {

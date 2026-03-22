@@ -127,6 +127,14 @@ async function syncSecurityStateFromGitHub() {
         if (state.banLevels) {
             Object.assign(banLevels, state.banLevels);
             console.log(`✅ Seguridad restaurada de la nube: ${Object.keys(banLevels).length} perfiles de riesgo.`);
+            
+            // AUTO-CORRECCIÓN: Si hay una IP nivel 3 en el historial pero NO en la lista de baneos activos, agregarla.
+            for (const [ip, data] of Object.entries(banLevels)) {
+                if (data.level >= 3 && !permanentBans.has(ip)) {
+                    console.log(`🔒 Restaurando baneo permanente faltante para: ${ip}`);
+                    updateBannedIpsInRender(ip);
+                }
+            }
         }
     } catch (e) {
         if(e.status !== 404) console.error("⚠️ No se pudo cargar seguridad de GitHub:", e.message);
@@ -159,6 +167,32 @@ async function syncSecurityStateToGitHub() {
         });
         console.log("☁️ Estado de seguridad respaldado en GitHub.");
     } catch (e) { console.error("❌ Error respaldando seguridad:", e.message); } finally { unlock(); }
+}
+
+async function syncBannedIpsToGitHub() {
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) return;
+    
+    // Ejecutar en segundo plano con bloqueo
+    const unlock = await gitMutex.lock();
+    try {
+        let sha;
+        try {
+            const { data: fileData } = await githubClient.repos.getContent({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'models_rf/img_rf/security/banned-ips.json'
+            });
+            sha = fileData.sha;
+        } catch(e) {}
+
+        const content = JSON.stringify(Array.from(permanentBans), null, 4);
+        await githubClient.repos.createOrUpdateFileContents({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO,
+            path: 'models_rf/img_rf/security/banned-ips.json',
+            message: 'Auto-update: Add permanent ban IP [skip render]',
+            content: Buffer.from(content).toString('base64'),
+            sha: sha
+        });
+        console.log("☁️ Archivo banned-ips.json sincronizado en GitHub.");
+    } catch (e) { console.error("❌ Error sincronizando banned-ips.json:", e.message); } finally { unlock(); }
 }
 
 /**
@@ -271,6 +305,9 @@ async function updateBannedIpsInRender(newIpToBan) {
         const dirPath = path.dirname(BANNED_IPS_PATH);
         if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
         fs.writeFileSync(BANNED_IPS_PATH, JSON.stringify(Array.from(permanentBans), null, 4));
+
+        // 3. Sincronizar con GitHub para persistencia total (Router Ban Strategy)
+        await syncBannedIpsToGitHub();
 
     } catch (error) {
         console.error("❌ Error al actualizar las variables de entorno de Render:", error.message);
@@ -472,7 +509,7 @@ const resolveEnvValue = (val) => {
  * @param {number} details.attempts - El número de intentos fallidos.
  * @param {string} details.userAgent - El dispositivo del atacante.
  */
-async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duration, level }) {
+async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duration, level, req }) {
     const ipInfo = await getIpInfo(ip);
     let locationInfo = `Ubicación: Falló geolocalización (${ipInfo.message || 'N/A'})`;
     if (ipInfo.status === 'success') {
@@ -483,14 +520,46 @@ async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duratio
         ? 'La dirección IP ha sido <strong>bloqueada permanentemente</strong>.'
         : `La dirección IP ha sido bloqueada temporalmente por <strong>${duration / 60000} minutos</strong>.`;
 
+    // --- Análisis Avanzado del Dispositivo (Modo Detective) ---
+    const parser = new UAParser(userAgent);
+    const os = parser.getOS();
+    const browser = parser.getBrowser();
+    const device = parser.getDevice();
+
+    let osInfo = `${os.name || 'Desconocido'} ${os.version || ''}`.trim();
+    const browserInfo = `${browser.name || 'Desconocido'} ${browser.version || ''}`.trim();
+    const deviceType = device.vendor ? `${device.vendor} ${device.model}` : (device.type || 'Escritorio');
+
+    // Intentar obtener datos precisos usando Client Hints si están disponibles en el request
+    if (req) {
+        const chPlatform = req.get('sec-ch-ua-platform'); // Ej: "Windows"
+        const chPlatformVersion = req.get('sec-ch-ua-platform-version'); // Ej: "15.0.0"
+        const chModel = req.get('sec-ch-ua-model'); // Ej: "Pixel 6"
+
+        if (chPlatform && chPlatformVersion) {
+            const cleanPlatform = chPlatform.replace(/"/g, '');
+            const cleanVersion = chPlatformVersion.replace(/"/g, '');
+            const majorVersion = parseInt(cleanVersion.split('.')[0]);
+
+            if (cleanPlatform === 'Windows') {
+                // Windows 11 reporta version 13+ en Client Hints
+                if (majorVersion >= 13) osInfo = 'Windows 11';
+                else if (majorVersion >= 1) osInfo = `Windows 10 (Build ${cleanVersion})`;
+            } else if (cleanPlatform === 'Android') {
+                osInfo = `Android ${cleanVersion}`;
+            }
+        }
+        if (chModel && chModel !== '""') osInfo += ` en ${chModel.replace(/"/g, '')}`;
+    }
+
     const subject = `🚨 Alerta de Seguridad: ${reason} 🚨`;
     const bodyContent = `
         <p>Se ha detectado una actividad potencialmente maliciosa en el sistema.</p>
         <div class="info-card">
             <div class="info-item"><strong>Motivo:</strong> ${reason}</div>
             <div class="info-item"><strong>Dirección IP:</strong> ${ip}</div>
-            <div class="info-item"><strong>Intentos Fallidos Recientes:</strong> ${attempts}</div>
-            <div class="info-item"><strong>Dispositivo:</strong> ${userAgent}</div>
+            <div class="info-item"><strong>Intentos:</strong> ${attempts}</div>
+            <div class="info-item"><strong>Sistema:</strong> ${osInfo} <br> <strong>Navegador:</strong> ${browserInfo} <br> <strong>Tipo:</strong> ${deviceType}</div>
             <div class="info-item"><strong>Geolocalización (aprox.):</strong><br>${locationInfo}</div>
         </div>
         <p>${durationText} Se recomienda monitorear el archivo <strong>login_report.txt</strong> para más detalles.</p>
@@ -572,8 +641,9 @@ function recordFailedAttempt(req, res, context = "General") {
                 reason: `Baneo Permanente por Múltiples Infracciones`,
                 attempts: attempt.count,
                 userAgent: req.headers['user-agent'],
-                duration: 'permanent',
-                level: newLevel
+                duration: 'permanent', 
+                level: newLevel,
+                req: req // Pasamos req para leer cabeceras Client Hints
             });
             // ¡ACCIÓN CLAVE! Actualizar la variable de entorno en Render.
             updateBannedIpsInRender(ip);
@@ -598,7 +668,8 @@ function recordFailedAttempt(req, res, context = "General") {
                 attempts: attempt.count,
                 userAgent: req.headers['user-agent'],
                 duration: currentBlockDuration,
-                level: newLevel
+                level: newLevel,
+                req: req
             });
         }
         delete loginAttempts[ip];
@@ -613,7 +684,7 @@ function recordFailedAttempt(req, res, context = "General") {
 }
 
 // Función auxiliar para enviar notificaciones
-async function sendEmailNotification(subject, htmlContent) {
+async function sendEmailNotification(subject, htmlContent, attachments = []) {
     // Lógica de destinatario: Enviar a TODOS los administradores.
     // Un administrador es un usuario con redirectUrl a 'admin_dashboard.html' y un email configurado.
     const adminEmails = usersConfig
@@ -629,11 +700,11 @@ async function sendEmailNotification(subject, htmlContent) {
     }
 
     // Usar la función centralizada de despacho
-    await dispatchEmail(adminEmails, subject, htmlContent);
+    await dispatchEmail(adminEmails, subject, htmlContent, attachments);
 }
 
 // --- Función Centralizada de Envío (Estrategia: GitHub -> Brevo) ---
-async function dispatchEmail(recipientsArray, subject, htmlContent) {
+async function dispatchEmail(recipientsArray, subject, htmlContent, attachments = []) {
     const recipientsString = recipientsArray.join(', ');
     let enviado = false;
 
@@ -642,6 +713,7 @@ async function dispatchEmail(recipientsArray, subject, htmlContent) {
         try {
             // Codificar HTML a Base64 para pasarlo seguro por la API de GitHub
             const htmlBase64 = Buffer.from(htmlContent).toString('base64');
+            const attachmentsJson = JSON.stringify(attachments);
             
             await githubClient.actions.createWorkflowDispatch({
                 owner: GITHUB_OWNER,
@@ -651,7 +723,8 @@ async function dispatchEmail(recipientsArray, subject, htmlContent) {
                 inputs: {
                     recipients: recipientsString,
                     subject: subject,
-                    html_base64: htmlBase64
+                    html_base64: htmlBase64,
+                    attachments: attachmentsJson // Pasar adjuntos como JSON string
                 }
             });
             console.log(`🚀 Solicitud enviada a GitHub Action (Gmail Nativo) para: ${recipientsString}`);
@@ -664,14 +737,14 @@ async function dispatchEmail(recipientsArray, subject, htmlContent) {
     // INTENTO 2: Brevo (Respaldo)
     if (!enviado && process.env.BREVO_API_KEY) {
         console.log("🔄 Usando Brevo como último respaldo...");
-        await sendEmailViaBrevo(recipientsArray, subject, htmlContent);
+        await sendEmailViaBrevo(recipientsArray, subject, htmlContent, attachments);
     } else if (!enviado) {
         console.error("❌ No se pudo enviar el correo por ningún método.");
     }
 }
 
 // --- Función para enviar vía Brevo (API HTTP) ---
-function sendEmailViaBrevo(recipientsArray, subject, htmlContent) {
+function sendEmailViaBrevo(recipientsArray, subject, htmlContent, attachments = []) {
     return new Promise((resolve, reject) => {
         // Configuración para Brevo
         const data = JSON.stringify({
@@ -679,6 +752,8 @@ function sendEmailViaBrevo(recipientsArray, subject, htmlContent) {
             to: recipientsArray.map(email => ({ email: email })), // Formato Brevo: array de objetos
             subject: subject,
             htmlContent: htmlContent,
+            // Mapear adjuntos al formato de Brevo: { url: "...", name: "..." }
+            attachment: attachments.map(att => ({ url: att.path, name: att.filename })),
             // Encabezados para marcar como IMPORTANTE y tratar de evitar la pestaña Promociones
             headers: {
                 "X-Priority": "1", // 1 = Alta prioridad
@@ -822,6 +897,12 @@ app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
+    next();
+});
+
+// Middleware para solicitar Client Hints (Datos precisos del dispositivo)
+app.use((req, res, next) => {
+    res.set('Accept-CH', 'Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List');
     next();
 });
 
@@ -2037,6 +2118,32 @@ app.post('/api/pedidos/edit', upload.fields([
     }
 });
 
+// Función auxiliar para obtener adjuntos del repositorio (Word o Editables)
+async function getAttachmentsForOrder(folderPath, type) {
+    const attachments = [];
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) return attachments;
+
+    try {
+        const { data: dirContent } = await githubClient.repos.getContent({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, path: folderPath
+        });
+
+        if (Array.isArray(dirContent)) {
+            // Buscar archivo Word (para producción)
+            if (type === 'production') {
+                const wordDoc = dirContent.find(f => f.name === 'imprimir_lamina_para_sublimar.docx');
+                if (wordDoc) attachments.push({ filename: wordDoc.name, path: wordDoc.download_url });
+            }
+            // Buscar editables (para cambios) - Plantillas .ai, .psd, etc.
+            if (type === 'design') {
+                const editable = dirContent.find(f => f.name.startsWith('plantilla_') || f.name.endsWith('.ai') || f.name.endsWith('.psd') || f.name.endsWith('.eps') || f.name.endsWith('.pdf'));
+                if (editable) attachments.push({ filename: editable.name, path: editable.download_url });
+            }
+        }
+    } catch (e) { console.error("Error buscando adjuntos en GitHub:", e.message); }
+    return attachments;
+}
+
 // Endpoint para actualizar el estado de un pedido
 app.post('/api/update-status', async (req, res) => {
     const { imagen_url, nuevo_estado, detalles } = req.body;
@@ -2082,16 +2189,34 @@ app.post('/api/update-status', async (req, res) => {
             let titulo = `Estado Actualizado`;
             let mensaje = `<p>El estado del pedido ha cambiado a: <strong>${nuevo_estado}</strong></p>`;
             let colorBorde = "#27ae60"; // Verde por defecto
+            let attachmentType = null;
+            let folderPath = null;
+
+            // Intentar deducir la ruta de la carpeta del pedido en el repo
+            // URL típica: https://raw.githubusercontent.com/USER/REPO/main/img/tipo/carpeta/archivo.png
+            if (imagen_url && imagen_url.includes('/img/')) {
+                const parts = imagen_url.split('/img/');
+                if (parts.length > 1) {
+                    const subPath = parts[1]; // tipo/carpeta/archivo.png
+                    const folderParts = subPath.split('/');
+                    if (folderParts.length >= 2) {
+                        folderPath = `img/${folderParts[0]}/${folderParts[1]}`;
+                    }
+                }
+            }
 
             if (nuevo_estado === "Creando diseño" && detalles) {
                 asunto = `⚠️ Solicitud de CAMBIO - Pedido S/N: ${pedidoId}`;
                 titulo = `Solicitud de Cambio`;
                 mensaje = `<p>El cliente solicita los siguientes cambios para el <strong>Pedido identificado con S/N: ${pedidoId}</strong>:</p><div style="background: #fff0f0; padding: 15px; border-left: 4px solid #e74c3c; font-style: italic; margin: 15px 0;">"${detalles}"</div>`;
                 colorBorde = "#e74c3c"; // Rojo para cambios
+                attachmentType = 'design'; // Buscar editables
             } else if (nuevo_estado.includes("Listo")) {
                 asunto = `✅ Cliente SATISFECHO - Pedido S/N: ${pedidoId}`;
                 titulo = `¡Cliente Satisfecho!`;
                 mensaje = `<p>¡El cliente ha aprobado el diseño del <strong>Pedido identificado con S/N: ${pedidoId}</strong>! El pedido está listo para la siguiente fase.</p>`;
+                attachmentType = 'production'; // Buscar Word
+
             }
 
             const bodyContent = `
@@ -2102,9 +2227,14 @@ app.post('/api/update-status', async (req, res) => {
                 </div>
                 ${mensaje}
             `;
+
+            let attachments = [];
+            if (folderPath && attachmentType) {
+                attachments = await getAttachmentsForOrder(folderPath, attachmentType);
+            }
             
             const emailHtml = getEmailTemplate(titulo, bodyContent, imagen_url);
-            sendEmailNotification(asunto, emailHtml);
+            sendEmailNotification(asunto, emailHtml, attachments);
         }
 
         res.json({ success: true });
