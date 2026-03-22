@@ -32,8 +32,8 @@ jobs:
       - name: Run Processing Scripts
         id: processing_scripts
         run: |
-          python convert_to_jpg.py img/
-          python generate_word.py
+          python python/convert_to_jpg.py img/
+          python python/generate_word.py
 
       - name: Check for changes and commit
         id: git_status

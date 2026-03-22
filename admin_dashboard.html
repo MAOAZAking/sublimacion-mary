@@ -603,7 +603,7 @@
 
     function inicializarDashboard() {
         // Cargar pedidos al inicio
-        fetch('pedidos.json')
+        fetch('json/pedidos.json')
             .then(res => res.json())
             .then(data => {
                 todosLosPedidos = data;

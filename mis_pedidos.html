@@ -433,7 +433,7 @@
 
         document.getElementById('infoCliente').textContent = `Pedidos asociados al: ${telefono}`;
 
-        fetch('pedidos.json')
+        fetch('json/pedidos.json')
             .then(response => {
                 if (!response.ok) throw new Error("No se pudo cargar la base de datos de pedidos.");
                 return response.json();

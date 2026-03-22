@@ -1,0 +1,58 @@
+[
+    {
+        "telefono": "3000000000",
+        "email": "miguelortegaayala13579@gmail.com",
+        "nombre": "Prueba 1",
+        "genero": null,
+        "fecha_registro": "2026-03-22T00:00:00.000Z"
+    },
+    {
+        "telefono": "3123456789",
+        "email": "miguelitortega@gmail.com",
+        "nombre": "Prueba 2",
+        "genero": null,
+        "fecha_registro": "2026-03-22T00:00:00.000Z"
+    },
+    {
+        "telefono": "3002052842",
+        "email": "reasesorias4@gmail.com",
+        "nombre": "Rosa Elena Ayala Arce",
+        "genero": "femenino",
+        "fecha_registro": "2026-03-22T00:00:00.000Z"
+    },
+    {
+        "telefono": "3167000443",
+        "email": "thejetas@gmail.com",
+        "nombre": "Wilson Ándres Ortega Samboni",
+        "genero": "masculino",
+        "fecha_registro": "2026-03-22T00:00:00.000Z"
+    },
+    {
+        "telefono": "3223065487",
+        "email": "luzmariazambrano49@gmail.com",
+        "nombre": "Luz Maria Zambrano de Ortega",
+        "genero": "femenino",
+        "fecha_registro": "2026-03-22T00:00:00.000Z"
+    },
+    {
+        "telefono": "3152214070",
+        "email": "maoaza13579@gmail.com",
+        "nombre": "Diana Carolina Rodriguez Mendoza",
+        "genero": "femenino",
+        "fecha_registro": "2026-03-22T00:00:00.000Z"
+    },
+    {
+        "telefono": "3169445092",
+        "email": "ortegalex777@gmail.com",
+        "nombre": "Miguel Angel Ortega Ayala",
+        "genero": "masculino",
+        "fecha_registro": "2026-03-22T00:00:00.000Z"
+    },
+    {
+        "telefono": "603013748",
+        "email": "ssoaza2011@gmail.com",
+        "nombre": "Maria Esther Ortega Zambrano",
+        "genero": "femenino",
+        "fecha_registro": "2026-03-22T00:00:00.000Z"
+    }
+]

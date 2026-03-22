@@ -267,7 +267,7 @@
         }
 
         try {
-            const response = await fetch('pedidos.json');
+            const response = await fetch('json/pedidos.json');
             if (!response.ok) throw new Error('No se pudo cargar la base de datos.');
             const todosLosPedidos = await response.json();
             
