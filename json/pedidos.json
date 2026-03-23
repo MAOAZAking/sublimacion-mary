@@ -79,7 +79,7 @@
         "telefono": "3002052842",
         "producto": "Mug Personalizado",
         "fecha": "21/03/2026 06:21:05",
-        "estado": "Producto terminado",
+        "estado": "Listo para estampar",
         "imagen_url": " https://res.cloudinary.com/du7lmg9ff/image/upload/v1768484056/jgpyuhwmf2sirfp3qkxf.png ",
         "tipo_mug": "clasico",
         "foto_diseno_url": null
@@ -111,7 +111,7 @@
         "telefono": "3169445092",
         "producto": "Camiseta Estampada",
         "fecha": "26/02/2026 18:06:11",
-        "estado": "Producto terminado",
+        "estado": "Listo para estampar",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_2/lamina_frontal_1772147188869.png",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_2/lamina_frontal_1772147188869.png",
@@ -137,7 +137,7 @@
         "telefono": "603013748",
         "producto": "Camiseta Estampada",
         "fecha": "30/01/2026 17:40:07",
-        "estado": "Producto terminado",
+        "estado": "Listo para estampar",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_4/lamina_frontal_camiseta_4.jpg",
