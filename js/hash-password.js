@@ -1,29 +1,20 @@
-// hash-password.js
 const bcrypt = require('bcrypt');
-const readline = require('readline');
 
-const saltRounds = 12; // Un valor más alto es más seguro
+const password = process.argv[2];
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+if (!password) {
+    console.error("❌ Por favor, proporciona una contraseña como argumento.");
+    console.log("Uso: node js/hash-password.js <tu_contraseña>");
+    process.exit(1);
+}
 
-rl.question('Introduce la contraseña a hashear: ', (password) => {
-  if (!password) {
-    console.error("No se introdujo ninguna contraseña.");
-    rl.close();
-    return;
-  }
+const saltRounds = 10;
 
-  bcrypt.hash(password, saltRounds, function(err, hash) {
+bcrypt.hash(password, saltRounds, (err, hash) => {
     if (err) {
-      console.error("Error al hashear la contraseña:", err);
-    } else {
-      console.log("\n¡Hash generado con éxito!");
-      console.log("Copia este hash y pégalo en tu archivo .env o en las variables de entorno de Render:\n");
-      console.log(hash);
+        console.error("Error al hashear:", err);
+        return;
     }
-    rl.close();
-  });
+    console.log(`\n🔑 Contraseña: ${password}`);
+    console.log(`🔒 Hash: ${hash}\n`);
 });

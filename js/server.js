@@ -700,17 +700,9 @@ function recordFailedAttempt(req, res, context = "General") {
 
     const ip = getClientIp(req);
     const now = Date.now();
-    const BAN_LEVEL_DECAY_HOURS = 24;
-    const BAN_LEVEL_DECAY_MS = BAN_LEVEL_DECAY_HOURS * 60 * 60 * 1000;
 
     // Cargar estado de baneo de la IP. Ahora es un objeto.
     const ipBanStatus = banLevels[ip] || { level: 0, lastOffense: 0 };
-
-    // Reiniciar nivel de baneo si la última ofensa fue hace más de 24 horas
-    if (now - ipBanStatus.lastOffense > BAN_LEVEL_DECAY_MS) {
-        console.log(`[Security] El nivel de baneo para la IP ${ip} ha sido reiniciado por inactividad.`);
-        ipBanStatus.level = 0;
-    }
 
     const attempt = loginAttempts[ip] || { count: 0, firstAttempt: now };
 
@@ -758,8 +750,8 @@ function recordFailedAttempt(req, res, context = "General") {
             // Baneo Temporal Progresivo
             // Leer duraciones de bloqueo por nivel desde variables de entorno (ej: "5,10" para 5 min en Nivel 1, 10 min en Nivel 2)
             // FIX: Se busca la variable en plural (BLOCK_DURATIONS_MINUTES) y como respaldo en singular (BLOCK_DURATION_MINUTES) para evitar errores por tipeo en Render.
-            // El valor "1,2" es el respaldo final si ninguna variable de entorno existe.
-            const blockDurationsString = process.env.BLOCK_DURATIONS_MINUTES || process.env.BLOCK_DURATION_MINUTES || "1,2";
+            // El valor "30,120" es el respaldo REAL para producción (30 min Nivel 1, 2 horas Nivel 2).
+            const blockDurationsString = process.env.BLOCK_DURATIONS_MINUTES || process.env.BLOCK_DURATION_MINUTES || "30,120";
             
             const blockDurationsMinutes = blockDurationsString.split(',').map(Number);
             // El índice del array es `newLevel - 1` (Nivel 1 -> índice 0)
@@ -1151,6 +1143,16 @@ if (!process.env.GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
 // Actualizado para interceptar la nueva ruta /json/pedidos.json
 app.get('/json/pedidos.json', (req, res) => res.json(localPedidos));
 
+// --- FIREWALL DE ARCHIVOS ESTÁTICOS (SEGURIDAD CRÍTICA) ---
+// Bloquear acceso directo a archivos sensibles que viven en la raíz o subcarpetas
+app.use((req, res, next) => {
+    const restrictedPaths = ['/json/usuarios.json', '/json/clientes.json', '/.env', '/package.json', '/README.md', '/js/server.js', '/js/worker_email.js'];
+    if (restrictedPaths.some(path => req.path.toLowerCase().startsWith(path))) {
+        return res.status(403).send('⛔ Access Denied: Protected Resource');
+    }
+    next();
+});
+
 // Servir archivos estáticos (HTML, CSS, JS, Imágenes)
 // IMPORTANTE: Servir desde '../' (la raíz) para que encuentre index.html, img/, css/, etc.
 app.use(express.static(path.join(__dirname, '../')));
@@ -1242,8 +1244,12 @@ app.post('/api/login', (req, res) => {
             const ip = getClientIp(req);
             if (loginAttempts[ip]) {
                 delete loginAttempts[ip];
-                saveSecurityState(); // Persistir la limpieza de intentos
             }
+            // Limpiar historial de niveles de baneo si accede correctamente
+            if (banLevels[ip]) {
+                delete banLevels[ip];
+            }
+            saveSecurityState(); // Persistir la limpieza
             // Face data is now sent by /api/check-user, no need to send it again here.
             return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
         } else {
@@ -1656,6 +1662,17 @@ app.post('/api/log-activity', async (req, res) => {
     }
 
     if (logSuccess) console.log(`✅ Actividad registrada en GitHub: ${payload.type}`);
+
+    // Limpiar historial de seguridad si la validación facial fue exitosa
+    if (['facial_success', 'reauth_success'].includes(payload.type)) {
+        if (loginAttempts[ip]) delete loginAttempts[ip];
+        if (banLevels[ip]) {
+            delete banLevels[ip];
+            console.log(`🛡️ Historial de infracciones limpiado para ${ip} tras validación facial exitosa.`);
+        }
+        saveSecurityState();
+    }
+
     res.json({ success: true, forceRefresh: banned });
 });
 
@@ -1805,7 +1822,7 @@ app.post('/api/pedidos', upload.fields([
 
         const folderName = `${tipoProducto}_${nextNum}`;
         const uploads = [];
-        let mainImageUrl = '', urlFrontal = null, urlespaldar = null, urlFotoDiseno = null;
+        let mainImageUrl = '', urlFrontal = null, urlEspaldar = null, urlFotoDiseno = null;
 
         if (['camiseta', 'saco'].includes(tipoProducto)) {
             if (files.lamina_frontal) {
@@ -1829,8 +1846,8 @@ app.post('/api/pedidos', upload.fields([
                 // DUPLICAR PARA PREVIEW
                 uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), content: fs.readFileSync(files.lamina_espaldar[0].path) });
                 
-                urlespaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
-                if (!mainImageUrl) mainImageUrl = urlespaldar;
+                urlEspaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+                if (!mainImageUrl) mainImageUrl = urlEspaldar;
             }
             if (files.plantilla) {
                 const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
@@ -1930,7 +1947,7 @@ app.post('/api/pedidos', upload.fields([
             imagen_url: mainImageUrl,
             imagenes: (tipoProducto === 'gorra') 
                 ? { lamina: urlFrontal } // GORRA: Solo propiedad 'lamina'
-                : { frontal: urlFrontal, espaldar: urlespaldar }, // TEXTIL: Propiedades estandar
+                : { frontal: urlFrontal, espaldar: urlEspaldar }, // TEXTIL: Propiedades estandar
             foto_diseno_url: urlFotoDiseno
         };
         pedidos.push(nuevoPedido);
@@ -2105,7 +2122,7 @@ app.post('/api/pedidos/edit', upload.fields([
         const uploads = [];
         let mainImageUrl = pedido.imagen_url;
         let urlFrontal = pedido.imagenes ? pedido.imagenes.frontal : null;
-        let urlespaldar = pedido.imagenes ? pedido.imagenes.espaldar : null;
+        let urlEspaldar = pedido.imagenes ? pedido.imagenes.espaldar : null;
 
         if (['camiseta', 'saco'].includes(tipoProducto)) {
              if (files.lamina_frontal) {
@@ -2130,8 +2147,8 @@ app.post('/api/pedidos/edit', upload.fields([
                 // DUPLICAR PARA PREVIEW (Edición)
                 uploads.push({ path: relativePath.replace(ext, `_preview${ext}`), filePath: files.lamina_espaldar[0].path });
                 
-                urlespaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
-                if (!mainImageUrl) mainImageUrl = urlespaldar;
+                urlEspaldar = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${branch}/${relativePath}`;
+                if (!mainImageUrl) mainImageUrl = urlEspaldar;
             }
             if (files.plantilla) {
                 const ext = path.extname(files.plantilla[0].originalname).toLowerCase();
@@ -2203,7 +2220,7 @@ app.post('/api/pedidos/edit', upload.fields([
         } else if (['camiseta', 'saco'].includes(tipoProducto)) {
             if (!pedido.imagenes) pedido.imagenes = {};
             pedido.imagenes.frontal = urlFrontal;
-            pedido.imagenes.espaldar = urlespaldar;
+            pedido.imagenes.espaldar = urlEspaldar;
         }
 
         localPedidos = pedidos;
