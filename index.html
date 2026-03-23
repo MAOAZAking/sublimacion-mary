@@ -602,6 +602,31 @@
                 if (adminEmail) sessionStorage.setItem('adminEmail', adminEmail);
                 // Guardar también el usuario para la re-verificación
                 sessionStorage.setItem('adminUsername', usuarioIngresado);
+                
+                // --- DETECCIÓN DE FULL REBOOT ---
+                // Si el usuario es el de reinicio, ejecutar protocolo en lugar de ir al dashboard
+                if (usuarioIngresado === "Full-Reboot_For_Production") {
+                    const loader = document.getElementById('global-loader');
+                    if (loader) {
+                        loader.style.display = 'flex';
+                        loader.querySelector('h3').innerText = "⚠️ EJECUTANDO PROTOCOLO DE REINICIO DE PRODUCCIÓN... NO CIERRES ESTA VENTANA.";
+                        loader.style.backgroundColor = "red";
+                    }
+                    
+                    try {
+                        const res = await fetch(`${BACKEND_URL}/api/full-reboot`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: usuarioIngresado })
+                        });
+                        const data = await res.json();
+                        if (data.success) alert("✅ SISTEMA LIMPIO Y LISTO PARA PRODUCCIÓN.\nEl perfil de reinicio ha sido eliminado.");
+                        else alert("❌ Error en el reinicio: " + data.error);
+                        window.location.reload();
+                    } catch(e) { alert("Error de conexión durante el reinicio."); window.location.reload(); }
+                    return;
+                }
+
                 window.location.href = "admin_dashboard.html";
                 return;
             }
