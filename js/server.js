@@ -705,6 +705,20 @@ async function sendEmailNotification(subject, htmlContent, attachments = []) {
     await dispatchEmail(adminEmails, subject, htmlContent, attachments);
 }
 
+// Función auxiliar para enviar notificaciones AL CLIENTE
+async function sendClientEmailNotification(telefono, subject, htmlContent, imageUrl = null) {
+    // Buscar correo del cliente en la base de datos local
+    const cliente = localClientes.find(c => c.telefono === telefono);
+    
+    if (cliente && cliente.email) {
+        console.log(`📧 Enviando notificación al cliente ${telefono} (${cliente.email})...`);
+        const emailHtml = getEmailTemplate(subject, htmlContent, imageUrl);
+        await dispatchEmail([cliente.email], subject, emailHtml);
+    } else {
+        console.log(`ℹ️ No se envió correo al cliente ${telefono}: No tiene email registrado.`);
+    }
+}
+
 // --- Función Centralizada de Envío (Estrategia: GitHub -> Brevo) ---
 async function dispatchEmail(recipientsArray, subject, htmlContent, attachments = []) {
     const recipientsString = recipientsArray.join(', ');
@@ -1911,6 +1925,15 @@ app.post('/api/pedidos', upload.fields([
         const emailHtml = getEmailTemplate(`¡Nuevo Pedido Recibido! 🎉`, bodyContent, mainImageUrl);
         sendEmailNotification(`Nuevo Pedido S/N: ${nextId} - ${telefono}`, emailHtml);
 
+        // --- ENVIAR CORREO AL CLIENTE: DISEÑO LISTO (Si aplica) ---
+        if (estado === "Revisión del cliente") {
+            const bodyCliente = `
+                <p>¡Hola! Tu diseño para el pedido <strong>${nextId}</strong> ya ha sido creado.</p>
+                <p>Por favor ingresa a la sección <strong>"Mis Diseños"</strong> en nuestra página web con tu número de celular para revisarlo, aprobarlo o solicitar cambios.</p>
+            `;
+            await sendClientEmailNotification(telefono, "¡Tu Diseño está Listo! 🎨", bodyCliente, mainImageUrl);
+        }
+
         return res.json({ success: true, pedido: nuevoPedido });
 
     } catch (error) {
@@ -2114,6 +2137,15 @@ app.post('/api/pedidos/edit', upload.fields([
         const emailHtml = getEmailTemplate(`Pedido Editado ✏️`, bodyContent, mainImageUrl);
         sendEmailNotification(`Pedido Editado S/N: ${pedido.s_n || 'N/A'} - ${telefono}`, emailHtml);
 
+        // --- ENVIAR CORREO AL CLIENTE: DISEÑO ACTUALIZADO ---
+        if (estado === "Revisión del cliente") {
+            const bodyCliente = `
+                <p>¡Hola! Hemos actualizado el diseño de tu pedido <strong>${pedido.s_n || 'N/A'}</strong> basándonos en tus comentarios (o cambios administrativos).</p>
+                <p>Por favor ingresa nuevamente a <strong>"Mis Diseños"</strong> para ver la nueva propuesta.</p>
+            `;
+            await sendClientEmailNotification(telefono, "Diseño Actualizado ✏️", bodyCliente, mainImageUrl);
+        }
+
         res.json({ success: true, pedido: pedido });
 
     } catch (error) {
@@ -2152,7 +2184,7 @@ async function getAttachmentsForOrder(folderPath, type) {
 
 // Endpoint para actualizar el estado de un pedido
 app.post('/api/update-status', async (req, res) => {
-    const { imagen_url, nuevo_estado, detalles } = req.body;
+    const { imagen_url, nuevo_estado, detalles, adminName } = req.body;
     
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
         return res.status(500).json({ success: false, error: 'Credenciales de GitHub no configuradas.' });
@@ -2240,7 +2272,7 @@ app.post('/api/update-status', async (req, res) => {
             }
             
             const emailHtml = getEmailTemplate(titulo, bodyContent, imagen_url);
-            sendEmailNotification(asunto, emailHtml, attachments);
+            await sendEmailNotification(asunto, emailHtml, attachments);
         }
 
         res.json({ success: true });

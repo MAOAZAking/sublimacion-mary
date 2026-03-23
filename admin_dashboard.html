@@ -400,7 +400,7 @@
             inicializarDashboard(); // Saltar verificación facial
         } else {
             const loaderText = document.getElementById('loader-text');
-            if (loaderText) loaderText.innerText = "Se requiere verificación facial para continuar...";
+            if (loaderText) loaderText.innerText = "Ya estamos terminando de configurar todo para ti...";
             reverificarIdentidad(); // Proceder con la verificación facial
         }
 
@@ -982,7 +982,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     imagen_url: pedido.imagen_url, 
-                    nuevo_estado: 'Producto terminado' 
+                    nuevo_estado: 'Producto terminado',
+                    adminName: sessionStorage.getItem('adminUsername') || 'Admin'
                 })
             });
             const data = await res.json();
@@ -1027,7 +1028,7 @@
                     const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${sn}`;
 
                     // Usamos códigos Unicode para los emojis para evitar errores de codificación (rombos)
-                    // 👋 = \uD83D\uDC4B | ✅ = \u2705 | 🛍️ = \uD83D\uDECD\uFE0F | 👇 = \uD83D\uDC47
+                    // 👋🏼 = \uD83D\uDC4B | ✅ = \u2705 | 🛍️ = \uD83D\uDECD\uFE0F | 👇🏼 = \uD83D\uDC47
                     const mensaje = `\uD83D\uDC4B ¡Hola! Un saludo de *Sublimación Mary*.\n\n\u2705 Tu pedido con S/N: *${sn}* ya está *LISTO* y fabricado.\n\n\uD83D\uDECD\uFE0F Ya puedes pasar a recogerlo.\n\n\uD83D\uDC47 Mira la foto aquí:\n${previewUrl}`;
                     const numeroWhatsApp = telefono.length === 10 ? `+57${telefono}` : telefono;
                     
@@ -1808,17 +1809,6 @@
         window.location.href = url;
     }
 
-    // Detectar salida de la página para cerrar sesión si no es navegación interna
-    window.addEventListener('pagehide', () => {
-        if (!isInternalNavigation) {
-            // Limpiar credenciales críticas al salir del entorno admin
-            sessionStorage.removeItem('adminLogueado');
-            sessionStorage.removeItem('adminUsername');
-            sessionStorage.removeItem('faceData');
-            sessionStorage.removeItem('adminFacialVerified');
-            sessionStorage.removeItem('adminLastActivity');
-        }
-    });
 
     function cerrarSesion(message) {
         if (message) {

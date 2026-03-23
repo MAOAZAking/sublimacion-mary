@@ -1412,7 +1412,7 @@
         const publicServerUrl = 'https://sublimacion-mary.onrender.com';
         const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
 
-        const mensajeWA = `Hola, soy el cliente ${telefono}. Mi pedido es el S/N: ${idPedido} ME ENCANTA EL DISEÑO, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${previewUrl})`;
+        const mensajeWA = `Hola, soy el cliente ${telefono}. Mi pedido es el S/N: *"${idPedido}"*\nME ENCANTA EL DISEÑO, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${previewUrl})`;
         const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         
         window.location.href = urlWA;
