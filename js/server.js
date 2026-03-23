@@ -819,26 +819,28 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
     if (type === 'security') {
         if (level >= 3) { // Baneo permanente
             footerImage = `${repoBaseUrl}presentacion_email_baneo.png`;
-            bodyBg = '#c0392b'; // Fondo rojo oscuro para todo el correo
-            containerBg = '#c0392b'; // Fondo del contenedor rojo
-            headerBg = '#c0392b'; // Fondo rojo oscuro
-            footerBg = '#c0392b'; // Fondo rojo oscuro
-            textColor = '#ffffff'; // Texto blanco
-            titleColor = '#ffffff'; // Títulos blancos
+            bodyBg = 'rgb(255, 0, 0)'; // Fondo rojo oscuro para todo el correo
+            containerBg = 'rgb(255, 0, 0)'; // Fondo rojo que esta en medio del header y fotter
+            headerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
+            footerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
+            textColor = 'rgb(255, 0, 0)'; // Texto blanco
+            titleColor = '#be0000'; // Títulos blancos
             containerBorder = '2px solid white'; // Borde blanco para el contenedor principal
             headerTitle = '🚨☠️ Alerta de Seguridad ☠️🚨';
             infoCardBorder = '#ffffff'; // Linea blanca
-            infoCardBg = 'rgba(0,0,0,0.1)'; // Fondo tarjeta sutil
+            infoCardBg = 'rgb(156, 156, 156)'; // Fondo tarjeta de informacion de la infraccion
             strongColor = '#ffffff'; // Negritas en blanco
         } else if (level === 2) { // Segunda infracción
             footerImage = `${repoBaseUrl}presentacion_email_rojo.png`;
             headerTitle = '🚨 Alerta de Seguridad 🚨';
-            infoCardBorder = '#e74c3c'; // Mantiene el borde rojo
-            headerBg = '#c0392b'; // Fondo rojo oscuro
-            footerBg = '#c0392b'; // Fondo rojo oscuro
+            infoCardBorder = 'rgb(255, 0, 0)'; // Mantiene el borde rojo
+            headerBg = 'rgb(255, 0, 0)'; // Fondo rojo
+            footerBg = 'rgb(255, 0, 0)'; // Fondo rojo
+            containerBg = 'rgb(192, 57, 43)'; // Fondo del contenedor rojo
         } else if (level === 1) { // Primera infracción
             headerTitle = '🚨 Alerta de Seguridad 🚨';
-            infoCardBorder = '#e74c3c'; // Borde rojo para la tarjeta de información
+            infoCardBorder = 'rgb(255, 0, 0)'; // Borde rojo para la tarjeta de información
+            containerBg = 'rgb(156, 156, 156)'; // Fondo gris clarito
         }
     }
 
@@ -852,19 +854,19 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: ${bodyBg}; margin: 0; padding: 0; color: ${textColor}; }
             .email-container { max-width: 600px; margin: 20px auto; background-color: ${containerBg}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: ${containerBorder}; }
             .header { background-color: ${headerBg}; padding: 30px 20px; text-align: center; }
-            .header h1 { color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
+            .header h1 { color: ${level >= 3 ? 'rgb(255, 0, 0)' : 'rgb(255, 255, 255)'}; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
             .content { padding: 40px 30px; line-height: 1.6; font-size: 16px; color: ${textColor}; }
             .content h2 { color: ${titleColor}; font-size: 22px; margin-top: 0; margin-bottom: 20px; font-weight: 600; }
             .info-card { background-color: ${infoCardBg}; border-left: 5px solid ${infoCardBorder}; padding: 20px; margin: 25px 0; border-radius: 4px; }
             .info-item { margin-bottom: 10px; }
             .info-item strong { color: ${strongColor}; display: inline-block; width: 120px; }
             .btn { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #ffffff !important; text-decoration: none; border-radius: 50px; font-weight: bold; margin-top: 25px; text-align: center; box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3); }
-            .footer-image { width: 100%; display: block; border-top: 1px solid #eee; }
-            .footer { background-color: ${footerBg}; padding: 20px; text-align: center; color: ${level >= 3 ? '#e0e0e0' : '#aaa'}; font-size: 13px; }
+            .footer-image { width: 100%; display: block; border-top: 1px solid rgb(255, 255, 255); }
+            .footer { background-color: ${footerBg}; padding: 20px; text-align: center; color: ${level >= 3 ? 'rgb(255, 0, 0)' : 'rgb(255, 255, 255)'}; font-size: 13px; }
             .footer p { margin: 5px 0; }
         </style>
     </head>
-    <body>
+    <body style="background-color: ${bodyBg}; margin:0; padding:0;">
         <div class="email-container">
             <div class="header">
                 <h1>${headerTitle}</h1>
@@ -2252,9 +2254,10 @@ app.post('/api/update-status', async (req, res) => {
 
 // Endpoint para generar vista previa de WhatsApp (Open Graph)
 app.get('/api/preview', (req, res) => {
-    const { img, sn } = req.query;
+    const { img, sn, original } = req.query;
     // Si no hay imagen, redirigir al home o mostrar error
     if (!img) return res.status(404).send("Imagen no encontrada");
+    const fallback = original ? `onerror="this.onerror=null; this.src='${original}';"` : '';
 
     // HTML dinámico con Open Graph Tags para que WhatsApp muestre la tarjeta
     const html = `
@@ -2282,7 +2285,7 @@ app.get('/api/preview', (req, res) => {
     <div class="container">
         <h1>¡Tu pedido está listo! 🎉</h1>
         <p>Referencia S/N: ${sn || 'N/A'}</p>
-        <img src="${img}" alt="Foto del Pedido">
+        <img src="${img}" alt="Foto del Pedido" ${fallback}>
         <p>Ya puedes pasar a recogerlo en nuestro local.</p>
     </div>
 </body>

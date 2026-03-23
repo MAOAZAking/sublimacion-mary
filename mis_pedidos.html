@@ -1406,8 +1406,13 @@
         // La notificación por correo ahora se envía automáticamente desde el backend (server.js)
         // al llamar a /api/update-status. No se necesita hacer nada más aquí.
         // Redireccionar a WhatsApp
-        const idPedido = currentPedidoData.id || 'N/A';
-        const mensajeWA = `Hola, soy el cliente ${telefono}. Mi pedido es el #${idPedido} ME ENCANTA EL DISEÑO, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${imgUrl})`;
+        const idPedido = currentPedidoData.s_n || 'N/A';
+
+        const finalImgForPreview = imgUrl.replace(/\.(png|jpeg|jpg)$/i, '_preview.jpg');
+        const publicServerUrl = 'https://sublimacion-mary.onrender.com';
+        const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
+
+        const mensajeWA = `Hola, soy el cliente ${telefono}. Mi pedido es el S/N: ${idPedido} ME ENCANTA EL DISEÑO, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${previewUrl})`;
         const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         
         window.location.href = urlWA;
@@ -1425,7 +1430,7 @@
         const telefono = currentPedidoData.telefono || currentPedidoData.teléfono;
         const imgUrl = currentPedidoData.imagen_url;
         const linkPagina = window.location.href;
-        const idPedido = currentPedidoData.id || 'N/A';
+        const idPedido = currentPedidoData.s_n || 'N/A';
 
         // Actualizar estado localmente y ocultar overlay inmediatamente
         currentPedidoData.estado = "Creando diseño";
@@ -1448,14 +1453,22 @@
         // Copiar al portapapeles
         navigator.clipboard.writeText(textoCambio).then(() => {
             // Redireccionar a WhatsApp
-            const mensajeWA = `Hola, soy el cliente ${telefono}. Vengo del link ${linkPagina}. Quiero solicitar una modificación en el pedido #${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${imgUrl})`;
+            const finalImgForPreview = imgUrl.replace(/\.(png|jpeg|jpg)$/i, '_preview.jpg');
+            const publicServerUrl = 'https://sublimacion-mary.onrender.com';
+            const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
+
+            const mensajeWA = `Hola, soy el cliente ${telefono}. Vengo del link ${linkPagina}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
             const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
             
             window.location.href = urlWA;
         }).catch(err => {
             console.error('Error al copiar: ', err);
             // Fallback si falla el copiado, redireccionar igual
-            const mensajeWA = `Hola, soy el cliente ${telefono}. Vengo del link ${linkPagina}. Quiero solicitar una modificación en el pedido #${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${imgUrl})`;
+            const finalImgForPreview = imgUrl.replace(/\.(png|jpeg|jpg)$/i, '_preview.jpg');
+            const publicServerUrl = 'https://sublimacion-mary.onrender.com';
+            const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
+
+            const mensajeWA = `Hola, soy el cliente ${telefono}. Vengo del link ${linkPagina}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
             window.location.href = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         });
     }

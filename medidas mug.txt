@@ -1,0 +1,22 @@
+19.5 cm -> ancho de la lamina
+7.9 cm -> alto de la lamina
+25.9 cm -> ancho del mug
+9.9 cm -> alto del mug
+1 cm -> desde el borde del mug hacia adentro, para la lamina
+1.5 cm -> ancho oreja del mug
+5.7 cm -> de frente de espacio entre el inicio y fin de la lamina
+
+###################### TABLA DE CONVERSOR DE CM A PX ######################
+118,1538461538462 px = 1cm
+1 cm = 118,1538461538462 px
+
+###################### LAMINA MEDIDAS EN PX ######################
+2.304,0000000000009 px = 19.5 cm
+933,41538461538498 px = 7.9 cm
+
+###################### IMPRESORA DE SUBLIMAR ######################
+Epson eco tank L121
+
+###################### MEDIDA HOJA DE SUBLIMAR (A4) ######################
+21 x 29,7 cm
+2481,230769230769 x 3509,169230769231 px

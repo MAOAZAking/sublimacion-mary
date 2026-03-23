@@ -1,7 +1,7 @@
 import os
 import json
 from docx import Document
-from docx.shared import Mm
+from docx.shared import Mm, Cm
 from docx.enum.section import WD_ORIENT
 
 # Cargar pedidos.json para saber que imagenes son las validas
@@ -54,20 +54,35 @@ def create_word_for_folder(folder_path, valid_images_set):
     doc = Document()
     section = doc.sections[0]
     
-    # Configurar Pagina Horizontal A4
-    section.orientation = WD_ORIENT.LANDSCAPE
-    section.page_width = Mm(297)
-    section.page_height = Mm(210)
+    # Configurar Pagina Vertical A4 (Estandar Impresora)
+    section.orientation = WD_ORIENT.PORTRAIT
+    section.page_width = Mm(210)
+    section.page_height = Mm(297)
     
-    # Margenes
-    section.left_margin = Mm(10)
-    section.right_margin = Mm(10)
-    section.top_margin = Mm(10)
-    section.bottom_margin = Mm(10)
+    # Margenes para Epson EcoTank L121 (Minimo seguro aprox 3-5mm)
+    # Usamos 5mm para aprovechar el maximo de la hoja sin riesgos de corte
+    margin_val = Mm(5)
+    section.left_margin = margin_val
+    section.right_margin = margin_val
+    section.top_margin = margin_val
+    section.bottom_margin = margin_val
+    
+    # Detectar tipo de producto por la carpeta
+    path_lower = folder_path.lower()
+    is_mug_or_cap = 'mug' in path_lower or 'gorra' in path_lower
+    
+    # Ancho maximo disponible para imprimir
+    printable_width = section.page_width - section.left_margin - section.right_margin
 
     for i, img_path in enumerate(images):
         try:
-            doc.add_picture(img_path) # Agrega imagen tamano original
+            if is_mug_or_cap:
+                # Medidas especificas solicitadas: 19.5cm x 7.9cm
+                doc.add_picture(img_path, width=Cm(19.5), height=Cm(7.9))
+            else:
+                # Camiseta, Saco u otros: Maximo de la hoja
+                doc.add_picture(img_path, width=printable_width)
+            
             if i < len(images) - 1:
                 doc.add_paragraph() # Salto de linea entre imagenes
         except Exception as e:
