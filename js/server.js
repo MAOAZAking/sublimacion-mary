@@ -15,6 +15,9 @@ const UAParser = require('ua-parser-js'); // Para analizar el User-Agent
 // Cargar .env desde la raíz (un nivel arriba)
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
+// --- URLs de la Aplicación ---
+const GITHUB_PAGES_URL = 'https://maoazaking.github.io/sublimacion-mary'; // URL para clientes (carga rápida)
+
 // Función auxiliar para esperar (ayuda a evitar errores de GitHub por peticiones muy rápidas)
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2050,8 +2053,7 @@ app.post('/api/pedidos', upload.fields([
 
         // --- ENVIAR CORREO AL CLIENTE: DISEÑO LISTO (Si aplica) ---
         if (estado === "Revisión del cliente") {
-            const publicUrl = 'https://sublimacion-mary.onrender.com';
-            const linkDirecto = `${publicUrl}/mis_pedidos.html?telefono=${telefono}&pedido=${nextId}`;
+            const linkDirecto = `${GITHUB_PAGES_URL}/mis_pedidos.html?telefono=${telefono}&pedido=${nextId}`;
             const bodyCliente = `
                 <p>¡Hola! Tu diseño para el pedido <strong>${nextId}</strong> ya ha sido creado.</p>
                 <p>Puedes verlo en 3D, aprobarlo o pedir cambios tocando el siguiente botón:</p>
@@ -2266,8 +2268,7 @@ app.post('/api/pedidos/edit', upload.fields([
 
         // --- ENVIAR CORREO AL CLIENTE: DISEÑO ACTUALIZADO ---
         if (estado === "Revisión del cliente") {
-            const publicUrl = 'https://sublimacion-mary.onrender.com';
-            const linkDirecto = `${publicUrl}/mis_pedidos.html?telefono=${telefono}&pedido=${pedido.s_n || 'N/A'}`;
+            const linkDirecto = `${GITHUB_PAGES_URL}/mis_pedidos.html?telefono=${telefono}&pedido=${pedido.s_n || 'N/A'}`;
             const bodyCliente = `
                 <p>¡Hola! Hemos actualizado el diseño de tu pedido <strong>${pedido.s_n || 'N/A'}</strong> basándonos en tus comentarios (o cambios administrativos).</p>
                 <p>Entra aquí para revisar la nueva versión:</p>
@@ -2381,8 +2382,7 @@ app.post('/api/update-status', async (req, res) => {
                 attachmentType = 'design'; // Buscar editables
 
                 // Enviar confirmación al cliente de que su solicitud fue recibida
-                const publicUrl = 'https://sublimacion-mary.onrender.com';
-                const linkDirecto = `${publicUrl}/mis_pedidos.html?telefono=${pedidoEncontrado.telefono}&pedido=${pedidoId}`;
+                const linkDirecto = `${GITHUB_PAGES_URL}/mis_pedidos.html?telefono=${pedidoEncontrado.telefono}&pedido=${pedidoId}`;
                 const bodyCliente = `<p>¡Hola! Hemos recibido tu solicitud de cambio para el pedido <strong>${pedidoId}</strong>.</p><p>Estamos trabajando en ello y te notificaremos en un nuevo correo cuando el diseño actualizado esté listo para tu revisión.</p><div style="text-align:center; margin: 20px 0;"><a href="${linkDirecto}" class="btn">👀 Ver mi Pedido</a></div>`;
                 await sendClientEmailNotification(pedidoEncontrado.telefono, "📝 Solicitud de Cambio Recibida", bodyCliente, imagen_url);
 
@@ -2393,8 +2393,7 @@ app.post('/api/update-status', async (req, res) => {
                 attachmentType = 'production'; // Buscar Word
 
                 // Enviar confirmación al cliente de que su aprobación fue recibida
-                const publicUrl = 'https://sublimacion-mary.onrender.com';
-                const linkDirecto = `${publicUrl}/mis_pedidos.html?telefono=${pedidoEncontrado.telefono}&pedido=${pedidoId}`;
+                const linkDirecto = `${GITHUB_PAGES_URL}/mis_pedidos.html?telefono=${pedidoEncontrado.telefono}&pedido=${pedidoId}`;
                 const bodyCliente = `<p>¡Hola! Hemos recibido la aprobación para tu pedido <strong>${pedidoId}</strong>.</p><p>Pronto pasará a producción. Puedes ver el diseño que aprobaste haciendo clic en el botón:</p><div style="text-align:center; margin: 20px 0;"><a href="${linkDirecto}" class="btn">👍 Ver Diseño Aprobado</a></div>`;
                 await sendClientEmailNotification(pedidoEncontrado.telefono, "✅ Diseño Aprobado", bodyCliente, imagen_url);
 
