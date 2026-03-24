@@ -250,5 +250,19 @@
             "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_5/lamina_espaldar_1774376028011.png"
         },
         "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_5/foto_usada_en_camiseta_5.png"
+    },
+    {
+        "s_n": "CAMI_0007",
+        "telefono": "3152214070",
+        "producto": "Camiseta Estampada",
+        "fecha": "24/03/2026 15:06:10",
+        "estado": "Revisión del cliente",
+        "tipo_estampado": "bolsillo",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_6/lamina_frontal_camiseta_6.png",
+        "imagenes": {
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_6/lamina_frontal_camiseta_6.png",
+            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_6/lamina_espaldar_camiseta_6.png"
+        },
+        "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_6/foto_usada_en_camiseta_6.png"
     }
 ]
