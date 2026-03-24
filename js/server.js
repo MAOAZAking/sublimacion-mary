@@ -750,8 +750,8 @@ function recordFailedAttempt(req, res, context = "General") {
             // Baneo Temporal Progresivo
             // Leer duraciones de bloqueo por nivel desde variables de entorno (ej: "5,10" para 5 min en Nivel 1, 10 min en Nivel 2)
             // FIX: Se busca la variable en plural (BLOCK_DURATIONS_MINUTES) y como respaldo en singular (BLOCK_DURATION_MINUTES) para evitar errores por tipeo en Render.
-            // El valor "30,120" es el respaldo REAL para producción (30 min Nivel 1, 2 horas Nivel 2).
-            const blockDurationsString = process.env.BLOCK_DURATIONS_MINUTES || process.env.BLOCK_DURATION_MINUTES || "30,120";
+            // El valor "120,360" es el respaldo REAL para producción (2 horas Nivel 1, 6 horas Nivel 2).
+            const blockDurationsString = process.env.BLOCK_DURATIONS_MINUTES || process.env.BLOCK_DURATION_MINUTES || "120,360";
             
             const blockDurationsMinutes = blockDurationsString.split(',').map(Number);
             // El índice del array es `newLevel - 1` (Nivel 1 -> índice 0)
@@ -1684,7 +1684,7 @@ app.post('/api/pedidos', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente } = req.body;
+    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente, tipo_estampado } = req.body;
     const files = req.files || {};
 
     // 1. Determinar tipo de producto
@@ -1944,6 +1944,7 @@ app.post('/api/pedidos', upload.fields([
         const nuevoPedido = { 
             s_n: nextId,
             telefono, producto, fecha, estado, tipo_mug, color_mug,
+            tipo_estampado: tipo_estampado || 'completo', // Default: Completo
             imagen_url: mainImageUrl,
             imagenes: (tipoProducto === 'gorra') 
                 ? { lamina: urlFrontal } // GORRA: Solo propiedad 'lamina'
@@ -2049,9 +2050,12 @@ app.post('/api/pedidos', upload.fields([
 
         // --- ENVIAR CORREO AL CLIENTE: DISEÑO LISTO (Si aplica) ---
         if (estado === "Revisión del cliente") {
+            const publicUrl = 'https://sublimacion-mary.onrender.com';
+            const linkDirecto = `${publicUrl}/mis_pedidos.html?telefono=${telefono}&pedido=${nextId}`;
             const bodyCliente = `
                 <p>¡Hola! Tu diseño para el pedido <strong>${nextId}</strong> ya ha sido creado.</p>
-                <p>Por favor ingresa a la sección <strong>"Mis Diseños"</strong> en nuestra página web con tu número de celular para revisarlo, aprobarlo o solicitar cambios.</p>
+                <p>Puedes verlo en 3D, aprobarlo o pedir cambios tocando el siguiente botón:</p>
+                <div style="text-align:center; margin: 20px 0;"><a href="${linkDirecto}" class="btn">👉 Ver mi Diseño 3D</a></div>
             `;
             await sendClientEmailNotification(telefono, "¡Tu Diseño está Listo! 🎨", bodyCliente, mainImageUrl);
         }
@@ -2074,7 +2078,7 @@ app.post('/api/pedidos/edit', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug } = req.body;
+    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug, tipo_estampado } = req.body;
     const files = req.files || {};
 
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
@@ -2210,6 +2214,7 @@ app.post('/api/pedidos/edit', upload.fields([
         pedido.fecha = fecha;
         pedido.estado = estado;
         pedido.imagen_url = mainImageUrl;
+        pedido.tipo_estampado = tipo_estampado || 'completo';
         
         if (tipoProducto === 'mug') {
             pedido.tipo_mug = tipo_mug;
@@ -2261,9 +2266,12 @@ app.post('/api/pedidos/edit', upload.fields([
 
         // --- ENVIAR CORREO AL CLIENTE: DISEÑO ACTUALIZADO ---
         if (estado === "Revisión del cliente") {
+            const publicUrl = 'https://sublimacion-mary.onrender.com';
+            const linkDirecto = `${publicUrl}/mis_pedidos.html?telefono=${telefono}&pedido=${pedido.s_n || 'N/A'}`;
             const bodyCliente = `
                 <p>¡Hola! Hemos actualizado el diseño de tu pedido <strong>${pedido.s_n || 'N/A'}</strong> basándonos en tus comentarios (o cambios administrativos).</p>
-                <p>Por favor ingresa nuevamente a <strong>"Mis Diseños"</strong> para ver la nueva propuesta.</p>
+                <p>Entra aquí para revisar la nueva versión:</p>
+                <div style="text-align:center; margin: 20px 0;"><a href="${linkDirecto}" class="btn">👉 Ver Diseño Actualizado</a></div>
             `;
             await sendClientEmailNotification(telefono, "Diseño Actualizado ✏️", bodyCliente, mainImageUrl);
         }
@@ -2342,7 +2350,7 @@ app.post('/api/update-status', async (req, res) => {
             sha: jsonFile.sha
         });
 
-        // --- ENVIAR CORREO: ACTUALIZACIÓN DE ESTADO (CLIENTE) ---
+        // --- ENVIAR CORREO DE NOTIFICACIÓN ---
         if (pedidoEncontrado) {
             const pedidoId = pedidoEncontrado.s_n || 'N/A';
             let asunto = `Actualización de Estado - Pedido S/N: ${pedidoId}`;
@@ -2371,13 +2379,39 @@ app.post('/api/update-status', async (req, res) => {
                 mensaje = `<p>El cliente solicita los siguientes cambios para el <strong>Pedido identificado con S/N: ${pedidoId}</strong>:</p><div style="background: #fff0f0; padding: 15px; border-left: 4px solid #e74c3c; font-style: italic; margin: 15px 0;">"${detalles}"</div>`;
                 colorBorde = "#e74c3c"; // Rojo para cambios
                 attachmentType = 'design'; // Buscar editables
+
+                // Enviar confirmación al cliente de que su solicitud fue recibida
+                const publicUrl = 'https://sublimacion-mary.onrender.com';
+                const linkDirecto = `${publicUrl}/mis_pedidos.html?telefono=${pedidoEncontrado.telefono}&pedido=${pedidoId}`;
+                const bodyCliente = `<p>¡Hola! Hemos recibido tu solicitud de cambio para el pedido <strong>${pedidoId}</strong>.</p><p>Estamos trabajando en ello y te notificaremos en un nuevo correo cuando el diseño actualizado esté listo para tu revisión.</p><div style="text-align:center; margin: 20px 0;"><a href="${linkDirecto}" class="btn">👀 Ver mi Pedido</a></div>`;
+                await sendClientEmailNotification(pedidoEncontrado.telefono, "📝 Solicitud de Cambio Recibida", bodyCliente, imagen_url);
+
             } else if (nuevo_estado.includes("Listo")) {
                 asunto = `✅ Cliente SATISFECHO - Pedido S/N: ${pedidoId}`;
-                titulo = `¡Cliente Satisfecho!`;
+                titulo = `✅¡Cliente Satisfecho!`;
                 mensaje = `<p>¡El cliente ha aprobado el diseño del <strong>Pedido identificado con S/N: ${pedidoId}</strong>! El pedido está listo para la siguiente fase.</p>`;
                 attachmentType = 'production'; // Buscar Word
 
+                // Enviar confirmación al cliente de que su aprobación fue recibida
+                const publicUrl = 'https://sublimacion-mary.onrender.com';
+                const linkDirecto = `${publicUrl}/mis_pedidos.html?telefono=${pedidoEncontrado.telefono}&pedido=${pedidoId}`;
+                const bodyCliente = `<p>¡Hola! Hemos recibido la aprobación para tu pedido <strong>${pedidoId}</strong>.</p><p>Pronto pasará a producción. Puedes ver el diseño que aprobaste haciendo clic en el botón:</p><div style="text-align:center; margin: 20px 0;"><a href="${linkDirecto}" class="btn">👍 Ver Diseño Aprobado</a></div>`;
+                await sendClientEmailNotification(pedidoEncontrado.telefono, "✅ Diseño Aprobado", bodyCliente, imagen_url);
+
+            } else if (nuevo_estado === "Producto terminado") {
+                // --- LÓGICA PARA PRODUCTO TERMINADO ---
+                const actor = adminName || "Un administrador";
+                
+                // 1. Correo a ADMINS (Con trazabilidad)
+                asunto = `✅ Pedido TERMINADO por ${actor} - S/N: ${pedidoId}`;
+                titulo = "¡Pedido Finalizado!";
+                mensaje = `<p>El administrador <strong>${actor}</strong> ha marcado el pedido como <strong>TERMINADO</strong> y listo para entregar.</p>`;
+                
+                // 2. Correo al CLIENTE (Asegurando que llegue)
+                const bodyCliente = `<p>¡Buenas noticias! Tu pedido <strong>${pedidoId}</strong> (${pedidoEncontrado.producto}) está fabricado y <strong>LISTO PARA RECOGER</strong>. 🛍️</p><p>Te esperamos.</p>`;
+                await sendClientEmailNotification(pedidoEncontrado.telefono, "¡Tu Pedido está Listo! 🎁", bodyCliente, imagen_url);
             }
+
 
             const bodyContent = `
                 <div class="info-card" style="border-left-color: ${colorBorde};">
@@ -2394,7 +2428,7 @@ app.post('/api/update-status', async (req, res) => {
             }
             
             const emailHtml = getEmailTemplate(titulo, bodyContent, imagen_url);
-            await sendEmailNotification(asunto, emailHtml, attachments);
+            await sendEmailNotification(asunto, emailHtml, attachments); // Notificación para el administrador
         }
 
         res.json({ success: true });

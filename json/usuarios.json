@@ -5,7 +5,7 @@
         "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
         "redirectUrl": "admin_dashboard.html",
         "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
-        "gender": "mujer",
+        "gender": "femenino",
         "name": "Mariajosé"
     },
     {
@@ -14,7 +14,7 @@
         "email": "ENV:ADMIN_EMAIL_MIGUEL",
         "redirectUrl": "admin_dashboard.html",
         "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
-        "gender": "hombre",
+        "gender": "masculino",
         "name": "Miguel"
     },
     {
@@ -23,7 +23,7 @@
         "email": "",
         "redirectUrl": "bienvenida_majo.html",
         "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
-        "gender": "mujer",
+        "gender": "femenino",
         "name": "Mariajosé"
     },
     {

@@ -22,7 +22,9 @@
     </script>
     <script>
         // SEGURIDAD: Verificar si el cliente inició sesión (pasó por el index)
-        if (!sessionStorage.getItem('clienteLogueado')) {
+        // Permitir si viene con token en URL (se valida en onload)
+        const isMagicLink = window.location.search.includes('telefono=') && window.location.search.includes('pedido=');
+        if (!sessionStorage.getItem('clienteLogueado') && !isMagicLink) {
             window.location.href = 'index.html';
         }
     </script>
@@ -422,6 +424,15 @@
 
     // Al cargar la página
     window.onload = function() {
+        // Detectar parámetros de URL (Enlace mágico del correo)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTelefono = urlParams.get('telefono');
+        const urlPedido = urlParams.get('pedido'); // S/N del pedido
+
+        if (urlTelefono) {
+            sessionStorage.setItem('clienteLogueado', urlTelefono);
+        }
+
         // Obtener teléfono de la sesión (Fuente de verdad segura)
         const telefono = sessionStorage.getItem('clienteLogueado');
         const galleryDiv = document.getElementById('gallery');
@@ -458,6 +469,12 @@
                             galleryDiv.appendChild(item);
                         }
                     });
+
+                    // Si hay un pedido específico en la URL, abrirlo automáticamente
+                    if (urlPedido) {
+                        const pedidoObjetivo = misPedidos.find(p => p.s_n === urlPedido);
+                        if (pedidoObjetivo) abrirModal(pedidoObjetivo);
+                    }
                 } else {
                     document.getElementById('mensajeError').innerHTML = `
                         <div class="empty-state-container">
@@ -783,7 +800,7 @@
 
         // Configuración separada por género y producto
         const textureSettings = {
-            hombre: {
+            masculino: {
                 //Explicacion de dimensiones en camiseta:
                 // X -> Entre mayor sea el número se mueve la lamina hacia la derecha
                 // NOTA DE X: Su tope esta en la costura derecha en la parte frontal de la camiseta
@@ -792,6 +809,7 @@
                 // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
                 camiseta: {
                     frontal: { x: -240, y: 200, scale: 1.5, angle: 0 },
+                    frontal_bolsillo: { x: -150, y: 130, scale: 0.45, angle: 0 }, // Posición bolsillo (pecho izq)
                     espaldar: { x: 270, y: 200, scale: 1.5, angle: 0 }
                 },
                 //Explicacion de dimensiones en saco:
@@ -803,6 +821,7 @@
                 // ANGLE -> Entre mayor sea el número se inclina mas la lamina hacia la derecha
                 saco: {
                     frontal: { x: 40, y: 260, scale: 1.0, angle: 0 },
+                    frontal_bolsillo: { x: 130, y: 190, scale: 0.35, angle: 0 }, // Posición bolsillo (pecho izq)
                     espaldar: { x: -320, y: 260, scale: 1.0, angle: 0 }
                 },
                 //Explicacion de dimensiones en gorra:
@@ -819,7 +838,7 @@
                     }
                 }
             },
-            mujer: {
+            femenino: {
                 //Explicacion de dimensiones en camiseta:
                 // X -> Entre mayor sea el número se mueve la lamina hacia la derecha
                 // NOTA DE X: Su tope esta en la costura derecha en la parte frontal de la camiseta
@@ -829,6 +848,7 @@
                 camiseta: {
                     // Y aumentado para bajar el estampado y que no quede muy pegado al cuello
                     frontal: { x: -240, y: 230, scale: 1.5, angle: 0 },
+                    frontal_bolsillo: { x: -150, y: 160, scale: 0.45, angle: 0 }, // Posición bolsillo (pecho izq)
                     espaldar: { x: 270, y: 230, scale: 1.5, angle: 0 }
                 },
                 //Explicacion de dimensiones en saco:
@@ -841,6 +861,7 @@
                 saco: {
                     // SCALE disminuido para que no quede la imagen sobre los bolsillos
                     frontal: { x: 40, y: 260, scale: 0.9, angle: 0 },
+                    frontal_bolsillo: { x: 130, y: 190, scale: 0.3, angle: 0 }, // Posición bolsillo (pecho izq)
                     espaldar: { x: -320, y: 260, scale: 0.9, angle: 0 }
                 },
                 //Explicacion de dimensiones en gorra:
@@ -963,7 +984,13 @@
             }
 
             if (tshirtFrontImg && settings.frontal) {
-                const s = settings.frontal;
+                // Seleccionar configuración según el tipo de estampado del pedido
+                let s = settings.frontal;
+                // Si el pedido es tipo bolsillo y existe configuración para ello, usarla
+                if (currentPedidoData && currentPedidoData.tipo_estampado === 'bolsillo' && settings.frontal_bolsillo) {
+                    s = settings.frontal_bolsillo;
+                }
+
                 drawImageOnCanvas(tshirtFrontImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
             }
             // Solo dibujar espalda si existe configuración (Gorra es null)
@@ -988,8 +1015,11 @@
             // Actualizar textura con las coordenadas del género seleccionado
             updateTextureForGender(gender);
 
-            const productType = tipoProducto; // Usar el tipo dinámico (camiseta, saco, gorra)
-            const modelPath = `modelo_3d/${gender}/modelo_3d_${gender}_${productType}.glb`;
+            // Mapeo: masculino -> hombre, femenino -> mujer
+            const folderGender = gender === 'masculino' ? 'hombre' : 'mujer';
+            const productType = tipoProducto;
+            
+            const modelPath = `modelo_3d/${folderGender}/modelo_3d_${folderGender}_${productType}.glb`;
 
             gltfLoader.load(modelPath, (gltf) => {
                 if (currentModel) {
@@ -1071,9 +1101,9 @@
 
                     // Definir cuánto sale el pliegue según el género
                     let maxPush;
-                    if (gender === 'hombre') {
+                    if (gender === 'masculino') {
                         maxPush = laminaRadius * 0.11;
-                    } else if (gender === 'mujer') {
+                    } else if (gender === 'femenino') {
                         maxPush = laminaRadius * 0.09;
                     }
 
@@ -1120,7 +1150,7 @@
                     // --- Posicionamiento y Rotación por Género ---
                     let laminaRotationX, laminaPositionZOffset;
 
-                    if (gender === 'hombre') {
+                    if (gender === 'masculino') {
                         // Inclinar la lámina hacia atrás para que siga la forma de la gorra
                         // Explicacion de posicionamiento, entre menor sea el numero mas se inclina hacia atras
                         laminaRotationX = -0.85;
@@ -1133,7 +1163,7 @@
                         // En la seccion (box.max.y - size.y * 0.08) entre mayor sea el número mas hacia abjo se pone la lamina
                         // En la seccion (center.z - 0.045,) entre mayor sea el número de la resta mas hacia adentro se pone la lamina
                         laminaMesh.position.set(center.x, box.max.y - size.y * 0.085, center.z + laminaPositionZOffset);
-                    } else if (gender === 'mujer'){
+                    } else if (gender === 'femenino'){
                         // Inclinar la lámina hacia atrás para que siga la forma de la gorra
                         // Explicacion de posicionamiento, entre menor sea el numero mas se inclina hacia atras
                         laminaRotationX = -0.83; // Menos inclinación
@@ -1179,7 +1209,7 @@
             });
         };
 
-        let currentGender = 'hombre';
+        let currentGender = 'masculino';
         loadModel(currentGender);
 
         const toggleBtn = document.createElement('button');
@@ -1207,7 +1237,7 @@
         });
 
         const updateButton = () => {
-            if (currentGender === 'hombre') {
+            if (currentGender === 'masculino') {
                 toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
                 toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
                 toggleBtn.style.border = '2px solid rgb(213, 0, 249)';
@@ -1223,7 +1253,7 @@
 
         toggleBtn.onclick = (e) => {
             e.stopPropagation();
-            currentGender = currentGender === 'hombre' ? 'mujer' : 'hombre';
+            currentGender = currentGender === 'masculino' ? 'femenino' : 'masculino';
             // loadModel llama internamente a updateTextureForGender
             loadModel(currentGender);
             updateButton();
@@ -1392,16 +1422,20 @@
         currentPedidoData.estado = nuevoEstado;
         document.getElementById('feedbackOverlay').style.display = 'none';
 
-        // Actualizar estado en servidor
+        // Actualizar estado en servidor Y ESPERAR a que termine antes de redirigir
         const BACKEND_URL = window.location.hostname.includes('github.io') 
             ? 'https://sublimacion-mary.onrender.com' 
             : '';
 
-        fetch(`${BACKEND_URL}/api/update-status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: nuevoEstado })
-        });
+        try {
+            await fetch(`${BACKEND_URL}/api/update-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: nuevoEstado })
+            });
+        } catch (e) {
+            console.error("Error actualizando estado, pero se continuará a WhatsApp:", e);
+        }
         
         // La notificación por correo ahora se envía automáticamente desde el backend (server.js)
         // al llamar a /api/update-status. No se necesita hacer nada más aquí.
@@ -1436,16 +1470,20 @@
         currentPedidoData.estado = "Creando diseño";
         document.getElementById('feedbackOverlay').style.display = 'none';
 
-        // Actualizar estado en servidor
+        // Actualizar estado en servidor Y ESPERAR a que termine antes de redirigir
         const BACKEND_URL = window.location.hostname.includes('github.io') 
             ? 'https://sublimacion-mary.onrender.com' 
             : '';
 
-        fetch(`${BACKEND_URL}/api/update-status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: "Creando diseño", detalles: textoCambio })
-        });
+        try {
+            await fetch(`${BACKEND_URL}/api/update-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: "Creando diseño", detalles: textoCambio })
+            });
+        } catch (e) {
+            console.error("Error actualizando estado, pero se continuará a WhatsApp:", e);
+        }
 
         // La notificación por correo ahora se envía automáticamente desde el backend (server.js)
         // al llamar a /api/update-status. No se necesita hacer nada más aquí.
@@ -1457,7 +1495,7 @@
             const publicServerUrl = 'https://sublimacion-mary.onrender.com';
             const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
 
-            const mensajeWA = `Hola, soy el cliente ${telefono}. Vengo del link ${linkPagina}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
+            const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
             const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
             
             window.location.href = urlWA;
@@ -1468,7 +1506,7 @@
             const publicServerUrl = 'https://sublimacion-mary.onrender.com';
             const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
 
-            const mensajeWA = `Hola, soy el cliente ${telefono}. Vengo del link ${linkPagina}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
+            const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
             window.location.href = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         });
     }

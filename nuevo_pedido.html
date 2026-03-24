@@ -33,7 +33,7 @@
         h2 { text-align: center; color: rgb(255, 255, 255); margin-bottom: 25px; font-weight: 600; }
         .form-group { margin-bottom: 1.5rem; }
         label { display: block; margin-bottom: 0.8rem; color: #b0b0b0; font-weight: 500; font-size: 0.9rem; }
-        input[type="text"], input[type="tel"], select, input[type="file"] { width: 100%; padding: 12px 15px; border: 2px solid #333; border-radius: 10px; box-sizing: border-box; background: #2d2d2d; color: white; font-family: inherit; transition: all 0.3s; -webkit-appearance: none; }
+        input[type="text"], input[type="tel"], select, input[type="file"], input[type="email"] { width: 100%; padding: 12px 15px; border: 2px solid #333; border-radius: 10px; box-sizing: border-box; background: #2d2d2d; color: white; font-family: inherit; transition: all 0.3s; -webkit-appearance: none; }
         input:focus, select:focus { border-color: #8e44ad; background: #333; outline: none; }
         button { width: 100%; padding: 15px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 20px rgba(142, 68, 173, 0.3); margin-top: 10px; -webkit-appearance: none; }
         button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(142, 68, 173, 0.4); }
@@ -173,7 +173,6 @@
         }
         .hidden { display: none; }
     </style>
-</head>
 </head>
 <body>
 
@@ -351,18 +350,30 @@
         window.location.href = url;
     }
 
-    // Detectar salida para cerrar sesión
-    window.addEventListener('pagehide', () => {
-        if (!isInternalNavigation) {
-            sessionStorage.removeItem('adminLogueado');
-            sessionStorage.removeItem('adminUsername');
-            sessionStorage.removeItem('faceData');
-            sessionStorage.removeItem('adminFacialVerified');
-            sessionStorage.removeItem('adminLastActivity');
+    // --- Script para preservar archivos si el usuario cancela la selección ---
+    // Guarda los archivos al hacer click en el input
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.type === 'file') {
+            if (e.target.files.length > 0) {
+                // Guardamos una copia de la lista de archivos actual
+                e.target._currentFiles = Array.from(e.target.files);
+            } else {
+                e.target._currentFiles = null;
+            }
         }
     });
 
-    // Lógica dinámica del formulario
+    // Si al cambiar el input queda vacío (usuario canceló o borró), restauramos
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.type === 'file') {
+            if (e.target.files.length === 0 && e.target._currentFiles && e.target._currentFiles.length > 0) {
+                const dt = new DataTransfer();
+                e.target._currentFiles.forEach(file => dt.items.add(file));
+                e.target.files = dt.files;
+            }
+        }
+    });
+
     const productoSelect = document.getElementById('producto');
     const dynamicFiles = document.getElementById('dynamic-files');
     const telefonoInput = document.getElementById('telefono');
@@ -414,6 +425,17 @@
                 `;
             } else if (['Camiseta Estampada', 'Saco Estampado'].includes(tipo)) {
                 dynamicFiles.innerHTML = `
+                    <div class="form-group">
+                        <label>Estilo de Estampado Frontal:</label>
+                        <div style="display: flex; gap: 20px; background: #2d2d2d; padding: 10px; border-radius: 10px; border: 2px solid #333;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; margin: 0;">
+                                <input type="radio" name="tipo_estampado" value="completo" checked> Completo (Grande)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; margin: 0;">
+                                <input type="radio" name="tipo_estampado" value="bolsillo"> Tipo Bolsillo (Pequeño)
+                            </label>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label for="lamina_frontal">Subir Lámina Frontal (Imagen del diseño):</label>
                         <input type="file" name="lamina_frontal" id="lamina_frontal" accept=".jpg, .jpeg, .png">
@@ -529,11 +551,7 @@
     });
 
     document.getElementById('pedidoForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
         e.preventDefault(); 
-
         const producto = document.getElementById('producto').value;
         const telefono = document.getElementById('telefono').value;
         const toast = document.getElementById('floating-toast');
@@ -627,6 +645,13 @@
                 const plantillaInput = document.getElementById('plantilla');
                 const fotoDisenoInput = document.getElementById('foto_diseno');
                 if (frontalInput.files.length > 0) formData.append('lamina_frontal', frontalInput.files[0], frontalInput.files[0].name.replace(/\s+/g, '-'));
+                
+                // Enviar tipo de estampado
+                const tipoEstampado = document.querySelector('input[name="tipo_estampado"]:checked');
+                if (tipoEstampado) {
+                    formData.append('tipo_estampado', tipoEstampado.value);
+                }
+
                 if (espaldarInput.files.length > 0) formData.append('lamina_espaldar', espaldarInput.files[0], espaldarInput.files[0].name.replace(/\s+/g, '-'));
                 if (plantillaInput.files.length > 0) formData.append('plantilla', plantillaInput.files[0], plantillaInput.files[0].name.replace(/\s+/g, '-'));
                 if (fotoDisenoInput.files.length > 0) formData.append('foto_diseno', fotoDisenoInput.files[0], fotoDisenoInput.files[0].name.replace(/\s+/g, '-'));

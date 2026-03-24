@@ -154,8 +154,6 @@
     <div id="errorMsg" class="error-msg">Datos incorrectos</div>
 </div>
 
-<video id="video" playsinline style="display: none;"></video>
-
 <div class="footer-copy">
     &copy; <span id="copyright-year"></span> Sublimación Mary. Todo personalizado.
 </div>
@@ -227,8 +225,7 @@
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             videoEl.srcObject = stream;
-            await new Promise(resolve => videoEl.onloadedmetadata = resolve);
-            videoEl.play();
+            await videoEl.play();
             
             await new Promise(r => setTimeout(r, 500)); // Esperar a que la cámara se ajuste
 
@@ -438,8 +435,8 @@
             }
 
             // Personalizar saludo según género
-            const gender = sessionStorage.getItem('adminGender') || 'hombre';
-            const saludo = gender === 'mujer' ? 'Bienvenida' : 'Bienvenido';
+            const gender = sessionStorage.getItem('adminGender') || 'masculino';
+            const saludo = gender === 'femenino' ? 'Bienvenida' : 'Bienvenido';
 
             // 3. Mostrar UI de contraseña
             container.innerHTML = `

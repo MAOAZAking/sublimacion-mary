@@ -67,10 +67,10 @@
         "producto": "Camiseta Estampada",
         "fecha": "26/02/2026 17:59:12",
         "estado": "Producto terminado",
-        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_1772146759219.png",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_camiseta_1.png",
         "imagenes": {
-            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_1772146759219.png",
-            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_espaldar_1772146759219.png"
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_frontal_camiseta_1.png",
+            "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_1/lamina_espaldar_camiseta_1.png"
         },
         "foto_diseno_url": null
     },
@@ -112,9 +112,9 @@
         "producto": "Camiseta Estampada",
         "fecha": "26/02/2026 18:06:11",
         "estado": "Listo para estampar",
-        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_2/lamina_frontal_1772147188869.png",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_2/lamina_frontal_camiseta_2.png",
         "imagenes": {
-            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_2/lamina_frontal_1772147188869.png",
+            "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_2/lamina_frontal_camiseta_2.png",
             "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_2/lamina_espaldar_camiseta_2.png"
         },
         "foto_diseno_url": null

@@ -1028,10 +1028,11 @@
                     const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${sn}`;
 
                     // Usamos códigos Unicode para los emojis para evitar errores de codificación (rombos)
-                    // 👋🏼 = \uD83D\uDC4B | ✅ = \u2705 | 🛍️ = \uD83D\uDECD\uFE0F | 👇🏼 = \uD83D\uDC47
-                    const mensaje = `\uD83D\uDC4B ¡Hola! Un saludo de *Sublimación Mary*.\n\n\u2705 Tu pedido con S/N: *${sn}* ya está *LISTO* y fabricado.\n\n\uD83D\uDECD\uFE0F Ya puedes pasar a recogerlo.\n\n\uD83D\uDC47 Mira la foto aquí:\n${previewUrl}`;
+                    // Usamos emojis base sin variantes de color/estilo para máxima compatibilidad
+                    // 👋 = \uD83D\uDC4B | ✅ = \u2705 | 🛍 = \uD83D\uDECD | 👇 = \uD83D\uDC47
+                    const mensaje = `\uD83D\uDC4B ¡Hola! Un saludo de *Sublimación Mary*.\n\n\u2705 Tu pedido con S/N: *${sn}* ya está *LISTO* y fabricado.\n\n\uD83D\uDECD Ya puedes pasar a recogerlo.\n\n\uD83D\uDC47 Mira la foto aquí:\n${previewUrl}`;
                     const numeroWhatsApp = telefono.length === 10 ? `+57${telefono}` : telefono;
-                    
+                
                     window.location.href = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
                 } else {
                     alert('Pedido marcado como terminado, pero no tiene número para redirigir a WhatsApp.');
@@ -1055,6 +1056,9 @@
         const container3D = document.getElementById('container3D');
         const btnDescargar = document.getElementById('btnDescargar');
         const rotationMsg = document.getElementById('rotationMsg');
+
+        // Guardar referencia global para el renderizado 3D (para saber si es bolsillo o completo)
+        window.currentAdminPedido = pedido;
 
         // Resetear estado de información (visible por defecto)
         modalInfo.style.display = 'block';
@@ -1391,13 +1395,15 @@
 
         // Configuración separada por género y producto (Igual que en mis_pedidos.html)
         const textureSettings = {
-            hombre: {
+            masculino: {
                 camiseta: {
                     frontal: { x: -240, y: 200, scale: 1.5, angle: 0 },
+                    frontal_bolsillo: { x: -150, y: 130, scale: 0.45, angle: 0 },
                     espaldar: { x: 270, y: 200, scale: 1.5, angle: 0 }
                 },
                 saco: {
                     frontal: { x: 40, y: 260, scale: 1.0, angle: 0 },
+                    frontal_bolsillo: { x: 130, y: 190, scale: 0.35, angle: 0 },
                     espaldar: { x: -320, y: 260, scale: 1.0, angle: 0 }
                 },
                 gorra: {
@@ -1407,15 +1413,17 @@
                     }
                 }
             },
-            mujer: {
+            femenino: {
                 camiseta: {
                     // Y aumentado para bajar el estampado y que no quede muy pegado al cuello
                     frontal: { x: -240, y: 230, scale: 1.5, angle: 0 }, 
+                    frontal_bolsillo: { x: -150, y: 160, scale: 0.45, angle: 0 },
                     espaldar: { x: 270, y: 230, scale: 1.5, angle: 0 }
                 },
                 saco: {
                     // SCALE disminuido para que no quede la imagen sobre los bolsillos
                     frontal: { x: 40, y: 260, scale: 0.9, angle: 0 }, 
+                    frontal_bolsillo: { x: 130, y: 190, scale: 0.3, angle: 0 },
                     espaldar: { x: -320, y: 260, scale: 0.9, angle: 0 }
                 },
                 gorra: {
@@ -1527,7 +1535,17 @@
             }
 
             if (tshirtFrontImg && settings.frontal) {
-                const s = settings.frontal;
+                // Lógica para usar el tipo de estampado correcto en admin dashboard
+                // Necesitamos acceder al pedido actual que se está visualizando en el modal
+                let s = settings.frontal;
+                // En el dashboard, 'currentPedido' es una variable global que se setea en abrirModal pero aquí no es global directa
+                // Usamos una variable global temporal o pasamos el dato. 
+                // Nota: En admin_dashboard.html, la función loadModel está dentro de init3DTextil, que no recibe 'pedido'.
+                // Pero 'abrirModal' llama a 'init3DTextil'. 
+                // SOLUCIÓN: Usaremos una variable global window.currentAdminPedido que estableceremos en abrirModal
+                if (window.currentAdminPedido && window.currentAdminPedido.tipo_estampado === 'bolsillo' && settings.frontal_bolsillo) {
+                    s = settings.frontal_bolsillo;
+                }
                 drawImageOnCanvas(tshirtFrontImg, s.x, s.y, s.scale, s.angle, s.curvature, s);
             }
             if (tshirtBackImg && settings.espaldar) {
@@ -1551,8 +1569,12 @@
             // Actualizar textura con las coordenadas del género seleccionado
             updateTextureForGender(gender);
 
+            // Mapeo de Estandarización: "masculino" -> Carpeta "hombre", "femenino" -> Carpeta "mujer"
+            // Esto permite mantener la estructura de archivos existente mientras usamos los nuevos términos.
+            const folderGender = gender === 'masculino' ? 'hombre' : 'mujer';
             const productType = tipoProducto;
-            const modelPath = `modelo_3d/${gender}/modelo_3d_${gender}_${productType}.glb`;
+            
+            const modelPath = `modelo_3d/${folderGender}/modelo_3d_${folderGender}_${productType}.glb`;
 
             gltfLoader.load(modelPath, (gltf) => {
                 if (currentModel) {
@@ -1632,9 +1654,9 @@
                     
                     // Definir cuánto sale el pliegue según el género
                     let maxPush;
-                    if (gender === 'hombre') {
+                    if (gender === 'masculino') {
                         maxPush = laminaRadius * 0.11; // 0.11
-                    } else if (gender === 'mujer') {
+                    } else if (gender === 'femenino') {
                         maxPush = laminaRadius * 0.09; // 0.09
                     }
 
@@ -1681,7 +1703,7 @@
                     // --- Posicionamiento y Rotación por Género ---
                     let laminaRotationX, laminaPositionZOffset;
 
-                    if (gender === 'hombre') {
+                    if (gender === 'masculino') {
                         // Inclinar la lámina hacia atrás para que siga la forma de la gorra
                         // Explicacion de posicionamiento, entre menor sea el numero mas se inclina hacia atras
                         laminaRotationX = -0.85;
@@ -1694,7 +1716,7 @@
                         // En la seccion (box.max.y - size.y * 0.08) entre mayor sea el número mas hacia abjo se pone la lamina
                         // En la seccion (center.z - 0.045,) entre mayor sea el número de la resta mas hacia adentro se pone la lamina
                         laminaMesh.position.set(center.x, box.max.y - size.y * 0.085, center.z + laminaPositionZOffset);
-                    } else if (gender === 'mujer'){
+                    } else if (gender === 'femenino'){
                         // Inclinar la lámina hacia atrás para que siga la forma de la gorra
                         // Explicacion de posicionamiento, entre menor sea el numero mas se inclina hacia atras
                         laminaRotationX = -0.83; // Menos inclinación
@@ -1740,7 +1762,7 @@
             });
         };
 
-        let currentGender = 'hombre';
+        let currentGender = 'masculino';
         loadModel(currentGender);
 
         const toggleBtn = document.createElement('button');
@@ -1767,7 +1789,7 @@
         });
 
         const updateButton = () => {
-            if (currentGender === 'hombre') {
+            if (currentGender === 'masculino') {
                 toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
                 toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
                 toggleBtn.style.border = '2px solid rgb(213, 0, 249)';
@@ -1783,7 +1805,7 @@
 
         toggleBtn.onclick = (e) => {
             e.stopPropagation();
-            currentGender = currentGender === 'hombre' ? 'mujer' : 'hombre';
+            currentGender = currentGender === 'masculino' ? 'femenino' : 'masculino';
             loadModel(currentGender);
             updateButton();
         };
