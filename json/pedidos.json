@@ -45,11 +45,13 @@
         "s_n": "MUGS_0004",
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
-        "fecha": "14/01/2026 15:34:16",
+        "fecha": "24/03/2026 15:34:46",
         "estado": "Revisión del cliente",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768434621/qfls8nm931umeclvfkdo.jpg",
-        "tipo_mug": "clasico",
-        "foto_diseno_url": null
+        "tipo_mug": "color interno",
+        "foto_diseno_url": null,
+        "tipo_estampado": "completo",
+        "color_mug": "amarillo"
     },
     {
         "s_n": "MUGS_0005",
@@ -255,14 +257,27 @@
         "s_n": "CAMI_0007",
         "telefono": "3152214070",
         "producto": "Camiseta Estampada",
-        "fecha": "24/03/2026 15:18:59",
+        "fecha": "24/03/2026 15:27:17",
         "estado": "Revisión del cliente",
-        "tipo_estampado": "completo",
+        "tipo_estampado": "bolsillo",
         "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_6/lamina_frontal_camiseta_6.png",
         "imagenes": {
             "frontal": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_6/lamina_frontal_camiseta_6.png",
             "espaldar": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_6/lamina_espaldar_camiseta_6.png"
         },
         "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/camiseta/camiseta_6/foto_usada_en_camiseta_6.png"
+    },
+    {
+        "s_n": "GORR_0004",
+        "telefono": "3152214070",
+        "producto": "Gorra Estampada",
+        "fecha": "24/03/2026 15:24:34",
+        "estado": "Revisión del cliente",
+        "tipo_estampado": "completo",
+        "imagen_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_4/lamina_gorra_4.png",
+        "imagenes": {
+            "lamina": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_4/lamina_gorra_4.png"
+        },
+        "foto_diseno_url": "https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/gorra/gorra_4/foto_usada_en_gorra_4.png"
     }
 ]
