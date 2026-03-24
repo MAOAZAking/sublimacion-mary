@@ -45,11 +45,13 @@
         "s_n": "MUGS_0004",
         "telefono": "3223065487",
         "producto": "Mug Personalizado",
-        "fecha": "14/01/2026 15:34:16",
+        "fecha": "24/03/2026 15:33:13",
         "estado": "Revisión del cliente",
         "imagen_url": "https://res.cloudinary.com/du7lmg9ff/image/upload/v1768434621/qfls8nm931umeclvfkdo.jpg",
-        "tipo_mug": "clasico",
-        "foto_diseno_url": null
+        "tipo_mug": "color interno",
+        "foto_diseno_url": null,
+        "tipo_estampado": "completo",
+        "color_mug": "amarillo"
     },
     {
         "s_n": "MUGS_0005",
