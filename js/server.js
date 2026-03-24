@@ -971,7 +971,7 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
             .info-card { background-color: ${infoCardBg}; border-left: 5px solid ${infoCardBorder}; padding: 20px; margin: 25px 0; border-radius: 4px; }
             .info-item { margin-bottom: 10px; }
             .info-item strong { color: ${strongColor}; display: inline-block; width: 120px; }
-            .btn { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #ffffff !important; text-decoration: none; border-radius: 50px; font-weight: bold; margin-top: 25px; text-align: center; box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3); }
+            .btn { display: inline-block; padding: 14px 28px; background-color: #9b59b6; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #ffffff !important; text-decoration: none; border-radius: 50px; font-weight: bold; margin-top: 25px; text-align: center; box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3); }
             .footer-image { width: 100%; display: block; border-top: 1px solid rgb(255, 255, 255); }
             .footer { background-color: ${footerBg}; padding: 20px; text-align: center; color: ${level >= 3 ? 'rgb(255, 0, 0)' : 'rgb(255, 255, 255)'}; font-size: 13px; }
             .footer p { margin: 5px 0; }
