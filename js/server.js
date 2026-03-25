@@ -2620,6 +2620,16 @@ app.get('/api/preview', (req, res) => {
     if (!img) return res.status(404).send("Imagen no encontrada");
     const fallback = original ? `onerror="this.onerror=null; this.src='${original}';"` : '';
 
+    // --- CONFIGURACIÓN DE TAMAÑOS (Fácil de editar) ---
+    const alturaCamiseta = "380px";   // Altura para productos verticales (CAMI, SACO)
+    const anchoMugGorra = "420px";    // Ancho para productos horizontales (MUGS, GORR)
+
+    const prefix = (sn || '').split('_')[0].toUpperCase();
+    const isVertical = prefix === 'CAMI' || prefix === 'SACO';
+    const imgStyle = isVertical 
+        ? `height: ${alturaCamiseta}; width: auto; max-width: 90vw; object-fit: contain;` 
+        : `width: 90%; max-width: ${anchoMugGorra}; height: auto;`;
+
     // Mapeo dinámico de estados para WhatsApp
     let ogTitle = "✅ Pedido Listo";
     let ogDesc = "👋 ¡Hola! Tu producto personalizado ya fue fabricado y está listo para entrega.";
@@ -2663,11 +2673,29 @@ app.get('/api/preview', (req, res) => {
     <meta name="theme-color" content="#9b59b6">
     <style>
         body { margin: 0; background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; text-align: center; }
-        .container { padding: 20px; max-width: 600px; }
-        h1 { color: #e0aaff; margin-bottom: 10px; }
-        .main-img { width: 100%; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin: 20px 0; border: 2px solid #333; }
-        .btn-3d { display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; text-decoration: none; border-radius: 50px; font-weight: bold; margin-top: 10px; box-shadow: 0 5px 15px rgba(142,68,173,0.4); }
-        .disclaimer { font-size: 0.8rem; color: #777; margin-top: 30px; line-height: 1.4; border-top: 1px solid #333; padding-top: 15px; }
+        .container { padding: 20px; max-width: 600px; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #e0aaff; margin-bottom: 10px; font-size: 1.8rem; }
+        .main-img { ${imgStyle} border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin: 20px 0; border: 2px solid #333; }
+        .btn-3d { 
+            display: inline-block; padding: 15px 30px; 
+            background: linear-gradient(135deg, #9b59b6, #8e44ad); 
+            color: white; text-decoration: none; border-radius: 50px; 
+            font-weight: bold; margin-top: 10px; 
+            box-shadow: 0 0 15px #9b59b6, 0 0 30px rgba(142, 68, 173, 0.4);
+            border: 1px solid #e0aaff;
+            transition: all 0.3s ease;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .btn-3d:hover { transform: scale(1.05); box-shadow: 0 0 25px #9b59b6, 0 0 50px #8e44ad; }
+        .emoji-outline {
+            filter: drop-shadow(1px 1px 0px white) drop-shadow(-1px -1px 0px white) drop-shadow(1px -1px 0px white) drop-shadow(-1px 1px 0px white);
+        }
+        .disclaimer { 
+            font-size: 0.8rem; color: black; margin-top: 30px; line-height: 1.4; 
+            border-top: 1px solid #333; padding: 15px 20px 0; font-weight: 800;
+            -webkit-text-stroke: 0.5px white;
+            text-shadow: 0 0 10px #9b59b6, 0 0 20px #9b59b6;
+        }
     </style>
 </head>
 <body>
@@ -2676,7 +2704,9 @@ app.get('/api/preview', (req, res) => {
         <p>Referencia S/N: ${sn || 'N/A'}</p>
         <img class="main-img" src="${img}" alt="Foto del Pedido" ${fallback}>
         <p>${bodyP}</p>
-        <a href="${panelUrl}" class="btn-3d">🕹️ Explorar en 3D Interactivo</a>
+        <a href="${panelUrl}" class="btn-3d">
+            <span class="emoji-outline">🕹️</span> Explorar en 3D Interactivo
+        </a>
         <p class="disclaimer"><strong>AVISO DE REFERENCIA:</strong> Los colores y dimensiones mostrados en el modelo digital son una representación aproximada. El tono final puede presentar variaciones leves debido a la temperatura y tiempo del proceso de sublimación.</p>
     </div>
 </body>
