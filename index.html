@@ -330,7 +330,7 @@
 
             // Si el intento resultó en un baneo, el servidor nos lo dirá.
             if (logData && logData.forceRefresh) {
-                mostrarMensajeTop("Demasiados intentos fallidos. La página se recargará.", 3000);
+                mostrarMensajeTop("Se ha detectado un error de red. La página se actualizará.", 3000);
                 setTimeout(() => window.location.reload(), 3100);
                 return; // Detenemos la ejecución para que la página se recargue
             }
@@ -505,7 +505,7 @@
                 shakeForm();
                 // Si el fallo de contraseña provocó un baneo, recargar.
                 if (data.forceRefresh) {
-                    mostrarMensajeTop("Demasiados intentos fallidos. La página se recargará.", 3000);
+                    mostrarMensajeTop("Se ha detectado un error de red. La página se actualizará.", 3000);
                     setTimeout(() => window.location.reload(), 3100);
                 }
             }

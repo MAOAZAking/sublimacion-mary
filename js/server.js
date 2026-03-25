@@ -948,9 +948,12 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
             footerImage = `${repoBaseUrl}presentacion_email_rojo.png`;
             headerTitle = '🚨 Alerta de Seguridad 🚨';
             infoCardBorder = 'rgb(255, 0, 0)'; // Mantiene el borde rojo
-            headerBg = 'rgb(255, 0, 0)'; // Fondo rojo
-            footerBg = 'rgb(255, 0, 0)'; // Fondo rojo
-            containerBg = 'rgb(192, 57, 43)'; // Fondo del contenedor rojo
+            headerBg = 'rgb(232, 0, 0)'; // Fondo rojo
+            footerBg = 'rgb(232, 0, 0)'; // Fondo rojo
+            infoCardBg = 'rgb(192, 57, 43)'; // Fondo de la tarjeta de informacion  rojo oscuro
+            textColor = 'rgb(255, 255, 255)'; // Texto blanco
+            titleColor = 'rgb(172, 172, 172)'; // Títulos blancos
+            containerBg = 'rgb(255, 255, 255)'; // Fondo entre header y footer
         } else if (level === 1) { // Primera infracción
             headerTitle = '🚨 Alerta de Seguridad 🚨';
             infoCardBorder = 'rgb(255, 0, 0)'; // Borde rojo para la tarjeta de información
@@ -1065,7 +1068,7 @@ function rateLimiter(req, res, next) {
     if (blockedIPs[ip]) {
         const level = (banLevels[ip] && banLevels[ip].level) || 1;
         console.warn(`🚫 IP bloqueada temporalmente (Nivel ${level}) intentó acceder: ${ip}`);
-        return res.status(429).json({ error: 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.' });
+        return res.status(429).json({ error: 'Hubo un error de comunicación con el servidor. Inténtalo más tarde.' });
     }
 
     next();
