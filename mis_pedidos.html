@@ -1554,7 +1554,7 @@
             const publicServerUrl = 'https://sublimacion-mary.onrender.com';
             const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}&status=Creando%20diseño&tel=${telefono}`;
 
-            const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
+            const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: *${idPedido}*. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
             const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
             
             window.open(urlWA, '_blank');
@@ -1565,7 +1565,7 @@
             const publicServerUrl = 'https://sublimacion-mary.onrender.com';
             const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
 
-            const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
+            const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: *${idPedido}*. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
             window.open(`https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`, '_blank');
         });
     }
