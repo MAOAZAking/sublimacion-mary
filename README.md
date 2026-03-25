@@ -73,4 +73,4 @@ Security Patch #8 Fix #3:
 # Mejora N° del parche de seguridad N°
 Security Patch #8 Enhancement #0:
 # Parche de automatización N°
-Automation #8 Patch #0:
+Automation #8 Patch #1:

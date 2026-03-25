@@ -283,6 +283,7 @@
             });
             const data = await response.json();
             if (data.isAdmin) {
+                if (data.name) sessionStorage.setItem('adminName', data.name);
                 // CASO ESPECIAL: Admin sin contraseña (Majo primera vez)
                 if (data.isSetupRequired) {
                     sessionStorage.setItem('adminLogueado', 'true');
@@ -489,6 +490,7 @@
 
             if (data.success) {
                 // Contraseña correcta, iniciar verificación facial
+                if (data.name) sessionStorage.setItem('adminName', data.name);
                 const loader = document.getElementById('global-loader');
                 if (loader) {
                     loader.style.display = 'flex';

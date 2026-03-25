@@ -145,6 +145,22 @@
             z-index: 1002;
             padding: 10px 0; box-sizing: border-box;
         }
+        .disclaimer-3d {
+            position: absolute; bottom: 10px; width: 100%; text-align: center; 
+            color: black; font-size: 0.75rem; font-weight: 800; z-index: 1006; 
+            pointer-events: none; padding: 0 20px; box-sizing: border-box;
+            text-shadow: 
+                -1px -1px 0 #9b59b6, 1px -1px 0 #9b59b6, -1px 1px 0 #9b59b6, 1px 1px 0 #9b59b6,
+                0 0 10px #9b59b6, 0 0 15px #9b59b6;
+        }
+        .status-badge {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(142, 68, 173, 0.9); color: white; padding: 8px 20px;
+            border-radius: 50px; font-weight: 600; font-size: 0.9rem; z-index: 1005;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
+            white-space: nowrap; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 8px;
+            pointer-events: auto;
+        }
         .feedback-top-text {
             margin-top: 0px; color: white; font-size: 1.3rem; text-align: center;
             pointer-events: auto; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); font-weight: bold;
@@ -335,8 +351,10 @@
 <div id="imageModal" class="modal">
     <span class="close" onclick="cerrarModal()">&times;</span>
     <img class="modal-content" id="imgGrande">
+    <div id="statusIndicator" class="status-badge" style="display: none;"></div>
     <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camiseta, porque tu pedido tiene el estampado en la parte espaldar</div>
     <div id="container3D" onclick="event.stopPropagation()"></div>
+    <div class="disclaimer-3d">* Los colores y dimensiones del modelo 3D son de referencia y pueden variar ligeramente en el producto físico.</div>
 
     <!-- Overlay de Feedback -->
     <div id="feedbackOverlay" class="feedback-overlay" style="display: none;">
@@ -511,6 +529,21 @@
         const modalImg = document.getElementById('imgGrande');
         const container3D = document.getElementById('container3D');
         const rotationMsg = document.getElementById('rotationMsg');
+        const statusInd = document.getElementById('statusIndicator');
+
+        // Mapeo de estados amigables
+        const mapEstados = {
+            "Revisión del cliente": "🎨 Diseño listo para tu revisión",
+            "Creando diseño": "✏️ Estamos trabajando en los ajustes de tu diseño",
+            "Listo para sublimar": "🏭 Diseño aprobado. En cola de producción",
+            "Listo para estampar": "🏭 Diseño aprobado. En cola de producción",
+            "Listo para entregar": "✅ ¡Producto terminado! Listo para recoger",
+            "Producto terminado": "✅ ¡Producto terminado! Listo para recoger"
+        };
+        
+        statusInd.innerHTML = mapEstados[pedido.estado] || pedido.estado;
+        statusInd.style.display = 'flex';
+        statusInd.style.background = (pedido.estado === "Revisión del cliente") ? 'rgba(142, 68, 173, 0.9)' : 'rgba(44, 62, 80, 0.9)';
 
         modal.style.display = "flex";
         
@@ -566,6 +599,12 @@
     }
 
     function init3DMug(pedido, container) {
+        const loaderElement = document.getElementById('global-loader');
+        if (loaderElement) {
+            loaderElement.style.display = 'flex';
+            setTimeout(() => { loaderElement.style.opacity = '1'; }, 10);
+        }
+
         const imageUrl = pedido.imagen_url;
         const width = window.innerWidth;
         const height = window.innerHeight;
@@ -691,21 +730,33 @@
             bottomMesh.rotation.x = Math.PI / 2;
             bottomMesh.position.y = -3;
             scene.add(bottomMesh);
-        });
 
-        // Oreja del Mug
-        const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
-        const handleMat = new THREE.MeshPhysicalMaterial({ 
-            color: mugColor,
-            roughness: 0.15,
-            metalness: 0.1,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.1
+            // Oreja del Mug - Ahora se crea junto con el cuerpo
+            const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
+            const handleMat = new THREE.MeshPhysicalMaterial({ 
+                color: mugColor,
+                roughness: 0.15,
+                metalness: 0.1,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1
+            });
+            const handle = new THREE.Mesh(handleGeom, handleMat);
+            handle.position.set(2.4, 0, 0); // Posicionar al lado (pegado al cuerpo)
+            handle.rotation.z = -Math.PI / 2;
+            scene.add(handle);
+
+            // Quitar loader cuando todo esté listo
+            if (loaderElement) {
+                loaderElement.style.opacity = '0';
+                setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+            }
+        }, undefined, (err) => {
+            console.error("Error cargando textura del Mug:", err);
+            if (loaderElement) {
+                loaderElement.style.opacity = '0';
+                setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+            }
         });
-        const handle = new THREE.Mesh(handleGeom, handleMat);
-        handle.position.set(2.4, 0, 0); // Posicionar al lado (pegado al cuerpo)
-        handle.rotation.z = -Math.PI / 2;
-        scene.add(handle);
 
         const animate = function () {
             animationId = requestAnimationFrame(animate);
@@ -1427,15 +1478,16 @@
             ? 'https://sublimacion-mary.onrender.com' 
             : '';
 
-        try {
-            await fetch(`${BACKEND_URL}/api/update-status`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: nuevoEstado })
-            });
-        } catch (e) {
-            console.error("Error actualizando estado, pero se continuará a WhatsApp:", e);
-        }
+        // Usar fetch con keepalive para asegurar que la peticion llegue aunque se cambie de pagina
+        fetch(`${BACKEND_URL}/api/update-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: nuevoEstado }),
+            keepalive: true
+        }).catch(e => console.error("Update failed:", e));
+        
+        // Pequeña espera para asegurar que el hilo de red inicie antes del redireccionamiento
+        await new Promise(r => setTimeout(r, 500));
         
         // La notificación por correo ahora se envía automáticamente desde el backend (server.js)
         // al llamar a /api/update-status. No se necesita hacer nada más aquí.
@@ -1444,7 +1496,7 @@
 
         const finalImgForPreview = imgUrl.replace(/\.(png|jpeg|jpg)$/i, '_preview.jpg');
         const publicServerUrl = 'https://sublimacion-mary.onrender.com';
-        const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
+        const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}&status=${encodeURIComponent(nuevoEstado)}&tel=${telefono}`;
 
         const mensajeWA = `Hola, soy el cliente ${telefono}. Mi pedido es el S/N: *"${idPedido}"*\nME ENCANTA EL DISEÑO, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${previewUrl})`;
         const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
@@ -1475,15 +1527,15 @@
             ? 'https://sublimacion-mary.onrender.com' 
             : '';
 
-        try {
-            await fetch(`${BACKEND_URL}/api/update-status`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: "Creando diseño", detalles: textoCambio })
-            });
-        } catch (e) {
-            console.error("Error actualizando estado, pero se continuará a WhatsApp:", e);
-        }
+        // Usar fetch con keepalive
+        fetch(`${BACKEND_URL}/api/update-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imagen_url: imgUrl, nuevo_estado: "Creando diseño", detalles: textoCambio }),
+            keepalive: true
+        }).catch(e => console.error("Update failed:", e));
+
+        await new Promise(r => setTimeout(r, 500));
 
         // La notificación por correo ahora se envía automáticamente desde el backend (server.js)
         // al llamar a /api/update-status. No se necesita hacer nada más aquí.
@@ -1493,7 +1545,7 @@
             // Redireccionar a WhatsApp
             const finalImgForPreview = imgUrl.replace(/\.(png|jpeg|jpg)$/i, '_preview.jpg');
             const publicServerUrl = 'https://sublimacion-mary.onrender.com';
-            const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
+            const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}&status=Creando%20diseño&tel=${telefono}`;
 
             const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
             const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;

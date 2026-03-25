@@ -613,6 +613,7 @@
             formData.append('telefono', telefono);
             formData.append('fecha', fechaCompleta);
             formData.append('estado', estadoInicial);
+            formData.append('adminName', sessionStorage.getItem('adminName') || 'Administrador');
 
             // Datos del cliente
             const isNewClient = !document.getElementById('new-client-section').classList.contains('hidden');

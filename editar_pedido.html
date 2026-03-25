@@ -500,6 +500,7 @@
         formData.append('telefono', telefono);
         formData.append('fecha', fechaCompleta);
         formData.append('estado', nuevoEstado);
+        formData.append('adminName', sessionStorage.getItem('adminName') || 'Administrador');
         
         // Sanitizar nombres de archivo y añadir a FormData
         const esTextil = ['camiseta', 'saco'].some(t => productoTipo.toLowerCase().includes(t));

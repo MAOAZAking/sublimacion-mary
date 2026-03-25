@@ -978,6 +978,7 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
             .footer-image { width: 100%; display: block; border-top: 1px solid rgb(255, 255, 255); }
             .footer { background-color: ${footerBg}; padding: 20px; text-align: center; color: ${level >= 3 ? 'rgb(255, 0, 0)' : 'rgb(255, 255, 255)'}; font-size: 13px; }
             .footer p { margin: 5px 0; }
+            .disclaimer { font-size: 11px; color: #888; margin-top: 15px; padding: 0 20px; line-height: 1.4; }
         </style>
     </head>
     <body style="background-color: ${bodyBg}; margin:0; padding:0;">
@@ -989,6 +990,7 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
                 <h2>${title}</h2>
                 ${bodyContent}
                 ${imageUrl ? `<div style="text-align:center; margin-top:30px;"><img src="${imageUrl}" alt="Vista Previa" style="max-width:100%; border-radius:8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>` : ''}
+                <p class="disclaimer"><strong>Nota:</strong> Los colores y dimensiones del modelo digital son de referencia. El resultado final puede variar ligeramente debido a factores técnicos del proceso de sublimación y estampación.</p>
             </div>
             <img src="${footerImage}" alt="Presentación" class="footer-image">
             <div class="footer">
@@ -1254,7 +1256,7 @@ app.post('/api/login', (req, res) => {
             }
             saveSecurityState(); // Persistir la limpieza
             // Face data is now sent by /api/check-user, no need to send it again here.
-            return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email) });
+            return res.json({ success: true, redirectUrl: user.redirectUrl || 'bienvenida_majo.html', email: resolveEnvValue(user.email), name: user.name });
         } else {
             const banned = recordFailedAttempt(req, res, "Contraseña incorrecta");
             return res.status(401).json({ success: false, message: 'Credenciales incorrectas', forceRefresh: banned });
@@ -1687,7 +1689,7 @@ app.post('/api/pedidos', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente, tipo_estampado } = req.body;
+    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente, tipo_estampado, adminName } = req.body;
     const files = req.files || {};
 
     // 1. Determinar tipo de producto
@@ -2037,7 +2039,7 @@ app.post('/api/pedidos', upload.fields([
 
         // --- ENVIAR CORREO: NUEVO PEDIDO ---
         const bodyContent = `
-            <p>Se ha registrado un nuevo pedido en el sistema. A continuación los detalles:</p>
+            <p>Se ha registrado un nuevo pedido en el sistema por <strong>${adminName || 'el administrador'}</strong>. A continuación los detalles:</p>
             <div class="info-card" style="border-left-color: #e74c3c;">
                 <div class="info-item"><strong>S/N:</strong> ${nextId}</div>
                 <div class="info-item"><strong>Cliente:</strong> ${telefono}</div>
@@ -2080,7 +2082,7 @@ app.post('/api/pedidos/edit', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug, tipo_estampado } = req.body;
+    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug, tipo_estampado, adminName } = req.body;
     const files = req.files || {};
 
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
@@ -2256,7 +2258,7 @@ app.post('/api/pedidos/edit', upload.fields([
 
         // --- ENVIAR CORREO: PEDIDO EDITADO ---
         const bodyContent = `
-            <p>El pedido del cliente <strong>${telefono}</strong> ha sido modificado exitosamente por el administrador.</p>
+            <p>El pedido del cliente <strong>${telefono}</strong> ha sido modificado exitosamente por <strong>${adminName || 'el administrador'}</strong>.</p>
             <div class="info-card" style="border-left-color: #2980b9;">
                 <div class="info-item"><strong>S/N:</strong> ${pedido.s_n || 'N/A'}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
@@ -2592,10 +2594,36 @@ app.post('/api/full-reboot', async (req, res) => {
 
 // Endpoint para generar vista previa de WhatsApp (Open Graph)
 app.get('/api/preview', (req, res) => {
-    const { img, sn, original } = req.query;
+    const { img, sn, original, status, tel } = req.query;
     // Si no hay imagen, redirigir al home o mostrar error
     if (!img) return res.status(404).send("Imagen no encontrada");
     const fallback = original ? `onerror="this.onerror=null; this.src='${original}';"` : '';
+
+    // Mapeo dinámico de estados para WhatsApp
+    let ogTitle = "✅ Pedido Listo";
+    let ogDesc = "👋 ¡Hola! Tu producto personalizado ya fue fabricado y está listo para entrega.";
+    let bodyH1 = "¡Tu pedido está listo! 🎉";
+    let bodyP = "Ya puedes pasar a recogerlo en nuestro local.";
+
+    if (status === "Revisión del cliente") {
+        ogTitle = "🎨 Diseño para Revisar";
+        ogDesc = "Toca para ver tu diseño 3D y confirmar si te gusta.";
+        bodyH1 = "¡Tu diseño está listo para revisión! 🎨";
+        bodyP = "Entra para verlo en 3D y dinos qué te parece.";
+    } else if (status === "Creando diseño") {
+        ogTitle = "✏️ Ajustando tu Diseño";
+        ogDesc = "Estamos trabajando en los cambios que solicitaste. Toca para ver el progreso.";
+        bodyH1 = "Estamos trabajando en tu diseño ✏️";
+        bodyP = "Estamos aplicando las modificaciones solicitadas.";
+    } else if (status && (status.includes("Listo para sublimar") || status.includes("Listo para estampar"))) {
+        ogTitle = "🏭 En Cola de Producción";
+        ogDesc = "Tu diseño fue aprobado y ya está en fila para ser fabricado.";
+        bodyH1 = "¡Diseño aprobado! 🚀";
+        bodyP = "Tu pedido está en nuestra línea de producción.";
+    }
+
+    // Link para ir al panel real desde la preview
+    const panelUrl = `${GITHUB_PAGES_URL}/mis_pedidos.html?telefono=${tel || ''}&pedido=${sn || ''}`;
 
     // HTML dinámico con Open Graph Tags para que WhatsApp muestre la tarjeta
     const html = `
@@ -2603,10 +2631,10 @@ app.get('/api/preview', (req, res) => {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>¡Tu Pedido está Listo!</title>
+    <title>${ogTitle}</title>
     <meta property="og:site_name" content="Sublimación Mary">
-    <meta property="og:title" content="✅ Pedido Listo (S/N: ${sn || 'N/A'})">
-    <meta property="og:description" content="👋 ¡Hola! Tu producto personalizado ya fue fabricado y está listo para entrega. Toca aquí para ver la foto.">
+    <meta property="og:title" content="${ogTitle} (S/N: ${sn || 'N/A'})">
+    <meta property="og:description" content="${ogDesc}">
     <meta property="og:image" content="${img}">
     <meta property="og:image:width" content="800">
     <meta property="og:image:height" content="800">
@@ -2616,15 +2644,19 @@ app.get('/api/preview', (req, res) => {
         body { margin: 0; background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; text-align: center; }
         .container { padding: 20px; max-width: 600px; }
         h1 { color: #e0aaff; margin-bottom: 10px; }
-        img { width: 100%; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin: 20px 0; border: 2px solid #333; }
+        .main-img { width: 100%; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin: 20px 0; border: 2px solid #333; }
+        .btn-3d { display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; text-decoration: none; border-radius: 50px; font-weight: bold; margin-top: 10px; box-shadow: 0 5px 15px rgba(142,68,173,0.4); }
+        .disclaimer { font-size: 0.8rem; color: #777; margin-top: 30px; line-height: 1.4; border-top: 1px solid #333; padding-top: 15px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>¡Tu pedido está listo! 🎉</h1>
+        <h1>${bodyH1}</h1>
         <p>Referencia S/N: ${sn || 'N/A'}</p>
-        <img src="${img}" alt="Foto del Pedido" ${fallback}>
-        <p>Ya puedes pasar a recogerlo en nuestro local.</p>
+        <img class="main-img" src="${img}" alt="Foto del Pedido" ${fallback}>
+        <p>${bodyP}</p>
+        <a href="${panelUrl}" class="btn-3d">🕹️ Explorar en 3D Interactivo</a>
+        <p class="disclaimer"><strong>AVISO DE REFERENCIA:</strong> Los colores y dimensiones mostrados en el modelo digital son una representación aproximada. El tono final puede presentar variaciones leves debido a la temperatura y tiempo del proceso de sublimación.</p>
     </div>
 </body>
 </html>`;

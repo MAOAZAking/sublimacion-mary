@@ -1167,6 +1167,12 @@
     }
 
     function init3DMug(pedido, container) {
+        const loaderElement = document.getElementById('global-loader');
+        if (loaderElement) {
+            loaderElement.style.display = 'flex';
+            setTimeout(() => { loaderElement.style.opacity = '1'; }, 10);
+        }
+
         const imageUrl = pedido.imagen_url;
         const width = window.innerWidth;
         const height = window.innerHeight;
@@ -1287,20 +1293,33 @@
             bottomMesh.rotation.x = Math.PI / 2;
             bottomMesh.position.y = -3;
             scene.add(bottomMesh);
-        });
 
-        const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
-        const handleMat = new THREE.MeshPhysicalMaterial({ 
-            color: mugColor,
-            roughness: 0.15,
-            metalness: 0.1,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.1
+            // Oreja del Mug
+            const handleGeom = new THREE.TorusGeometry(2.0, 0.3, 16, 100, Math.PI);
+            const handleMat = new THREE.MeshPhysicalMaterial({ 
+                color: mugColor,
+                roughness: 0.15,
+                metalness: 0.1,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1
+            });
+            const handle = new THREE.Mesh(handleGeom, handleMat);
+            handle.position.set(2.4, 0, 0); 
+            handle.rotation.z = -Math.PI / 2;
+            scene.add(handle);
+
+            // Quitar loader cuando todo esté listo
+            if (loaderElement) {
+                loaderElement.style.opacity = '0';
+                setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+            }
+        }, undefined, (err) => {
+            console.error("Error cargando textura del Mug:", err);
+            if (loaderElement) {
+                loaderElement.style.opacity = '0';
+                setTimeout(() => { loaderElement.style.display = 'none'; }, 500);
+            }
         });
-        const handle = new THREE.Mesh(handleGeom, handleMat);
-        handle.position.set(2.4, 0, 0); 
-        handle.rotation.z = -Math.PI / 2;
-        scene.add(handle);
 
         const animate = function () {
             animationId = requestAnimationFrame(animate);
