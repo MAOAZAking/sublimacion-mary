@@ -2307,8 +2307,29 @@ async function getAttachmentsForOrder(folderPath, type) {
             }
             // Buscar editables (para cambios) - Plantillas .ai, .psd, etc.
             if (type === 'design') {
-                const editable = dirContent.find(f => f.name.startsWith('plantilla_') || f.name.endsWith('.ai') || f.name.endsWith('.psd') || f.name.endsWith('.eps') || f.name.endsWith('.pdf'));
+                // 1. Plantilla (AI, PSD, etc)
+                const editable = dirContent.find(f => f.name.includes('plantilla_') || f.name.endsWith('.ai') || f.name.endsWith('.psd') || f.name.endsWith('.eps') || f.name.endsWith('.pdf'));
                 if (editable) attachments.push({ filename: editable.name, path: editable.download_url });
+
+                // 2. Láminas (PNG/JPG) - El usuario pide la imagen de la lámina
+                const laminas = dirContent.filter(f => f.name.startsWith('lamina_') && !f.name.includes('_preview') && (f.name.endsWith('.png') || f.name.endsWith('.jpg') || f.name.endsWith('.jpeg')));
+                laminas.forEach(l => attachments.push({ filename: l.name, path: l.download_url }));
+
+                // 3. Foto usada en el diseño (Referencia original)
+                const fotoRef = dirContent.find(f => f.name.startsWith('foto_usada_en_') && !f.name.includes('_preview'));
+                if (fotoRef) attachments.push({ filename: fotoRef.name, path: fotoRef.download_url });
+
+                // 4. Agregar el ZIP del pack completo
+                const parts = folderPath.split('/');
+                if (parts.length >= 3) {
+                    const prodType = parts[1];
+                    const folder = parts[2];
+                    const publicUrl = 'https://sublimacion-mary.onrender.com';
+                    attachments.push({ 
+                        filename: `Pack_Pedido_${folder}.zip`, 
+                        path: `${publicUrl}/api/download-folder/${prodType}/${folder}` 
+                    });
+                }
             }
         }
     } catch (e) { console.error("Error buscando adjuntos en GitHub:", e.message); }

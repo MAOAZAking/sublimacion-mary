@@ -944,7 +944,7 @@
         }
 
         const resultados = baseList.filter(p => {
-            const id = (p.s_n || '').toString();
+            const id = (p.s_n || '').toString().toLowerCase();
             const tel = (p.telefono || p.teléfono || '').toString();
             const estado = (p.estado || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             
@@ -983,7 +983,7 @@
                 body: JSON.stringify({ 
                     imagen_url: pedido.imagen_url, 
                     nuevo_estado: 'Producto terminado',
-                    adminName: sessionStorage.getItem('adminUsername') || 'Admin'
+                    adminName: sessionStorage.getItem('adminName') || 'Administrador'
                 })
             });
             const data = await res.json();

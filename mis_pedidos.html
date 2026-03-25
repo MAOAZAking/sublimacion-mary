@@ -154,15 +154,15 @@
                 0 0 10px #9b59b6, 0 0 15px #9b59b6;
         }
         .status-badge {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
             background: rgba(142, 68, 173, 0.9); color: white; padding: 8px 20px;
-            border-radius: 50px; font-weight: 600; font-size: 0.9rem; z-index: 1005;
+            border-radius: 50px; font-weight: 600; font-size: 0.8rem; z-index: 1005;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
             white-space: nowrap; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 8px;
             pointer-events: auto;
         }
         .feedback-top-text {
-            margin-top: 0px; color: white; font-size: 1.3rem; text-align: center;
+            margin-top: 45px; color: white; font-size: 1.3rem; text-align: center;
             pointer-events: auto; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); font-weight: bold;
         }
         .feedback-buttons {
@@ -1360,6 +1360,9 @@
                     if (prod.includes('mug')) {
                         dy = -4.0; 
                         dz = 4.0; // Alejar cámara (Zoom out) solo para Mug en móvil
+                    } else if (prod.includes('gorra')) {
+                        dy = -0.08; // Reducción adicional para gorra
+                        dz = 0.15;
                     } else {
                         dy = -0.35; 
                         dz = 0.5; // Alejar cámara (Zoom out) para otros productos
@@ -1371,9 +1374,7 @@
                 if (currentPedidoData && currentPedidoData.producto) {
                     const prod = currentPedidoData.producto.toLowerCase();
                     if (prod.includes('mug')) shiftValue = 3.5;
-                    else if (prod.includes('camiseta')) shiftValue = 0.5;
-                    else if (prod.includes('saco')) shiftValue = 0.5;
-                    else if (prod.includes('gorra')) shiftValue = 0.5;
+                    else if (prod.includes('gorra')) shiftValue = 0.1; // Reducción adicional para gorra en escritorio
                 }
                 
                 // Se calcula el vector "derecha" de la cámara en coordenadas del mundo.
@@ -1464,10 +1465,9 @@
         const imgUrl = currentPedidoData.imagen_url;
         const producto = currentPedidoData.producto || "";
 
-        // Determinar nuevo estado
-        let nuevoEstado = "Listo para entregar";
+        // Estandarización de estados de aprobación
+        let nuevoEstado = "Listo para estampar"; // Gorras, Camisetas, Sacos
         if (producto.toLowerCase().includes('mug')) nuevoEstado = "Listo para sublimar";
-        if (producto.toLowerCase().includes('camiseta')) nuevoEstado = "Listo para estampar";
 
         // Actualizar estado localmente y ocultar overlay inmediatamente
         currentPedidoData.estado = nuevoEstado;
@@ -1501,7 +1501,7 @@
         const mensajeWA = `Hola, soy el cliente ${telefono}. Mi pedido es el S/N: *"${idPedido}"*\nME ENCANTA EL DISEÑO, POR FAVOR MANDARLO A PRODUCCIÓN. (Ref imagen: ${previewUrl})`;
         const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
         
-        window.location.href = urlWA;
+        window.open(urlWA, '_blank');
     }
 
     async function enviarSolicitudCambio() {
@@ -1517,6 +1517,13 @@
         const imgUrl = currentPedidoData.imagen_url;
         const linkPagina = window.location.href;
         const idPedido = currentPedidoData.s_n || 'N/A';
+
+        // Restaurar modelo a su lugar original antes de enviar
+        if (isModelShifted && controls && camera) {
+            const s = currentPedidoData.lastShift || { x: 0, y: 0, z: 0 };
+            animateCameraShift(-s.x, -s.y, -s.z);
+            isModelShifted = false;
+        }
 
         // Actualizar estado localmente y ocultar overlay inmediatamente
         currentPedidoData.estado = "Creando diseño";
@@ -1550,7 +1557,7 @@
             const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
             const urlWA = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
             
-            window.location.href = urlWA;
+            window.open(urlWA, '_blank');
         }).catch(err => {
             console.error('Error al copiar: ', err);
             // Fallback si falla el copiado, redireccionar igual
@@ -1559,7 +1566,7 @@
             const previewUrl = `${publicServerUrl}/api/preview?img=${encodeURIComponent(finalImgForPreview)}&original=${encodeURIComponent(imgUrl)}&sn=${idPedido}`;
 
             const mensajeWA = `Hola, soy el cliente ${telefono}. Quiero solicitar una modificación en el pedido S/N: ${idPedido}. Deseo que: ${textoCambio} (Ref imagen: ${previewUrl})`;
-            window.location.href = `https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`;
+            window.open(`https://wa.me/+573209287029?text=${encodeURIComponent(mensajeWA)}`, '_blank');
         });
     }
 
