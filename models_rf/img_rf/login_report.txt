@@ -2427,3 +2427,28 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/suspicious_input_1774471502969.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-03-25 15:45:08 (Hora de Colombia)
+(UTC: 2026-03-25 20:45:08)
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "marijo2"
+
+--- Datos de Geolocalización ---
+Dirección IP: 127.0.0.1
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (reserved range)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (IP local no consultable.)
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Windows 10
+Navegador: Chrome 146.0.0.0
+Tipo de Dispositivo: Escritorio
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/suspicious_input_1774471508585.jpeg
+============================================================
+
