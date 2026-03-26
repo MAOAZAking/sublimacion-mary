@@ -6,6 +6,7 @@ const dns = require('dns'); // Necesario para forzar un DNS público
 const fs = require('fs');
 const multer = require('multer'); // Necesario para subir archivos
 const imageSizeLib = require('image-size'); // Para validar dimensiones
+const crypto = require('crypto'); // Para generar tokens de desbaneo
 // Fix: Asegurar que sizeOf sea una función (compatibilidad con diferentes versiones de la librería)
 const sizeOf = typeof imageSizeLib === 'function' ? imageSizeLib : imageSizeLib.imageSize;
 const { Octokit } = require("@octokit/rest"); // Cliente de GitHub
@@ -41,6 +42,9 @@ const loginAttempts = {};
 const blockedIPs = {};
 const banLevels = {}; // Para rastrear el nivel de ofensa de cada IP
 const permanentBans = new Set(); // Para baneos permanentes
+const pendingUnbans = new Map(); // Almacenar tokens temporales para desbaneo: ip -> {token, activated, expires}
+const amnestyIPs = new Map(); // IPs que tienen permiso de limpiar sus cookies: ip -> timestamp_expiracion
+
 // RUTAS ACTUALIZADAS: Usamos '../' para salir de la carpeta 'js/' y buscar en la raíz o carpetas hermanas
 const BANNED_IPS_PATH = path.join(__dirname, '../models_rf/img_rf/security/banned-ips.json');
 const SECURITY_STATE_PATH = path.join(__dirname, '../models_rf/img_rf/security/security-state.json');
@@ -219,10 +223,10 @@ async function syncBannedIpsFromGitHub() {
             // 2. Detección: ¿Hay IPs en Render que NO están en GitHub? (Fue eliminada manualmente del JSON -> Debemos desbanear)
             if (!needsUpdate) {
                 for (const ip of envSet) {
-                    if (!remoteSet.has(ip)) {
-                        console.log(`🔄 Sincronización: La IP ${ip} fue eliminada del JSON en GitHub. Se eliminará de Render.`);
-                        needsUpdate = true;
-                        break;
+                    if (!remoteSet.has(ip) && !pendingUnbans.has(ip)) {
+                        console.warn(`🚨 ALERTA: Intento de desbaneo detectado para IP: ${ip}. Requiere autorización del Desarrollador.`);
+                        triggerUnbanAuthorization(ip);
+                        // No marcamos needsUpdate para evitar que el desbaneo ocurra sin permiso
                     }
                 }
             }
@@ -243,6 +247,46 @@ async function syncBannedIpsFromGitHub() {
     } finally { 
         unlock(); 
     }
+}
+
+/**
+ * Genera un token y envía correo a los administradores para autorizar un desbaneo.
+ */
+async function triggerUnbanAuthorization(ip) {
+    const token = crypto.randomBytes(32).toString('hex');
+    // El token no expira hasta que se abre el link (Lazy Activation)
+    pendingUnbans.set(ip, { token, activated: false, expires: null });
+
+    const publicUrl = 'https://sublimacion-mary.onrender.com';
+    const verifyUrl = `${publicUrl}/api/unban-verify?ip=${ip}&token=${token}`;
+
+    const subject = `⚠️ AUTORIZACIÓN REQUERIDA: Desbaneo de IP ${ip}`;
+    const bodyContent = `
+        <p>Se ha detectado un intento de eliminar la restricción permanente para la dirección IP: <strong>${ip}</strong>.</p>
+        <div class="info-card" style="border-left-color: #f1c40f;">
+            <p>Este cambio proviene de la eliminación de la IP en el archivo maestro de GitHub.</p>
+            <p><strong>Acción:</strong> Si realizaste este cambio intencionalmente, por favor autoriza la operación.</p>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="${verifyUrl}" class="btn" style="background: linear-gradient(135deg, #f1c40f, #f39c12);">Autorizar Desbaneo</a>
+        </div>
+        <p style="font-size: 12px; color: #888; margin-top: 20px;">Nota: El enlace es de un solo uso. Una vez abierto, tendrán 30 minutos para completar la validación con la llave maestra.</p>
+    `;
+
+    const emailHtml = getEmailTemplate('Seguridad: Validación de Desbaneo', bodyContent, null, { type: 'security', level: 2 });
+    
+    // Enviar a Miguel y Mariajose
+    const devEmail = process.env.ADMIN_EMAIL_MIGUEL_HASH || 'maoaza13579@gmail.com';
+    const majoEmail = process.env.ADMIN_EMAIL_MARIAJOSE;
+    
+    const recipients = [devEmail];
+    if (majoEmail && majoEmail.includes('@')) {
+        // Resolver si es ENV:
+        const resolvedMajo = majoEmail.startsWith('ENV:') ? process.env[majoEmail.split(':')[1]] : majoEmail;
+        if (resolvedMajo) recipients.push(resolvedMajo);
+    }
+
+    await dispatchEmail(recipients, subject, emailHtml);
 }
 
 async function syncBannedIpsToGitHub() {
@@ -669,6 +713,9 @@ async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duratio
             <div class="info-item"><strong>Motivo:</strong> ${reason}</div>
             <div class="info-item"><strong>Dirección IP:</strong> ${ip}</div>
             <div class="info-item"><strong>Intentos:</strong> ${attempts}</div>
+            <div class="info-item"><strong>Tiempo sancion:</strong> ${duration === 'permanent' ? 'Permanente' : (duration / 60000 >= 60 
+                ? `${Math.floor(duration / 60000 / 60)} horas y ${Math.floor((duration / 60000) % 60)} minutos` 
+                : `${Math.floor(duration / 60000)} minutos`)}</div>
             <div class="info-item"><strong>Sistema:</strong> ${osInfo} <br> <strong>Navegador:</strong> ${browserInfo} <br> <strong>Tipo:</strong> ${deviceType}</div>
             <div class="info-item"><strong>Geolocalización (aprox.):</strong><br>${locationInfo}</div>
         </div>
@@ -777,7 +824,19 @@ function recordFailedAttempt(req, res, context = "General") {
         delete loginAttempts[ip];
         saveSecurityState();
         // RESPALDO EN LA NUBE: Guardar el nuevo nivel en GitHub para que sobreviva reinicios
-        syncSecurityStateToGitHub(); 
+        syncSecurityStateToGitHub();
+        // --- REFUERZO: Alerta Nivel 4 o superior ---
+        if (newLevel >= 4) {
+            sendSecurityAlertEmail({
+                ip: ip,
+                reason: `⚠️ ATAQUE PERSISTENTE DETECTADO (Nivel ${newLevel})`,
+                attempts: attempt.count,
+                userAgent: req.headers['user-agent'],
+                duration: 'permanent',
+                level: newLevel,
+                req: req
+            });
+        }
         return true; // Devolver TRUE para indicar que se acaba de banear
     }
     // Guardar el estado de los intentos y niveles de baneo en cada intento fallido
@@ -928,36 +987,38 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
     let infoCardBorder = '#8e44ad'; // Morado por defecto
     let infoCardBg = '#f8f9fa';
     let strongColor = '#333';
+    let cognotacionColor = 'inherit';
 
     // Aplicar estilos de seguridad según el nivel
     if (type === 'security') {
         if (level >= 3) { // Baneo permanente
             footerImage = `${repoBaseUrl}presentacion_email_baneo.png`;
-            bodyBg = 'rgb(255, 0, 0)'; // Fondo rojo oscuro para todo el correo
-            containerBg = 'rgb(255, 0, 0)'; // Fondo rojo que esta en medio del header y fotter
+            bodyBg = 'rgb(227, 6, 19)'; // Fondo rojo oscuro para todo el correo
+            containerBg = 'rgb(227, 6, 19)'; // Fondo rojo que esta en medio del header y foter
             headerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
             footerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
-            textColor = 'rgb(255, 0, 0)'; // Texto blanco
-            titleColor = '#be0000'; // Títulos blancos
-            containerBorder = '2px solid white'; // Borde blanco para el contenedor principal
+            textColor = 'rgb(54, 54, 54)'; // Texto blanco
+            titleColor = 'rgb(0, 0, 0)'; // Títulos blancos
             headerTitle = '🚨☠️ Alerta de Seguridad ☠️🚨';
-            infoCardBorder = '#ffffff'; // Linea blanca
-            infoCardBg = 'rgb(156, 156, 156)'; // Fondo tarjeta de informacion de la infraccion
-            strongColor = '#ffffff'; // Negritas en blanco
+            infoCardBorder = 'rgb(255, 255, 255)'; // Linea blanca izquierda
+            infoCardBg = 'rgba(0, 0, 0, 0.4)'; // Fondo tarjeta de informacion de la infraccion
+            strongColor = 'rgb(255, 255, 255)'; // Negritas en blanco
+            cognotacionColor = 'rgb(255, 255, 255)';
         } else if (level === 2) { // Segunda infracción
             footerImage = `${repoBaseUrl}presentacion_email_rojo.png`;
+            bodyBg = 'rgb(255, 255, 255)'; // Fondo rojo oscuro para todo el correo
             headerTitle = '🚨 Alerta de Seguridad 🚨';
-            infoCardBorder = 'rgb(255, 0, 0)'; // Mantiene el borde rojo
-            headerBg = 'rgb(232, 0, 0)'; // Fondo rojo
-            footerBg = 'rgb(232, 0, 0)'; // Fondo rojo
-            infoCardBg = 'rgb(192, 57, 43)'; // Fondo de la tarjeta de informacion  rojo oscuro
-            textColor = 'rgb(255, 255, 255)'; // Texto blanco
-            titleColor = 'rgb(172, 172, 172)'; // Títulos blancos
+            infoCardBg = 'rgba(0, 0, 0, 0.4)'; // Mantiene el borde rojo
+            headerBg = 'rgb(227, 6, 19)'; // Fondo rojo
+            footerBg = 'rgb(227, 6, 19)'; // Fondo rojo
+            infoCardBg = 'rgb(255, 255, 255)'; // Fondo de la tarjeta de informacion
+            textColor = 'rgb(0, 0, 0)'; // Texto blanco
+            titleColor = 'rgb(54, 54, 54)'; // Títulos blancos
             containerBg = 'rgb(255, 255, 255)'; // Fondo entre header y footer
+            cognotacionColor = 'rgb(227, 6, 19)'; // Color congnotaicon de que varia los coloes y dimensiones
         } else if (level === 1) { // Primera infracción
             headerTitle = '🚨 Alerta de Seguridad 🚨';
             infoCardBorder = 'rgb(255, 0, 0)'; // Borde rojo para la tarjeta de información
-            containerBg = 'rgb(156, 156, 156)'; // Fondo gris clarito
         }
     }
 
@@ -981,10 +1042,12 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
             .footer-image { width: 100%; display: block; border-top: 1px solid rgb(255, 255, 255); }
             .footer { background-color: ${footerBg}; padding: 20px; text-align: center; color: ${level >= 3 ? 'rgb(255, 0, 0)' : 'rgb(255, 255, 255)'}; font-size: 13px; }
             .footer p { margin: 5px 0; }
-            .disclaimer { font-size: 11px; color: #888; margin-top: 15px; padding: 0 20px; line-height: 1.4; }
+            .cognotacion { font-size: 11px; color: ${cognotacionColor}; margin-top: 15px; padding: 0 20px; line-height: 1.4; }
         </style>
     </head>
     <body style="background-color: ${bodyBg}; margin:0; padding:0;">
+        <br>
+        <br>
         <div class="email-container">
             <div class="header">
                 <h1>${headerTitle}</h1>
@@ -993,13 +1056,15 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
                 <h2>${title}</h2>
                 ${bodyContent}
                 ${imageUrl ? `<div style="text-align:center; margin-top:30px;"><img src="${imageUrl}" alt="Vista Previa" style="max-width:100%; border-radius:8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>` : ''}
-                <p class="disclaimer"><strong>Nota:</strong> Los colores y dimensiones del modelo digital son de referencia. El resultado final puede variar ligeramente debido a factores técnicos del proceso de sublimación y estampación.</p>
+                <p class="cognotacion"><strong>Nota:</strong> Los colores y dimensiones del modelo digital son de referencia. El resultado final puede variar ligeramente debido a factores técnicos del proceso de sublimación y estampación.</p>
             </div>
             <img src="${footerImage}" alt="Presentación" class="footer-image">
             <div class="footer">
                 <p>&copy; ${year} Sublimación Mary. Todo personalizado.</p>
             </div>
         </div>
+        <br>
+        <br>
     </body>
     </html>
     `;
@@ -1035,6 +1100,20 @@ app.use((req, res, next) => {
 function rateLimiter(req, res, next) {
     const ip = getClientIp(req);
 
+    // --- CABECERAS DE SEGURIDAD (Real-World Protection) ---
+    res.setHeader('X-Frame-Options', 'DENY'); // Evita ataques de Clickjacking
+    res.setHeader('X-Content-Type-Options', 'nosniff'); // Evita que el navegador adivine el tipo de archivo
+    res.setHeader('X-XSS-Protection', '1; mode=block'); // Filtro XSS básico
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Content-Security-Policy (Opcional pero recomendado: solo permite scripts de tu dominio y de confianza)
+    // res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline';");
+
+    // --- GESTIÓN DE AMNISTÍA (Limpieza de cookies) ---
+    if (amnestyIPs.has(ip) && amnestyIPs.get(ip) > Date.now()) {
+        res.clearCookie('sl'); // Ordenar al navegador borrar el rastro del baneo
+        console.log(`🧼 Amnistía aplicada: Limpiando rastro de baneo para ${ip}`);
+    }
+
     // 0. RECUPERACIÓN DE ESTADO DESDE EL NAVEGADOR (Anti-Amnesia del Servidor)
     // Si el servidor se reinició y olvidó el nivel, la cookie 'sl' (Security Level) se lo recordará.
     if (req.headers.cookie) {
@@ -1047,6 +1126,11 @@ function rateLimiter(req, res, next) {
                 console.log(`🔄 Sync: Restaurando nivel ${clientLevel} para IP ${ip} usando información del navegador.`);
                 // Restaurar nivel y refrescar timestamp para evitar que la lógica de "decay" lo borre inmediatamente
                 banLevels[ip] = { level: clientLevel, lastOffense: Date.now() }; 
+
+                // Si el nivel restaurado indica baneo permanente (>= 3), asegurar que esté en la lista activa de bloqueos
+                if (clientLevel >= 3 && !permanentBans.has(ip)) {
+                    permanentBans.add(ip);
+                }
             }
         }
     }
@@ -1055,6 +1139,13 @@ function rateLimiter(req, res, next) {
     if (permanentBans.has(ip)) {
         console.error(`🚫 CONEXIÓN RECHAZADA: IP con baneo permanente intentó acceder: ${ip}`);
         res.socket.destroy();
+        return;
+    }
+
+    // --- BLOQUEO POR NIVEL CRÍTICO (Tu solicitud: Nivel >= 3) ---
+    if (banLevels[ip] && banLevels[ip].level >= 3) {
+        console.error(`🚫 ACCESO DENEGADO (Nivel ${banLevels[ip].level}): IP persistente bloqueada: ${ip}`);
+        res.socket.destroy(); // Cortar conexión de inmediato para no gastar recursos
         return;
     }
 
@@ -2715,6 +2806,150 @@ app.get('/api/preview', (req, res) => {
 </body>
 </html>`;
     res.send(html);
+});
+
+// --- ENDPOINT HONEYPOT: Trampa para atacantes ---
+app.get(['/admin-config.php', '/wp-admin', '/.env.backup', '/config.php', '/phpmyadmin', '/backup.sql', '/root'], (req, res) => {
+    const ip = getClientIp(req);
+    console.error(`🪤 HONEYPOT: IP ${ip} atrapada en ruta: ${req.path}`);
+    updateBannedIpsInRender(ip); // Ban permanente de una vez
+    res.status(404).send("File not found");
+});
+
+// --- ENDPOINT PARA SERVIR LA PÁGINA DE VERIFICACIÓN DE DESBANEO ---
+app.get('/api/unban-verify', (req, res) => {
+    const { ip, token } = req.query;
+    const pending = pendingUnbans.get(ip);
+
+    if (!ip || !token || !pending || pending.token !== token || (pending.activated && Date.now() > pending.expires)) {
+        return res.status(403).send("<h1>Token inválido o expirado</h1>");
+    }
+
+    // --- ACTIVACIÓN LAZY DEL TOKEN ---
+    if (!pending.activated) {
+        pending.activated = true;
+        pending.expires = Date.now() + (30 * 60 * 1000); // 30 minutos desde este momento
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Autorizar Desbaneo - Seguridad Mary</title>
+        <style>
+            body { background: #121212; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #1e1e1e; padding: 40px; border-radius: 20px; border: 2px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2); text-align: center; width: 100%; max-width: 400px; }
+            input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #333; background: #2d2d2d; color: white; box-sizing: border-box; }
+            button { width: 100%; padding: 15px; border-radius: 50px; border: none; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; margin-top: 20px; }
+            .ip-display { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 5px; color: #f1c40f; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>🔐 Autorización de Administrador</h2>
+            <p>Confirmando desbaneo para:<br><span class="ip-display">${ip}</span></p>
+            <form action="/api/execute-unban" method="POST">
+                <input type="hidden" name="ip" value="${ip}">
+                <input type="hidden" name="token" value="${token}">
+                <input type="text" name="user" placeholder="Usuario Desarrollador" required>
+                <input type="password" name="pass" placeholder="Contraseña Maestra" required>
+                <input type="email" name="email" placeholder="Correo de Respaldo" required>
+                <button type="submit">VALIDAR Y DESBANEAR</button>
+            </form>
+        </div>
+    </body>
+    </html>`;
+    res.send(html);
+});
+
+// --- ENDPOINT PARA EJECUTAR EL DESBANEO TRAS VALIDACIÓN ---
+app.post('/api/execute-unban', async (req, res) => {
+    const { ip, token, user, pass, email } = req.body;
+
+    // 1. Validar token
+    const pending = pendingUnbans.get(ip);
+    if (!pending || pending.token !== token || !pending.activated || Date.now() > pending.expires) {
+        return res.status(403).send("Sesión de autorización expirada.");
+    }
+
+    // 2. Validar credenciales de MIGUEL (Llave Maestra)
+    const masterUser = process.env.ADMIN_USER_MIGUEL_HASH;
+    const masterPass = process.env.ADMIN_PASS_MIGUEL_HASH;
+    const masterEmail = process.env.ADMIN_EMAIL_MIGUEL_HASH;
+
+    if (user === masterUser && pass === masterPass && email === masterEmail) {
+        console.log(`✅ AUDITORÍA: La IP ${ip} ha sido desbaneada usando la Llave Maestra.`);
+        
+        // REGISTRO DE AUDITORÍA EN EL ARCHIVO .TXT
+        const auditEntry = `\n============================================================\n` +
+                           `AUDITORÍA MAESTRA: DESBANEO AUTORIZADO\n` +
+                           `Fecha: ${new Date().toLocaleString('es-CO')}\n` +
+                           `IP Liberada: ${ip}\n` +
+                           `Autorizado por: ${user} (Llave Maestra)\n` +
+                           `------------------------------------------------------------\n`;
+        
+        // Usar la lógica de Mutex para guardar este log de forma segura en GitHub
+        const unlock = await gitMutex.lock();
+        try {
+            const { data: reportFile } = await githubClient.repos.getContent({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'models_rf/img_rf/login_report.txt'
+            });
+            const newContent = Buffer.from(reportFile.content, 'base64').toString('utf-8') + auditEntry;
+            await githubClient.repos.createOrUpdateFileContents({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'models_rf/img_rf/login_report.txt',
+                message: `Audit: Unban for ${ip} [skip render]`,
+                content: Buffer.from(newContent).toString('base64'),
+                sha: reportFile.sha
+            });
+        } catch (e) { console.error("Error en log de auditoría:", e); } finally { unlock(); }
+
+        // 3. Ejecutar desbaneo real en Render
+        try {
+            const envIps = (process.env.PERMANENTLY_BANNED_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
+            const updatedIps = envIps.filter(existingIp => existingIp !== ip);
+            
+            await updateRenderEnvVar('PERMANENTLY_BANNED_IPS', updatedIps.join(','));
+            
+            // 4. Limpieza Profunda de Memoria
+            permanentBans.delete(ip);
+            pendingUnbans.delete(ip);
+            delete banLevels[ip];
+            delete loginAttempts[ip];
+
+            // Otorgar amnistía para que el navegador del cliente limpie sus cookies al entrar
+            amnestyIPs.set(ip, Date.now() + (10 * 60 * 1000)); 
+
+            // Registrar éxito en el reporte
+            const logPayload = { type: 'master_unban_success', username: user, userAgent: req.headers['user-agent'] };
+            // Simular el registro de actividad para que quede en el reporte .txt
+            // (Esto es opcional pero recomendado para trazabilidad)
+
+            res.send(`
+                <body style="background: #121212; color: #2ecc71; font-family: sans-serif; text-align: center; padding-top: 100px;">
+                    <h1>✅ Desbaneo Exitoso</h1>
+                    <p>La IP ${ip} ha sido eliminada. El usuario podrá acceder tras el reinicio automático.</p>
+                    <script>setTimeout(() => window.location.href = '/', 5000);</script>
+                </body>
+            `);
+        } catch (e) {
+            res.status(500).send("Error técnico al actualizar Render: " + e.message);
+        }
+    } else {
+        // Registrar intento fallido de uso de la llave maestra (GRAVE)
+        console.error(`❌ ALERTA: Intento fallido de desbaneo para IP ${ip} con credenciales maestras incorrectas.`);
+        
+        // Bloquear permanentemente a quien esté intentando adivinar la llave maestra
+        const sourceIp = getClientIp(req);
+        updateBannedIpsInRender(sourceIp);
+
+        res.status(401).send(`
+            <body style="background: #121212; color: #e74c3c; font-family: sans-serif; text-align: center; padding-top: 100px;">
+                <h1>❌ Credenciales Maestras Incorrectas</h1>
+                <p>Esta actividad ha sido reportada. Su acceso ha sido revocado.</p>
+            </body>
+        `);
+    }
 });
 
 // Cargar baneos permanentes al iniciar el servidor
