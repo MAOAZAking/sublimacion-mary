@@ -997,7 +997,7 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
             containerBg = 'rgb(227, 6, 19)'; // Fondo rojo que esta en medio del header y foter
             headerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
             footerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
-            textColor = 'rgb(54, 54, 54)'; // Texto blanco
+            textColor = 'rgb(162, 162, 162)'; // Texto blanco
             titleColor = 'rgb(0, 0, 0)'; // Títulos blancos
             headerTitle = '🚨☠️ Alerta de Seguridad ☠️🚨';
             infoCardBorder = 'rgb(255, 255, 255)'; // Linea blanca izquierda
@@ -1783,7 +1783,7 @@ app.post('/api/pedidos', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente, tipo_estampado, adminName } = req.body;
+    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente, tipo_estampado, adminName, cantidad, talla, genero_prenda } = req.body;
     const files = req.files || {};
 
     // 1. Determinar tipo de producto
@@ -2044,13 +2044,15 @@ app.post('/api/pedidos', upload.fields([
             s_n: nextId,
             telefono, producto, fecha, estado, tipo_mug, color_mug,
             tipo_estampado: tipo_estampado || 'completo', // Default: Completo
+            cantidad: parseInt(cantidad) || 1,
+            talla: (tipoProducto === 'camiseta' || tipoProducto === 'saco') ? (talla || 'N/A') : null,
+            genero_prenda: (tipoProducto === 'camiseta' || tipoProducto === 'saco') ? (genero_prenda || 'masculino') : null,
             imagen_url: mainImageUrl,
             imagenes: (tipoProducto === 'gorra') 
                 ? { lamina: urlFrontal } // GORRA: Solo propiedad 'lamina'
                 : { frontal: urlFrontal, espaldar: urlEspaldar }, // TEXTIL: Propiedades estandar
             foto_diseno_url: urlFotoDiseno
         };
-        pedidos.push(nuevoPedido);
 
         // --- GESTIÓN DE CLIENTES (CRM) ---
         let clienteActualizado = false;
@@ -2136,8 +2138,11 @@ app.post('/api/pedidos', upload.fields([
             <p>Se ha registrado un nuevo pedido en el sistema por <strong>${adminName || 'el administrador'}</strong>. A continuación los detalles:</p>
             <div class="info-card" style="border-left-color: #e74c3c;">
                 <div class="info-item"><strong>S/N:</strong> ${nextId}</div>
-                <div class="info-item"><strong>Cliente:</strong> ${telefono}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
+                <div class="info-item"><strong>Cantidad:</strong> ${nuevoPedido.cantidad} unidad(es)</div>
+                ${nuevoPedido.talla ? `<div class="info-item"><strong>Talla:</strong> ${nuevoPedido.talla}</div>` : ''}
+                ${nuevoPedido.genero_prenda ? `<div class="info-item"><strong>Género Prenda:</strong> ${nuevoPedido.genero_prenda}</div>` : ''}
+                <div class="info-item"><strong>Cliente (Tel):</strong> ${telefono}</div>
                 <div class="info-item"><strong>Fecha:</strong> ${fecha}</div>
             </div>
             <div style="text-align: center;">
@@ -2176,7 +2181,7 @@ app.post('/api/pedidos/edit', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug, tipo_estampado, adminName } = req.body;
+    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug, tipo_estampado, adminName, cantidad, talla, genero_prenda } = req.body;
     const files = req.files || {};
 
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
@@ -2313,6 +2318,9 @@ app.post('/api/pedidos/edit', upload.fields([
         pedido.estado = estado;
         pedido.imagen_url = mainImageUrl;
         pedido.tipo_estampado = tipo_estampado || 'completo';
+        pedido.cantidad = parseInt(cantidad) || pedido.cantidad || 1;
+        if (talla) pedido.talla = talla;
+        if (genero_prenda) pedido.genero_prenda = genero_prenda;
         
         if (tipoProducto === 'mug') {
             pedido.tipo_mug = tipo_mug;
@@ -2352,11 +2360,14 @@ app.post('/api/pedidos/edit', upload.fields([
 
         // --- ENVIAR CORREO: PEDIDO EDITADO ---
         const bodyContent = `
-            <p>El pedido del cliente <strong>${telefono}</strong> ha sido modificado exitosamente por <strong>${adminName || 'el administrador'}</strong>.</p>
+            <p>El pedido <strong>${pedido.s_n || 'N/A'}</strong> ha sido actualizado por <strong>${adminName || 'el administrador'}</strong>.</p>
             <div class="info-card" style="border-left-color: #2980b9;">
-                <div class="info-item"><strong>S/N:</strong> ${pedido.s_n || 'N/A'}</div>
+                <div class="info-item"><strong>Referencia:</strong> ${pedido.s_n || 'N/A'}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
-                <div class="info-item"><strong>Fecha Actualizada:</strong> ${fecha}</div>
+                <div class="info-item"><strong>Cantidad:</strong> ${pedido.cantidad}</div>
+                ${pedido.talla ? `<div class="info-item"><strong>Talla:</strong> ${pedido.talla}</div>` : ''}
+                ${pedido.genero_prenda ? `<div class="info-item"><strong>Género Prenda:</strong> ${pedido.genero_prenda}</div>` : ''}
+                <div class="info-item"><strong>Cliente (Tel):</strong> ${telefono}</div>
             </div>
         `;
         const emailHtml = getEmailTemplate(`Pedido Editado ✏️`, bodyContent, mainImageUrl);

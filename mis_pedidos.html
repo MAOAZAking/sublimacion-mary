@@ -543,6 +543,8 @@
         statusInd.innerHTML = mapEstados[pedido.estado] || pedido.estado;
         statusInd.style.display = 'flex';
         statusInd.style.background = (pedido.estado === "Revisión del cliente") ? 'rgba(142, 68, 173, 0.9)' : 'rgba(44, 62, 80, 0.9)';
+        // Añadir cantidad, talla y género al statusIndicator si existen
+        statusInd.innerHTML += `<br>Cant: ${pedido.cantidad || 1}${pedido.talla ? ` - Talla: ${pedido.talla}` : ''}${pedido.genero_prenda ? ` - Género: ${pedido.genero_prenda}` : ''}`;
 
         modal.style.display = "flex";
         

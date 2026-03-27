@@ -1106,6 +1106,8 @@
         modalInfo.innerHTML = `
             Cliente: ${pedido.telefono || pedido.teléfono || 'Sin datos'} (S/N: ${pedido.s_n || 'N/A'})<br>
             <span style="font-size: 1rem; font-weight: normal;">${pedido.producto} - ${pedido.fecha}</span><br>
+            <span style="font-size: 1rem; font-weight: normal;">Cantidad: ${pedido.cantidad || 1}</span><br>
+            ${pedido.talla ? `<span style="font-size: 1rem; font-weight: normal;">Talla: ${pedido.talla}</span><br>` : ''}
             <span style="font-size: 1rem; font-weight: normal; color: #ffd700;">Estado: ${pedido.estado || 'Desconocido'}</span>
         `;
 

@@ -176,6 +176,40 @@
             <input type="tel" name="telefono" id="telefono" placeholder="Ej: 3001234567" required pattern="[0-9]+" disabled>
         </div>
 
+        <div class="form-group">
+            <label for="cantidad">Cantidad:</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" onclick="changeQuantity(-1)" style="width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #555; box-shadow: none;" id="btnMinus">-</button>
+                <input type="number" name="cantidad" id="cantidad" value="1" min="1" required style="width: 80px; text-align: center;">
+                <button type="button" onclick="changeQuantity(1)" style="width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #555; box-shadow: none;">+</button>
+            </div>
+        </div>
+
+        <div class="form-group" id="talla_group" style="display:none;">
+            <label for="talla">Talla:</label>
+            <select name="talla" id="talla">
+                <option value="XS">XS</option>
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="genero_prenda_group" style="display:none;">
+            <label for="genero_prenda">Género de la Prenda:</label>
+            <div style="display: flex; gap: 20px; background: #2d2d2d; padding: 10px; border-radius: 10px; border: 2px solid #333;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; margin: 0;">
+                    <input type="radio" name="genero_prenda" value="masculino" checked> Masculino
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; margin: 0;">
+                    <input type="radio" name="genero_prenda" value="femenino"> Femenino
+                </label>
+            </div>
+        </div>
+
+
         <button type="submit" id="btnSubmit">Actualizar Pedido</button>
     </form>
     
@@ -301,6 +335,10 @@
         document.getElementById('subtitle').textContent = `Editando: ${productoTipoCompleto} de cliente ${pedido.telefono}`;
         document.getElementById('telefono').value = pedido.telefono || pedido.teléfono;
         document.getElementById('original_imagen_url').value = pedido.imagen_url;
+        document.getElementById('cantidad').value = pedido.cantidad || 1;
+        document.getElementById('btnMinus').disabled = (pedido.cantidad || 1) <= 1;
+
+
         document.getElementById('producto_tipo').value = productoTipoCompleto;
 
         const dynamicFiles = document.getElementById('dynamic-files');
@@ -392,6 +430,14 @@
                     <p class="file-info">Plantilla actual conservada. Si cambia alguna lámina, debe subir la nueva plantilla.</p>
                 </div>
             `;
+            
+            // Mostrar campos de talla y género para textiles
+            document.getElementById('talla_group').style.display = 'block';
+            document.getElementById('genero_prenda_group').style.display = 'flex';
+
+            // Precargar talla y género
+            document.getElementById('talla').value = pedido.talla || 'M';
+            document.querySelector(`input[name="genero_prenda"][value="${pedido.genero_prenda || 'masculino'}"]`).checked = true;
         } else if (esGorra) {
             let urlFrontal = pedido.imagenes ? (pedido.imagenes.lamina || pedido.imagenes.frontal) : (pedido.imagen_url || '');
             
@@ -407,6 +453,11 @@
                     <p class="file-info">Plantilla actual conservada. Si cambia la lámina, debe subir la nueva plantilla.</p>
                 </div>
             `;
+        }
+        // Ocultar campos de talla y género si no son textiles
+        if (!esTextil) {
+            document.getElementById('talla_group').style.display = 'none';
+            document.getElementById('genero_prenda_group').style.display = 'none';
         }
 
         document.getElementById('pedidoForm').style.display = 'block';
@@ -431,6 +482,19 @@
         element.classList.add('selected');
     };
 
+    window.changeQuantity = function(delta) {
+        const quantityInput = document.getElementById('cantidad');
+        let currentQuantity = parseInt(quantityInput.value);
+        if (isNaN(currentQuantity)) currentQuantity = 1;
+
+        const newQuantity = Math.max(1, currentQuantity + delta);
+        quantityInput.value = newQuantity;
+
+        // Deshabilitar botón '-' si la cantidad es 1
+        document.getElementById('btnMinus').disabled = newQuantity <= 1;
+    };
+
+
     document.getElementById('pedidoForm').addEventListener('submit', function(e) {
         e.preventDefault(); 
 
@@ -438,6 +502,9 @@
         const telefono = document.getElementById('telefono').value;
         const productoTipo = document.getElementById('producto_tipo').value;
         const originalUrl = document.getElementById('original_imagen_url').value;
+        const cantidad = document.getElementById('cantidad').value;
+        const talla = document.getElementById('talla').value;
+        const genero_prenda = document.querySelector('input[name="genero_prenda"]:checked') ? document.querySelector('input[name="genero_prenda"]:checked').value : null;
 
         // Validar regla: Si se sube imagen, plantilla es obligatoria
         const imgInput = document.getElementById('imagen');
@@ -467,7 +534,11 @@
             if (nuevoTipo !== (currentPedido.tipo_mug || 'clasico') || nuevoColor !== (currentPedido.color_mug || '')) cambiosMug = true;
         }
         
-        let cambiosEstampado = false;
+        let cambiosTextil = false;
+        if (parseInt(cantidad) !== (currentPedido.cantidad || 1)) cambiosTextil = true;
+        if (talla && talla !== (currentPedido.talla || '')) cambiosTextil = true;
+        if (genero_prenda && genero_prenda !== (currentPedido.genero_prenda || '')) cambiosTextil = true;
+
         if (['Camiseta Estampada', 'Saco Estampado'].includes(productoTipo)) {
             const nuevoEstilo = document.querySelector('input[name="tipo_estampado"]:checked').value;
             if (nuevoEstilo !== (currentPedido.tipo_estampado || 'completo')) cambiosEstampado = true;
@@ -501,6 +572,9 @@
         formData.append('fecha', fechaCompleta);
         formData.append('estado', nuevoEstado);
         formData.append('adminName', sessionStorage.getItem('adminName') || 'Administrador');
+        formData.append('cantidad', cantidad);
+        if (talla) formData.append('talla', talla);
+        if (genero_prenda) formData.append('genero_prenda', genero_prenda);
         
         // Sanitizar nombres de archivo y añadir a FormData
         const esTextil = ['camiseta', 'saco'].some(t => productoTipo.toLowerCase().includes(t));
