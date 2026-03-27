@@ -995,9 +995,10 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
             footerImage = `${repoBaseUrl}presentacion_email_baneo.png`;
             bodyBg = 'rgb(227, 6, 19)'; // Fondo rojo oscuro para todo el correo
             containerBg = 'rgb(227, 6, 19)'; // Fondo rojo que esta en medio del header y foter
+            containerBorder = 'rgb(255, 255, 255)'; // Contorno del conenedor que tine eheader y footer
             headerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
             footerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
-            textColor = 'rgb(162, 162, 162)'; // Texto blanco
+            textColor = 'rgb(188, 188, 188)'; // Texto blanco
             titleColor = 'rgb(0, 0, 0)'; // Títulos blancos
             headerTitle = '🚨☠️ Alerta de Seguridad ☠️🚨';
             infoCardBorder = 'rgb(255, 255, 255)'; // Linea blanca izquierda
@@ -1009,16 +1010,20 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
             bodyBg = 'rgb(255, 255, 255)'; // Fondo rojo oscuro para todo el correo
             headerTitle = '🚨 Alerta de Seguridad 🚨';
             infoCardBg = 'rgba(0, 0, 0, 0.4)'; // Mantiene el borde rojo
+            containerBorder = 'rgb(227, 6, 19)'; // Contorno del conenedor que tine eheader y footer
             headerBg = 'rgb(227, 6, 19)'; // Fondo rojo
             footerBg = 'rgb(227, 6, 19)'; // Fondo rojo
             infoCardBg = 'rgb(255, 255, 255)'; // Fondo de la tarjeta de informacion
+            infoCardBorder = 'rgb(227, 6, 19)'; // Linea blanca izquierda
             textColor = 'rgb(0, 0, 0)'; // Texto blanco
             titleColor = 'rgb(54, 54, 54)'; // Títulos blancos
             containerBg = 'rgb(255, 255, 255)'; // Fondo entre header y footer
             cognotacionColor = 'rgb(227, 6, 19)'; // Color congnotaicon de que varia los coloes y dimensiones
         } else if (level === 1) { // Primera infracción
             headerTitle = '🚨 Alerta de Seguridad 🚨';
+            containerBorder = 'rgb(0, 0, 0)'; // Contorno del conenedor que tine eheader y footer
             infoCardBorder = 'rgb(255, 0, 0)'; // Borde rojo para la tarjeta de información
+            bodyBg = 'rgb(255, 255, 255)'; // Fondo rojo oscuro para todo el correo
         }
     }
 
