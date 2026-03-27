@@ -276,7 +276,9 @@ async function triggerUnbanAuthorization(ip) {
     const emailHtml = getEmailTemplate('Seguridad: Validación de Desbaneo', bodyContent, null, { type: 'security', level: 2 });
     
     // Enviar a Miguel y Mariajose
-    const devEmail = process.env.ADMIN_EMAIL_MIGUEL_HASH || 'maoaza13579@gmail.com';
+    // FIX: Si la variable contiene un hash (con '$'), no usarla como dirección de envío, usar el respaldo.
+    const devEmail = process.env.ADMIN_EMAIL_MIGUEL;
+
     const majoEmail = process.env.ADMIN_EMAIL_MARIAJOSE;
     
     const recipients = [devEmail];
@@ -2854,23 +2856,31 @@ app.get('/api/unban-verify', (req, res) => {
         <meta charset="UTF-8">
         <title>Autorizar Desbaneo - Seguridad Mary</title>
         <style>
-            body { background: #121212; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            body { background: #000; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
             .card { background: #1e1e1e; padding: 40px; border-radius: 20px; border: 2px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2); text-align: center; width: 100%; max-width: 400px; }
             input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #333; background: #2d2d2d; color: white; box-sizing: border-box; }
             button { width: 100%; padding: 15px; border-radius: 50px; border: none; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; margin-top: 20px; }
             .ip-display { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 5px; color: #f1c40f; }
+            label { display: block; text-align: left; color: #f1c40f; font-size: 0.75rem; font-weight: bold; letter-spacing: 1px; }
         </style>
     </head>
     <body>
         <div class="card">
             <h2>🔐 Autorización de Administrador</h2>
             <p>Confirmando desbaneo para:<br><span class="ip-display">${ip}</span></p>
-            <form action="/api/execute-unban" method="POST">
+            <form action="/api/execute-unban" method="POST" autocomplete="off">
                 <input type="hidden" name="ip" value="${ip}">
                 <input type="hidden" name="token" value="${token}">
-                <input type="text" name="user" placeholder="Usuario Desarrollador" required>
-                <input type="password" name="pass" placeholder="Contraseña Maestra" required>
-                <input type="email" name="email" placeholder="Correo de Respaldo" required>
+                
+                <label>USUARIO MAESTRO</label>
+                <input type="password" name="user" placeholder="••••••••" required autocomplete="new-password">
+                
+                <label>CONTRASEÑA MAESTRA</label>
+                <input type="password" name="pass" placeholder="••••••••" required autocomplete="new-password">
+                
+                <label>IDENTIFICADOR DE CORREO</label>
+                <input type="password" name="email" placeholder="••••••••" required autocomplete="new-password">
+                
                 <button type="submit">VALIDAR Y DESBANEAR</button>
             </form>
         </div>
