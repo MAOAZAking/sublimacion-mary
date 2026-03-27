@@ -44,6 +44,7 @@ const banLevels = {}; // Para rastrear el nivel de ofensa de cada IP
 const permanentBans = new Set(); // Para baneos permanentes
 const pendingUnbans = new Map(); // Almacenar tokens temporales para desbaneo: ip -> {token, activated, expires}
 const amnestyIPs = new Map(); // IPs que tienen permiso de limpiar sus cookies: ip -> timestamp_expiracion
+const pendingSecurityActions = new Map(); // Tokens para acciones de seguridad: token -> {ip_atacante, expires}
 
 // RUTAS ACTUALIZADAS: Usamos '../' para salir de la carpeta 'js/' y buscar en la raíz o carpetas hermanas
 const BANNED_IPS_PATH = path.join(__dirname, '../models_rf/img_rf/security/banned-ips.json');
@@ -276,9 +277,7 @@ async function triggerUnbanAuthorization(ip) {
     const emailHtml = getEmailTemplate('Seguridad: Validación de Desbaneo', bodyContent, null, { type: 'security', level: 2 });
     
     // Enviar a Miguel y Mariajose
-    // FIX: Si la variable contiene un hash (con '$'), no usarla como dirección de envío, usar el respaldo.
     const devEmail = process.env.ADMIN_EMAIL_MIGUEL;
-
     const majoEmail = process.env.ADMIN_EMAIL_MARIAJOSE;
     
     const recipients = [devEmail];
@@ -715,9 +714,6 @@ async function sendSecurityAlertEmail({ ip, reason, attempts, userAgent, duratio
             <div class="info-item"><strong>Motivo:</strong> ${reason}</div>
             <div class="info-item"><strong>Dirección IP:</strong> ${ip}</div>
             <div class="info-item"><strong>Intentos:</strong> ${attempts}</div>
-            <div class="info-item"><strong>Tiempo sancion:</strong> ${duration === 'permanent' ? 'Permanente' : (duration / 60000 >= 60 
-                ? `${Math.floor(duration / 60000 / 60)} horas y ${Math.floor((duration / 60000) % 60)} minutos` 
-                : `${Math.floor(duration / 60000)} minutos`)}</div>
             <div class="info-item"><strong>Sistema:</strong> ${osInfo} <br> <strong>Navegador:</strong> ${browserInfo} <br> <strong>Tipo:</strong> ${deviceType}</div>
             <div class="info-item"><strong>Geolocalización (aprox.):</strong><br>${locationInfo}</div>
         </div>
@@ -826,19 +822,7 @@ function recordFailedAttempt(req, res, context = "General") {
         delete loginAttempts[ip];
         saveSecurityState();
         // RESPALDO EN LA NUBE: Guardar el nuevo nivel en GitHub para que sobreviva reinicios
-        syncSecurityStateToGitHub();
-        // --- REFUERZO: Alerta Nivel 4 o superior ---
-        if (newLevel >= 4) {
-            sendSecurityAlertEmail({
-                ip: ip,
-                reason: `⚠️ ATAQUE PERSISTENTE DETECTADO (Nivel ${newLevel})`,
-                attempts: attempt.count,
-                userAgent: req.headers['user-agent'],
-                duration: 'permanent',
-                level: newLevel,
-                req: req
-            });
-        }
+        syncSecurityStateToGitHub(); 
         return true; // Devolver TRUE para indicar que se acaba de banear
     }
     // Guardar el estado de los intentos y niveles de baneo en cada intento fallido
@@ -995,37 +979,31 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
     if (type === 'security') {
         if (level >= 3) { // Baneo permanente
             footerImage = `${repoBaseUrl}presentacion_email_baneo.png`;
-            bodyBg = 'rgb(227, 6, 19)'; // Fondo rojo oscuro para todo el correo
-            containerBg = 'rgb(227, 6, 19)'; // Fondo rojo que esta en medio del header y foter
-            containerBorder = 'rgb(255, 255, 255)'; // Contorno del conenedor que tine eheader y footer
+            bodyBg = 'rgb(255, 0, 0)'; // Fondo rojo oscuro para todo el correo
+            containerBg = 'rgb(255, 0, 0)'; // Fondo rojo que esta en medio del header y fotter
             headerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
             footerBg = 'rgb(255, 255, 255)'; // Fondo Blanco
-            textColor = 'rgb(188, 188, 188)'; // Texto blanco
-            titleColor = 'rgb(0, 0, 0)'; // Títulos blancos
+            textColor = 'rgb(255, 0, 0)'; // Texto blanco
+            titleColor = '#be0000'; // Títulos blancos
+            containerBorder = '2px solid white'; // Borde blanco para el contenedor principal
             headerTitle = '🚨☠️ Alerta de Seguridad ☠️🚨';
-            infoCardBorder = 'rgb(255, 255, 255)'; // Linea blanca izquierda
-            infoCardBg = 'rgba(0, 0, 0, 0.4)'; // Fondo tarjeta de informacion de la infraccion
-            strongColor = 'rgb(255, 255, 255)'; // Negritas en blanco
-            cognotacionColor = 'rgb(255, 255, 255)';
+            infoCardBorder = '#ffffff'; // Linea blanca
+            infoCardBg = 'rgb(156, 156, 156)'; // Fondo tarjeta de informacion de la infraccion
+            strongColor = '#ffffff'; // Negritas en blanco
         } else if (level === 2) { // Segunda infracción
             footerImage = `${repoBaseUrl}presentacion_email_rojo.png`;
-            bodyBg = 'rgb(255, 255, 255)'; // Fondo rojo oscuro para todo el correo
             headerTitle = '🚨 Alerta de Seguridad 🚨';
-            infoCardBg = 'rgba(0, 0, 0, 0.4)'; // Mantiene el borde rojo
-            containerBorder = 'rgb(227, 6, 19)'; // Contorno del conenedor que tine eheader y footer
-            headerBg = 'rgb(227, 6, 19)'; // Fondo rojo
-            footerBg = 'rgb(227, 6, 19)'; // Fondo rojo
-            infoCardBg = 'rgb(255, 255, 255)'; // Fondo de la tarjeta de informacion
-            infoCardBorder = 'rgb(227, 6, 19)'; // Linea blanca izquierda
-            textColor = 'rgb(0, 0, 0)'; // Texto blanco
-            titleColor = 'rgb(54, 54, 54)'; // Títulos blancos
+            infoCardBorder = 'rgb(255, 0, 0)'; // Mantiene el borde rojo
+            headerBg = 'rgb(232, 0, 0)'; // Fondo rojo
+            footerBg = 'rgb(232, 0, 0)'; // Fondo rojo
+            infoCardBg = 'rgb(192, 57, 43)'; // Fondo de la tarjeta de informacion  rojo oscuro
+            textColor = 'rgb(255, 255, 255)'; // Texto blanco
+            titleColor = 'rgb(172, 172, 172)'; // Títulos blancos
             containerBg = 'rgb(255, 255, 255)'; // Fondo entre header y footer
-            cognotacionColor = 'rgb(227, 6, 19)'; // Color congnotaicon de que varia los coloes y dimensiones
         } else if (level === 1) { // Primera infracción
             headerTitle = '🚨 Alerta de Seguridad 🚨';
-            containerBorder = 'rgb(0, 0, 0)'; // Contorno del conenedor que tine eheader y footer
             infoCardBorder = 'rgb(255, 0, 0)'; // Borde rojo para la tarjeta de información
-            bodyBg = 'rgb(255, 255, 255)'; // Fondo rojo oscuro para todo el correo
+            containerBg = 'rgb(156, 156, 156)'; // Fondo gris clarito
         }
     }
 
@@ -1053,8 +1031,6 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
         </style>
     </head>
     <body style="background-color: ${bodyBg}; margin:0; padding:0;">
-        <br>
-        <br>
         <div class="email-container">
             <div class="header">
                 <h1>${headerTitle}</h1>
@@ -1063,15 +1039,13 @@ const getEmailTemplate = (title, bodyContent, imageUrl, options = {}) => {
                 <h2>${title}</h2>
                 ${bodyContent}
                 ${imageUrl ? `<div style="text-align:center; margin-top:30px;"><img src="${imageUrl}" alt="Vista Previa" style="max-width:100%; border-radius:8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>` : ''}
-                <p class="cognotacion"><strong>Nota:</strong> Los colores y dimensiones del modelo digital son de referencia. El resultado final puede variar ligeramente debido a factores técnicos del proceso de sublimación y estampación.</p>
+                <p class="disclaimer"><strong>Nota:</strong> Los colores y dimensiones del modelo digital son de referencia. El resultado final puede variar ligeramente debido a factores técnicos del proceso de sublimación y estampación.</p>
             </div>
             <img src="${footerImage}" alt="Presentación" class="footer-image">
             <div class="footer">
                 <p>&copy; ${year} Sublimación Mary. Todo personalizado.</p>
             </div>
         </div>
-        <br>
-        <br>
     </body>
     </html>
     `;
@@ -1107,14 +1081,6 @@ app.use((req, res, next) => {
 function rateLimiter(req, res, next) {
     const ip = getClientIp(req);
 
-    // --- CABECERAS DE SEGURIDAD (Real-World Protection) ---
-    res.setHeader('X-Frame-Options', 'DENY'); // Evita ataques de Clickjacking
-    res.setHeader('X-Content-Type-Options', 'nosniff'); // Evita que el navegador adivine el tipo de archivo
-    res.setHeader('X-XSS-Protection', '1; mode=block'); // Filtro XSS básico
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    // Content-Security-Policy (Opcional pero recomendado: solo permite scripts de tu dominio y de confianza)
-    // res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline';");
-
     // --- GESTIÓN DE AMNISTÍA (Limpieza de cookies) ---
     if (amnestyIPs.has(ip) && amnestyIPs.get(ip) > Date.now()) {
         res.clearCookie('sl'); // Ordenar al navegador borrar el rastro del baneo
@@ -1146,13 +1112,6 @@ function rateLimiter(req, res, next) {
     if (permanentBans.has(ip)) {
         console.error(`🚫 CONEXIÓN RECHAZADA: IP con baneo permanente intentó acceder: ${ip}`);
         res.socket.destroy();
-        return;
-    }
-
-    // --- BLOQUEO POR NIVEL CRÍTICO (Tu solicitud: Nivel >= 3) ---
-    if (banLevels[ip] && banLevels[ip].level >= 3) {
-        console.error(`🚫 ACCESO DENEGADO (Nivel ${banLevels[ip].level}): IP persistente bloqueada: ${ip}`);
-        res.socket.destroy(); // Cortar conexión de inmediato para no gastar recursos
         return;
     }
 
@@ -1790,7 +1749,7 @@ app.post('/api/pedidos', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente, tipo_estampado, adminName, cantidad, talla, genero_prenda } = req.body;
+    const { producto, telefono, fecha, estado, tipo_mug, color_mug, email_cliente, nombre_cliente, genero_cliente, tipo_estampado, adminName } = req.body;
     const files = req.files || {};
 
     // 1. Determinar tipo de producto
@@ -2051,15 +2010,13 @@ app.post('/api/pedidos', upload.fields([
             s_n: nextId,
             telefono, producto, fecha, estado, tipo_mug, color_mug,
             tipo_estampado: tipo_estampado || 'completo', // Default: Completo
-            cantidad: parseInt(cantidad) || 1,
-            talla: (tipoProducto === 'camiseta' || tipoProducto === 'saco') ? (talla || 'N/A') : null,
-            genero_prenda: (tipoProducto === 'camiseta' || tipoProducto === 'saco') ? (genero_prenda || 'masculino') : null,
             imagen_url: mainImageUrl,
             imagenes: (tipoProducto === 'gorra') 
                 ? { lamina: urlFrontal } // GORRA: Solo propiedad 'lamina'
                 : { frontal: urlFrontal, espaldar: urlEspaldar }, // TEXTIL: Propiedades estandar
             foto_diseno_url: urlFotoDiseno
         };
+        pedidos.push(nuevoPedido);
 
         // --- GESTIÓN DE CLIENTES (CRM) ---
         let clienteActualizado = false;
@@ -2145,11 +2102,8 @@ app.post('/api/pedidos', upload.fields([
             <p>Se ha registrado un nuevo pedido en el sistema por <strong>${adminName || 'el administrador'}</strong>. A continuación los detalles:</p>
             <div class="info-card" style="border-left-color: #e74c3c;">
                 <div class="info-item"><strong>S/N:</strong> ${nextId}</div>
+                <div class="info-item"><strong>Cliente:</strong> ${telefono}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
-                <div class="info-item"><strong>Cantidad:</strong> ${nuevoPedido.cantidad} unidad(es)</div>
-                ${nuevoPedido.talla ? `<div class="info-item"><strong>Talla:</strong> ${nuevoPedido.talla}</div>` : ''}
-                ${nuevoPedido.genero_prenda ? `<div class="info-item"><strong>Género Prenda:</strong> ${nuevoPedido.genero_prenda}</div>` : ''}
-                <div class="info-item"><strong>Cliente (Tel):</strong> ${telefono}</div>
                 <div class="info-item"><strong>Fecha:</strong> ${fecha}</div>
             </div>
             <div style="text-align: center;">
@@ -2188,7 +2142,7 @@ app.post('/api/pedidos/edit', upload.fields([
     { name: 'lamina_espaldar', maxCount: 1 },
     { name: 'foto_diseno', maxCount: 1 }
 ]), async (req, res) => {
-    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug, tipo_estampado, adminName, cantidad, talla, genero_prenda } = req.body;
+    const { original_imagen_url, producto, telefono, fecha, estado, tipo_mug, color_mug, tipo_estampado, adminName } = req.body;
     const files = req.files || {};
 
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
@@ -2325,9 +2279,6 @@ app.post('/api/pedidos/edit', upload.fields([
         pedido.estado = estado;
         pedido.imagen_url = mainImageUrl;
         pedido.tipo_estampado = tipo_estampado || 'completo';
-        pedido.cantidad = parseInt(cantidad) || pedido.cantidad || 1;
-        if (talla) pedido.talla = talla;
-        if (genero_prenda) pedido.genero_prenda = genero_prenda;
         
         if (tipoProducto === 'mug') {
             pedido.tipo_mug = tipo_mug;
@@ -2367,14 +2318,11 @@ app.post('/api/pedidos/edit', upload.fields([
 
         // --- ENVIAR CORREO: PEDIDO EDITADO ---
         const bodyContent = `
-            <p>El pedido <strong>${pedido.s_n || 'N/A'}</strong> ha sido actualizado por <strong>${adminName || 'el administrador'}</strong>.</p>
+            <p>El pedido del cliente <strong>${telefono}</strong> ha sido modificado exitosamente por <strong>${adminName || 'el administrador'}</strong>.</p>
             <div class="info-card" style="border-left-color: #2980b9;">
-                <div class="info-item"><strong>Referencia:</strong> ${pedido.s_n || 'N/A'}</div>
+                <div class="info-item"><strong>S/N:</strong> ${pedido.s_n || 'N/A'}</div>
                 <div class="info-item"><strong>Producto:</strong> ${producto}</div>
-                <div class="info-item"><strong>Cantidad:</strong> ${pedido.cantidad}</div>
-                ${pedido.talla ? `<div class="info-item"><strong>Talla:</strong> ${pedido.talla}</div>` : ''}
-                ${pedido.genero_prenda ? `<div class="info-item"><strong>Género Prenda:</strong> ${pedido.genero_prenda}</div>` : ''}
-                <div class="info-item"><strong>Cliente (Tel):</strong> ${telefono}</div>
+                <div class="info-item"><strong>Fecha Actualizada:</strong> ${fecha}</div>
             </div>
         `;
         const emailHtml = getEmailTemplate(`Pedido Editado ✏️`, bodyContent, mainImageUrl);
@@ -2827,10 +2775,10 @@ app.get('/api/preview', (req, res) => {
 });
 
 // --- ENDPOINT HONEYPOT: Trampa para atacantes ---
-app.get(['/admin-config.php', '/wp-admin', '/.env.backup', '/config.php', '/phpmyadmin', '/backup.sql', '/root'], (req, res) => {
+app.get(['/admin-config.php', '/wp-admin', '/.env.backup'], (req, res) => {
     const ip = getClientIp(req);
-    console.error(`🪤 HONEYPOT: IP ${ip} atrapada en ruta: ${req.path}`);
-    updateBannedIpsInRender(ip); // Ban permanente de una vez
+    console.error(`🪤 HONEYPOT: IP ${ip} atrapada intentando acceder a rutas críticas.`);
+    updateBannedIpsInRender(ip); // Baneo permanente instantáneo
     res.status(404).send("File not found");
 });
 
@@ -2856,31 +2804,23 @@ app.get('/api/unban-verify', (req, res) => {
         <meta charset="UTF-8">
         <title>Autorizar Desbaneo - Seguridad Mary</title>
         <style>
-            body { background: #000; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            body { background: #121212; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
             .card { background: #1e1e1e; padding: 40px; border-radius: 20px; border: 2px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2); text-align: center; width: 100%; max-width: 400px; }
             input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #333; background: #2d2d2d; color: white; box-sizing: border-box; }
             button { width: 100%; padding: 15px; border-radius: 50px; border: none; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; margin-top: 20px; }
             .ip-display { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 5px; color: #f1c40f; }
-            label { display: block; text-align: left; color: #f1c40f; font-size: 0.75rem; font-weight: bold; letter-spacing: 1px; }
         </style>
     </head>
     <body>
         <div class="card">
             <h2>🔐 Autorización de Administrador</h2>
             <p>Confirmando desbaneo para:<br><span class="ip-display">${ip}</span></p>
-            <form action="/api/execute-unban" method="POST" autocomplete="off">
+            <form action="/api/execute-unban" method="POST">
                 <input type="hidden" name="ip" value="${ip}">
                 <input type="hidden" name="token" value="${token}">
-                
-                <label>USUARIO MAESTRO</label>
-                <input type="password" name="user" placeholder="••••••••" required autocomplete="new-password">
-                
-                <label>CONTRASEÑA MAESTRA</label>
-                <input type="password" name="pass" placeholder="••••••••" required autocomplete="new-password">
-                
-                <label>IDENTIFICADOR DE CORREO</label>
-                <input type="password" name="email" placeholder="••••••••" required autocomplete="new-password">
-                
+                <input type="text" name="user" placeholder="Usuario Desarrollador" required>
+                <input type="password" name="pass" placeholder="Contraseña Maestra" required>
+                <input type="email" name="email" placeholder="Correo de Respaldo" required>
                 <button type="submit">VALIDAR Y DESBANEAR</button>
             </form>
         </div>
@@ -2905,36 +2845,13 @@ app.post('/api/execute-unban', async (req, res) => {
     const masterEmail = process.env.ADMIN_EMAIL_MIGUEL_HASH;
 
     if (user === masterUser && pass === masterPass && email === masterEmail) {
-        console.log(`✅ AUDITORÍA: La IP ${ip} ha sido desbaneada usando la Llave Maestra.`);
+        console.log(`✅ AUDITORÍA: La IP ${ip} ha sido desbaneada usando la Llave Maestra por ${user}.`);
         
-        // REGISTRO DE AUDITORÍA EN EL ARCHIVO .TXT
-        const auditEntry = `\n============================================================\n` +
-                           `AUDITORÍA MAESTRA: DESBANEO AUTORIZADO\n` +
-                           `Fecha: ${new Date().toLocaleString('es-CO')}\n` +
-                           `IP Liberada: ${ip}\n` +
-                           `Autorizado por: ${user} (Llave Maestra)\n` +
-                           `------------------------------------------------------------\n`;
-        
-        // Usar la lógica de Mutex para guardar este log de forma segura en GitHub
-        const unlock = await gitMutex.lock();
-        try {
-            const { data: reportFile } = await githubClient.repos.getContent({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'models_rf/img_rf/login_report.txt'
-            });
-            const newContent = Buffer.from(reportFile.content, 'base64').toString('utf-8') + auditEntry;
-            await githubClient.repos.createOrUpdateFileContents({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'models_rf/img_rf/login_report.txt',
-                message: `Audit: Unban for ${ip} [skip render]`,
-                content: Buffer.from(newContent).toString('base64'),
-                sha: reportFile.sha
-            });
-        } catch (e) { console.error("Error en log de auditoría:", e); } finally { unlock(); }
-
         // 3. Ejecutar desbaneo real en Render
         try {
             const envIps = (process.env.PERMANENTLY_BANNED_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
             const updatedIps = envIps.filter(existingIp => existingIp !== ip);
-            
+
             await updateRenderEnvVar('PERMANENTLY_BANNED_IPS', updatedIps.join(','));
             
             // 4. Limpieza Profunda de Memoria
@@ -2944,8 +2861,10 @@ app.post('/api/execute-unban', async (req, res) => {
             delete loginAttempts[ip];
 
             // Otorgar amnistía para que el navegador del cliente limpie sus cookies al entrar
-            amnestyIPs.set(ip, Date.now() + (10 * 60 * 1000)); 
+            amnestyIPs.set(ip, Date.now() + (10 * 60 * 1000));
 
+            // --- REGISTRO DE AUDITORÍA EN EL ARCHIVO .TXT ---
+            // Este log ya se hace en el bloque superior, pero lo repetimos aquí para claridad si se mueve el código.
             // Registrar éxito en el reporte
             const logPayload = { type: 'master_unban_success', username: user, userAgent: req.headers['user-agent'] };
             // Simular el registro de actividad para que quede en el reporte .txt
@@ -2962,21 +2881,110 @@ app.post('/api/execute-unban', async (req, res) => {
             res.status(500).send("Error técnico al actualizar Render: " + e.message);
         }
     } else {
-        // Registrar intento fallido de uso de la llave maestra (GRAVE)
-        console.error(`❌ ALERTA: Intento fallido de desbaneo para IP ${ip} con credenciales maestras incorrectas.`);
-        
-        // Bloquear permanentemente a quien esté intentando adivinar la llave maestra
-        const sourceIp = getClientIp(req);
-        updateBannedIpsInRender(sourceIp);
+        // --- PROTOCOLO DE FALLO CRÍTICO (ADMIN/MASTER) ---
+        const attackerIp = getClientIp(req);
+        console.error(`❌ FALLO MAESTRO: IP ${attackerIp} falló al desbanear a ${ip}.`);
 
+        // 1. Matar token anterior (Invalidar link usado)
+        pendingUnbans.delete(ip);
+
+        // 2. Generar NUEVO token para el reintento (Si fue un admin que se equivocó)
+        const nextRetryToken = crypto.randomBytes(32).toString('hex');
+        pendingUnbans.set(ip, { token: nextRetryToken, activated: false, expires: null });
+
+        // 3. Generar token de BANEO inmediato para el atacante (Security Action)
+        const securityActionToken = crypto.randomBytes(32).toString('hex');
+        pendingSecurityActions.set(securityActionToken, { targetIp: attackerIp, expires: Date.now() + (24 * 60 * 60 * 1000) });
+
+        // 4. Registrar en login_report.txt
+        await logActivity({
+            type: 'master_key_failure',
+            username: user,
+            attemptedPass: '********',
+            attemptedEmail: email,
+            userAgent: req.headers['user-agent'],
+            ip: attackerIp,
+            targetUnbanIp: ip
+        });
+
+        // 5. Enviar Alerta Mejorada
+        const publicUrl = 'https://sublimacion-mary.onrender.com';
+        const newUnbanUrl = `${publicUrl}/api/unban-verify?ip=${ip}&token=${nextRetryToken}`;
+        const banAttackerUrl = `${publicUrl}/api/security/ban-attacker?token=${securityActionToken}`;
+
+        const subject = `🚨 ALERTA CRÍTICA: Intento Fallido de Desbaneo (${ip})`;
+        const bodyContent = `
+            <p>Se ha detectado un intento fallido de usar la <strong>Llave Maestra</strong> para desbanear la IP: <code>${ip}</code>.</p>
+            
+            <div class="info-card" style="border-left-color: #e74c3c; background: #fff5f5;">
+                <p><strong>Detalles del Intento:</strong></p>
+                <p>• IP Origen: <code>${attackerIp}</code></p>
+                <p>• Usuario Ingresado: <code>${user}</code></p>
+            </div>
+
+            <div style="background: #fdfae3; border: 1px solid #f1c40f; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                <p><strong>¿Fuiste tú?</strong> Si eres administrador y cometiste un error al escribir, usa este nuevo enlace:</p>
+                <a href="${newUnbanUrl}" style="color: #8e44ad; font-weight: bold;">[Nuevo Link de Desbaneo]</a>
+            </div>
+
+            <div style="background: #eee; padding: 15px; border-radius: 10px; text-align: center;">
+                <p><strong>¿No fuiste tú?</strong> Por favor contacta al otro administrador de inmediato para verificar si fue él.</p>
+                <p>Si confirmas que es un ataque, banea al atacante (${attackerIp}) ahora mismo:</p>
+                <a href="${banAttackerUrl}" class="btn" style="background: #000; color: #fff;">💀 BANEAR IP ATACANTE</a>
+            </div>
+        `;
+
+        const emailHtml = getEmailTemplate('Seguridad Máxima', bodyContent, null, { type: 'security', level: 3 });
+        
+        // Enviar a ambos
+        const recipients = [process.env.ADMIN_EMAIL_MIGUEL, resolveEnvValue(usersConfig.find(u => u.name === 'Mariajose')?.email)].filter(Boolean);
+        await dispatchEmail(recipients, subject, emailHtml);
+
+        // 6. Enviar respuesta visual de error
+        res.status(401).send(`
+            <body style="background: #000; color: #e74c3c; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+                <div style="text-align: center; border: 2px solid #e74c3c; padding: 40px; border-radius: 20px;">
+                    <h1>⛔ ACCESO DENEGADO</h1>
+                    <p>Las credenciales maestras son incorrectas.</p>
+                    <p>El token ha sido invalidado. Se ha enviado un nuevo link de seguridad a los administradores.</p>
+                </div>
+            </body>
+        `);
+    }
+});
+
+// --- ENDPOINT PARA BANEAR ATACANTE DESDE EL CORREO ---
+app.get('/api/security/ban-attacker', async (req, res) => {
+    const { token } = req.query;
+    const action = pendingSecurityActions.get(token);
+
+    if (!action || Date.now() > action.expires) {
+        return res.status(403).send("<h1>Acción de seguridad expirada o inválida</h1>");
+    }
+
+    const ipToBan = action.targetIp;
+    console.log(`💀 EJECUTANDO BANEO DE EMERGENCIA: IP ${ipToBan} marcada como atacante.`);
+
+    try {
+        await updateBannedIpsInRender(ipToBan);
+        pendingSecurityActions.delete(token);
+        
+        res.send(`
+            <body style="background: #000; color: #2ecc71; font-family: sans-serif; text-align: center; padding-top: 100px;">
+                <h1>💀 IP Fulminada</h1>
+                <p>La IP ${ipToBan} ha sido bloqueada permanentemente de todos los servicios.</p>
+            </body>
+        `);
+    } catch (e) {
+        res.status(500).send("Error al ejecutar baneo: " + e.message);
+    }
+});
         res.status(401).send(`
             <body style="background: #121212; color: #e74c3c; font-family: sans-serif; text-align: center; padding-top: 100px;">
                 <h1>❌ Credenciales Maestras Incorrectas</h1>
                 <p>Esta actividad ha sido reportada. Su acceso ha sido revocado.</p>
             </body>
         `);
-    }
-});
 
 // Cargar baneos permanentes al iniciar el servidor
 loadPermanentBans();
