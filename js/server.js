@@ -263,6 +263,7 @@ async function triggerUnbanAuthorization(ip) {
     const devEmail = process.env.ADMIN_EMAIL_MIGUEL;
     const majoEmail = process.env.ADMIN_EMAIL_MARIAJOSE;
     const publicUrl = 'https://sublimacion-mary.onrender.com';
+    const branch = 'main';
 
     const sendUnbanMail = async (targetEmail, adminName) => {
         const verifyUrl = `${publicUrl}/api/unban-verify?ip=${ip}&token=${token}&admin=${adminName}`;
@@ -272,7 +273,7 @@ async function triggerUnbanAuthorization(ip) {
             <p style="color: black;">Hola <strong>${adminName}</strong>, se requiere una validación de seguridad para la IP: <strong>${ip}</strong>.</p>
 
             <div class="info-card" style="border-left-color: #f1c40f;">
-                <p style="color: black">Se ha detectado un cambio en la configuración de red. Si este cambio fue solicitado, proceda con la validación de identidad.</p>
+                <p style="color: black">Se ha detectado un cambio en la configuración de red que requiere tu atención. <strong>Si fuiste tú o te comunicaron este cambio</strong>, procede con la validación.</p>
             </div>
             <div style="text-align: center; margin-top: 30px;">
                 <a href="${verifyUrl}" class="btn" style="background: #f39c12; color: white;">Verificar Identidad</a>
@@ -283,9 +284,12 @@ async function triggerUnbanAuthorization(ip) {
         const emailHtml = getEmailTemplate('Validación de Seguridad', bodyContent, null, { type: 'security', level: 2 });
         await dispatchEmail([targetEmail], subject, emailHtml);
     };
-    
-    const recipients = [devEmail];
-    if (devEmail) await sendUnbanMail(devEmail, 'Miguel');
+
+    // ENVIAR CORREOS INDIVIDUALES PARA TRAZABILIDAD
+    if (devEmail) {
+        await sendUnbanMail(devEmail, 'Miguel');
+        await delay(1000); // Evitar saturación de la API de Gmail
+    }
     if (majoEmail) await sendUnbanMail(majoEmail, 'Mariajose');
 }
 
@@ -441,6 +445,45 @@ async function updateBannedIpsInRender(newIpToBan) {
     } catch (error) {
         console.error("❌ Error al actualizar las variables de entorno de Render:", error.message);
         fallbackToDeployHook();
+    }
+}
+
+/**
+ * Sincroniza y limpia la lista de IPs baneadas en Render de forma robusta.
+ * @param {string} ipToRemove IP que se desea desbanear.
+ */
+async function cleanBannedIpInRender(ipToRemove) {
+    const apiKey = process.env.RENDER_API_KEY;
+    const serviceId = process.env.RENDER_SERVICE_ID;
+
+    if (!apiKey || !serviceId) return;
+
+    try {
+        // Obtener la lista más fresca directamente de la API de Render (No usar process.env que es estático)
+        const envVars = await new Promise((resolve, reject) => {
+            const req = https.request({
+                hostname: 'api.render.com', path: `/v1/services/${serviceId}/env-vars`, method: 'GET',
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+            }, res => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => res.statusCode >= 200 && res.statusCode < 300 ? resolve(JSON.parse(data)) : reject(new Error(`Status ${res.statusCode}`)));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+
+        const bannedIpsVar = envVars.find(v => v.key === 'PERMANENTLY_BANNED_IPS');
+        if (!bannedIpsVar) return;
+
+        const currentIps = bannedIpsVar.value.split(',').map(s => s.trim()).filter(Boolean);
+        const filteredIps = currentIps.filter(ip => ip !== ipToRemove);
+        
+        // Actualizar con la lista limpia
+        await updateRenderEnvVar('PERMANENTLY_BANNED_IPS', filteredIps.join(','));
+        console.log(`✅ Render: IP ${ipToRemove} removida de la lista maestra.`);
+    } catch (e) {
+        console.error("❌ Error técnico limpiando IP en Render:", e.message);
     }
 }
 
@@ -1088,7 +1131,6 @@ app.use((req, res, next) => {
  */
 function rateLimiter(req, res, next) {
     const ip = getClientIp(req);
-
     // --- GESTIÓN DE AMNISTÍA (Limpieza de cookies) ---
     if (amnestyIPs.has(ip) && amnestyIPs.get(ip) > Date.now()) {
         res.clearCookie('sl'); // Ordenar al navegador borrar el rastro del baneo
@@ -2881,10 +2923,8 @@ app.post('/api/execute-unban', async (req, res) => {
         
         // 3. Ejecutar desbaneo real en Render
         try {
-            const envIps = (process.env.PERMANENTLY_BANNED_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
-            const updatedIps = envIps.filter(existingIp => existingIp !== ip);
-
-            await updateRenderEnvVar('PERMANENTLY_BANNED_IPS', updatedIps.join(','));
+            // FIX: Limpieza real de variables de entorno
+            await cleanBannedIpInRender(ip);
             
             // 4. Limpieza Profunda de Memoria
             permanentBans.delete(ip);
@@ -2899,6 +2939,9 @@ app.post('/api/execute-unban', async (req, res) => {
             const logPayload = { type: 'master_unban_success', username: user, userAgent: req.headers['user-agent'] };
             // Simular el registro de actividad para que quede en el reporte .txt
             // (Esto es opcional pero recomendado para trazabilidad)
+            // 5. Enviar confirmación Doble Check (Missile Launch Protocol)
+            await sendUnbanConfirmation(ip, pending.admin_active);
+
 
             res.send(`
                 <body style="background: #121212; color: #2ecc71; font-family: sans-serif; text-align: center; padding-top: 100px;">
@@ -2979,6 +3022,30 @@ app.get('/api/security/ban-attacker', async (req, res) => {
     const { attackerIp, adminName, unbanIp } = action;
     const unbanStatus = pendingUnbans.get(unbanIp);
 
+    // --- DETECTOR DE COORDINACIÓN (MEJORA SOLICITADA) ---
+    // Si un admin intenta banear, pero el OTRO admin ya activó el link de desbaneo...
+    if (unbanStatus && unbanStatus.activated && unbanStatus.admin_active !== adminName) {
+        const coordinationBody = `
+            <p>Hola <strong>${adminName}</strong>,</p>
+            <p>Se ha detectado un intento de baneo por tu parte mientras <strong>${unbanStatus.admin_active}</strong> tenía la sesión de desbaneo abierta.</p>
+            <div class="info-card" style="border-left-color: #e67e22;">
+                <p>Si fue <strong>${unbanStatus.admin_active}</strong> quien estaba intentando desbanear la IP, por favor comunicate con el otro administrador para mantener una buena coordinación y manejo de la seguridad de la página la próxima vez.</p>
+            </div>
+            <p>El sistema ha bloqueado el baneo automático para evitar un bloqueo accidental de un administrador legítimo.</p>
+        `;
+        const myEmail = adminName === 'Miguel' ? process.env.ADMIN_EMAIL_MIGUEL : process.env.ADMIN_EMAIL_MARIAJOSE;
+        
+        // Enviar llamado de atención al admin que clicó "Ban"
+        await dispatchEmail([myEmail], "⚠️ Coordinación Requerida: Manejo de Seguridad", getEmailTemplate('Llamado de Atención', coordinationBody, null, {type: 'security', level: 1}));
+
+        return res.send(`
+            <body style="background: #000; color: #f1c40f; font-family: sans-serif; text-align: center; padding-top: 100px;">
+                <h1>⚠️ Coordinación Requerida</h1>
+                <p>${unbanStatus.admin_active} ya está procesando esta IP. Revisa tu correo, se te ha enviado una notificación de coordinación.</p>
+            </body>
+        `);
+    }
+
     // 1. DETECTOR DE COORDINACIÓN: ¿El otro admin está activo en el proceso de desbaneo?
     if (unbanStatus && unbanStatus.activated && unbanStatus.admin_active !== adminName) {
         const warningBody = `
@@ -3007,11 +3074,11 @@ app.get('/api/security/ban-attacker', async (req, res) => {
     voteState.votes.add(adminName);
 
     // 3. ¿BANEAMOS YA? (Si ambos votaron o si pasó el tiempo de gracia de 30 min)
-    const otherAdminName = adminName === 'Miguel' ? 'Mariajose' : 'Miguel';
+    // Si el otro admin no activó el link en 30 min, asumimos que no está pendiente y ejecutamos baneo.
     const isGracedTimePassed = (Date.now() - voteState.timestamp) > (30 * 60 * 1000);
 
     if (voteState.votes.size >= 2 || isGracedTimePassed) {
-        console.log(`💀 EJECUTANDO BANEO: Consenso alcanzado para IP ${attackerIp}.`);
+        console.log(`💀 EJECUTANDO BANEO: Consenso alcanzado o tiempo expirado para IP ${attackerIp}.`);
         try {
             await updateBannedIpsInRender(attackerIp);
             pendingSecurityActions.delete(token);
