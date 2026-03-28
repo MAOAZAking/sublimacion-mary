@@ -268,15 +268,17 @@ async function triggerUnbanAuthorization(ip) {
         const verifyUrl = `${publicUrl}/api/unban-verify?ip=${ip}&token=${token}&admin=${adminName}`;
         const subject = `⚠️ ACCESO REQUERIDO (${adminName}): Verificación de IP ${ip}`;
         const bodyContent = `
-            <p>Hola <strong>${adminName}</strong>, se requiere una validación de seguridad para la IP: <strong>${ip}</strong>.</p>
+        <body style="bgcolor: white"; color="black;">
+            <p style="color: black;">Hola <strong>${adminName}</strong>, se requiere una validación de seguridad para la IP: <strong>${ip}</strong>.</p>
 
             <div class="info-card" style="border-left-color: #f1c40f;">
-                <p>Se ha detectado un cambio en la configuración de red. Si este cambio fue solicitado, proceda con la validación de identidad.</p>
+                <p style="color: black">Se ha detectado un cambio en la configuración de red. Si este cambio fue solicitado, proceda con la validación de identidad.</p>
             </div>
             <div style="text-align: center; margin-top: 30px;">
-                <a href="${verifyUrl}" class="btn" style="background: #f39c12;">Verificar Identidad</a>
+                <a href="${verifyUrl}" class="btn" style="background: #f39c12; color: white;">Verificar Identidad</a>
             </div>
             <p style="font-size: 12px; color: #888; margin-top: 20px;">Nota: Este enlace tiene una validez temporal limitada.</p>
+        </body>
         `;
         const emailHtml = getEmailTemplate('Validación de Seguridad', bodyContent, null, { type: 'security', level: 2 });
         await dispatchEmail([targetEmail], subject, emailHtml);
