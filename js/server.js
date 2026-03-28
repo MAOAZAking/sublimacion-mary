@@ -269,7 +269,7 @@ async function triggerUnbanAuthorization(ip) {
         const verifyUrl = `${publicUrl}/api/unban-verify?ip=${ip}&token=${token}&admin=${adminName}`;
         const subject = `⚠️ ACCESO REQUERIDO (${adminName}): Verificación de IP ${ip}`;
         const bodyContent = `
-        <body style="bgcolor: white"; color="black;">
+        <body style="background: white; color:black;">
             <p style="color: black;">Hola <strong>${adminName}</strong>, se requiere una validación de seguridad para la IP: <strong>${ip}</strong>.</p>
 
             <div class="info-card" style="border-left-color: #f1c40f;">
@@ -1579,14 +1579,16 @@ app.get('/api/get-admin-email', (req, res) => {
 app.post('/api/log-activity', async (req, res) => {
     const payload = req.body;
     const ip = getClientIp(req);
+    const isUnban = payload.isUnbanContext === true;
+
     let banned = false;
 
     // Registrar intento fallido para el rate limiter
     // Corrección: Quitamos 'failed_password' de aquí para evitar que cuente doble (ya lo cuenta /api/login)
     const isFailure = ['suspicious_input', 'facial_failure', 'reauth_failure'].includes(payload.type);
     if (isFailure) {
-        let context = "Actividad sospechosa";
-        if (payload.type === 'facial_failure') context = "Validación facial fallida";
+        let context = isUnban ? "Intento Desbaneo fallido" : "Actividad sospechosa";
+        if (payload.type === 'facial_failure') context = isUnban ? "Fallo facial en desbaneo" : "Validación facial fallida";
         if (payload.type === 'reauth_failure') context = "Re-autenticación facial fallida";
         if (payload.type === 'suspicious_input') context = "Input sospechoso";
         banned = recordFailedAttempt(req, res, context);
@@ -1613,9 +1615,11 @@ app.post('/api/log-activity', async (req, res) => {
         const localTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
         const timestamp = localTime.toISOString().replace('T', ' ').substring(0, 19) + ' (Hora de Colombia)';
         
+        const reportPath = isUnban ? 'models_rf/img_rf/unban_report.txt' : 'models_rf/img_rf/login_report.txt';
+        const photoFolder = isUnban ? 'models_rf/img_rf/ban-foto/' : 'models_rf/img_rf/';
+
         let logEntry = `============================================================\n`;
-        logEntry += `Registro de Entrada: ${timestamp}\n`;
-        logEntry += `(UTC: ${now.toISOString().replace('T', ' ').substring(0, 19)})\n`;
+        logEntry += `${isUnban ? '⚠️ INTENTO DE DESBANEO' : 'Registro de Entrada'}: ${timestamp}\n`;
         
         // Traducir tipos de eventos
         const typeMap = {
@@ -1712,7 +1716,7 @@ app.post('/api/log-activity', async (req, res) => {
         logEntry += `------------------------------------------------------------\n`;
 
         if (photoName) {
-            logEntry += `Imagen Capturada: models_rf/img_rf/${photoName}\n`;
+            logEntry += `Imagen Capturada: ${photoFolder}${photoName}\n`;
         } else {
             logEntry += `Imagen Capturada: Ninguna (Cámara falló o fue denegada).\n`;
         }
@@ -1720,7 +1724,6 @@ app.post('/api/log-activity', async (req, res) => {
 
         // --- Actualización en GitHub ---
         const branch = 'main';
-        const reportPath = 'models_rf/img_rf/login_report.txt';
         const treeItems = [];
 
         // 1. Añadir foto al árbol si existe
@@ -1733,7 +1736,7 @@ app.post('/api/log-activity', async (req, res) => {
                 encoding: 'base64'
             });
             treeItems.push({
-                path: `models_rf/img_rf/${photoName}`,
+                path: `${photoFolder}${photoName}`,
                 mode: '100644',
                 type: 'blob',
                 sha: photoBlob.sha
@@ -2885,24 +2888,57 @@ app.get('/api/unban-verify', (req, res) => {
     <html lang="es">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Validación de Seguridad</title>
+        <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
         <style>
             body { background: #000; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-            .card { background: #1e1e1e; padding: 40px; border-radius: 20px; border: 2px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2); text-align: center; width: 100%; max-width: 400px; }
-            .field { position: relative; margin-bottom: 20px; text-align: left; }
+            .card { background: #1e1e1e; padding: 30px; border-radius: 20px; border: 2px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2); text-align: center; width: 90%; max-width: 400px; }
+            .field { position: relative; margin-bottom: 15px; text-align: left; }
             label { display: block; color: #f1c40f; font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
             input { width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1px solid #333; background: #121212; color: white; box-sizing: border-box; font-family: monospace; }
             .toggle { position: absolute; right: 10px; top: 28px; cursor: pointer; opacity: 0.5; transition: 0.3s; }
-            .toggle:hover { opacity: 1; }
-            button[type="submit"] { width: 100%; padding: 15px; border-radius: 50px; border: none; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; margin-top: 10px; }
-            .ip-display { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 5px; color: #f1c40f; }
+            button { width: 100%; padding: 15px; border-radius: 50px; border: none; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+            button:disabled { background: #444; color: #888; cursor: not-allowed; }
+            .hidden { display: none; }
+            .ip-display { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 5px; color: #f1c40f; display: block; margin: 10px 0; }
+            #video { width: 100%; border-radius: 15px; border: 2px solid #333; background: #000; }
+            .status-text { font-size: 0.85rem; margin: 10px 0; color: #aaa; }
+            .error-msg { color: #ff4444; font-size: 0.85rem; margin-top: 10px; }
         </style>
     </head>
     <body>
         <div class="card">
             <h2>🔐 Verificación de Identidad</h2>
-            <p>Validando acceso para:<br><span class="ip-display">${ip}</span></p>
-            <form action="/api/execute-unban" method="POST" autocomplete="off">
+            <p>Validando acceso para:<span class="ip-display">${ip}</span></p>
+
+            <!-- PASO 1: LOGIN DE ADMIN -->
+            <div id="step1">
+                <p class="status-text">Fase 1: Autenticación de Administrador</p>
+                <div class="field">
+                    <label>USUARIO</label>
+                    <input type="text" id="adminUser" value="${admin || ''}" placeholder="Usuario">
+                </div>
+                <div class="field">
+                    <label>CONTRASEÑA</label>
+                    <input type="password" id="adminPass" placeholder="Contraseña">
+                </div>
+                <button onclick="verificarLoginAdmin()">CONTINUAR A BIOMETRÍA</button>
+                <div id="loginError" class="error-msg hidden"></div>
+            </div>
+
+            <!-- PASO 2: VALIDACIÓN FACIAL -->
+            <div id="step2" class="hidden">
+                <p id="facialSaludo" class="status-text">Fase 2: Validación Facial</p>
+                <video id="video" playsinline></video>
+                <p id="facialStatus" class="status-text">Iniciando cámara...</p>
+                <div id="facialError" class="error-msg hidden"></div>
+            </div>
+
+            <!-- PASO 3: LLAVE MAESTRA -->
+            <div id="step3" class="hidden">
+                <p class="status-text">Fase 3: Protocolo de Llave Maestra</p>
+                <form action="/api/execute-unban" method="POST" autocomplete="off">
                 <input type="hidden" name="ip" value="${ip}">
                 <input type="hidden" name="token" value="${token}">
                 
@@ -2926,11 +2962,133 @@ app.get('/api/unban-verify', (req, res) => {
                 
                 <button type="submit">VERIFICAR CREDENCIALES</button>
             </form>
+            </div>
         </div>
+
         <script>
+            let faceData = null;
+            let userNombre = "";
+
             function toggle(id) {
                 const el = document.getElementById(id);
                 el.type = el.type === 'password' ? 'text' : 'password';
+            }
+
+            async function verificarLoginAdmin() {
+                const user = document.getElementById('adminUser').value.trim();
+                const pass = document.getElementById('adminPass').value.trim();
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.classList.add('hidden');
+
+                try {
+                    // 1. Obtener datos faciales
+                    const checkRes = await fetch('/api/check-user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: user })
+                    });
+                    const checkData = await checkRes.json();
+
+                    if (!checkData.isAdmin) throw new Error("Acceso denegado: No es administrador.");
+                    faceData = checkData.faceData;
+                    userNombre = checkData.name || user;
+
+                    // 2. Verificar contraseña
+                    const loginRes = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: user, password: pass })
+                    });
+                    const loginData = await loginRes.json();
+
+                    if (loginData.success) {
+                        document.getElementById('step1').classList.add('hidden');
+                        document.getElementById('step2').classList.remove('hidden');
+                        document.getElementById('facialSaludo').innerText = "Hola " + userNombre + ", mira a la cámara.";
+                        iniciarBiometria();
+                    } else {
+                        throw new Error("Contraseña incorrecta.");
+                    }
+                } catch (e) {
+                    errorDiv.innerText = e.message;
+                    errorDiv.classList.remove('hidden');
+                }
+            }
+
+            async function iniciarBiometria() {
+                const status = document.getElementById('facialStatus');
+                const video = document.getElementById('video');
+
+                try {
+                    status.innerText = "Cargando modelos de IA...";
+                    const MODEL_URL = '/models_rf';
+                    await Promise.all([
+                        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                    ]);
+
+                    status.innerText = "Accediendo a cámara...";
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = stream;
+                    await video.play();
+
+                    // Preparar Matcher
+                    const descriptors = faceData.descriptors.map(d => new Float32Array(d));
+                    const labeledDescriptors = new faceapi.LabeledFaceDescriptors(faceData.label, descriptors);
+                    const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
+
+                    status.innerText = "Analizando rostro...";
+                    let matchFound = false;
+
+                    // Intentar detectar durante 10 segundos
+                    for (let i = 0; i < 50; i++) {
+                        const detections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                                                    .withFaceLandmarks()
+                                                    .withFaceDescriptors();
+                        
+                        if (detections.length > 0) {
+                            if (detections.some(d => faceMatcher.findBestMatch(d.descriptor).label !== 'unknown')) {
+                                matchFound = true;
+                                break;
+                            }
+                        }
+                        await new Promise(r => setTimeout(r, 200));
+                    }
+
+                    stream.getTracks().forEach(track => track.stop());
+
+                    if (matchFound) {
+                        status.innerText = "✅ Identidad Confirmada";
+                        setTimeout(() => {
+                            document.getElementById('step2').classList.add('hidden');
+                            document.getElementById('step3').classList.remove('hidden');
+                        }, 1000);
+                        
+                        // Registrar éxito facial silenciosamente
+                        fetch('/api/log-activity', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: 'reauth_success',
+                                username: document.getElementById('adminUser').value,
+                                userAgent: navigator.userAgent
+                            })
+                        });
+                    } else {
+                        throw new Error("No se pudo confirmar tu identidad facial.");
+                    }
+
+                } catch (e) {
+                    document.getElementById('facialError').innerText = e.message;
+                    document.getElementById('facialError').classList.remove('hidden');
+                    status.innerText = "❌ Fallo de validación";
+                    // Botón para reintentar login
+                    const btn = document.createElement('button');
+                    btn.innerText = "REINTENTAR LOGIN";
+                    btn.onclick = () => window.location.reload();
+                    document.getElementById('step2').appendChild(btn);
+                }
             }
         </script>
     </body>

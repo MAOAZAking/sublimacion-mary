@@ -69,7 +69,7 @@ git reset --hard origin/main
 Sistema integral para la gestión de pedidos de sublimación, diseñado para optimizar el flujo de trabajo desde la toma del pedido hasta la producción y entrega.
 
 # Correccion N° del parche de seguridad N°
-Security Patch #10 Fix #6:
+Security Patch #11 Fix #0:
 # Mejora N° del parche de seguridad N°
 Security Patch #10 Enhancement #0:
 # Parche de automatización N°
