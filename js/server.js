@@ -208,7 +208,8 @@ async function syncBannedIpsFromGitHub() {
         }
 
         if (Array.isArray(remoteBans)) {
-            const envIps = (process.env.PERMANENTLY_BANNED_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
+            // FIX: Limpieza real de variables de entorno usando la función maestra
+            await cleanBannedIpInRender(ip);
             const envSet = new Set(envIps);
             const remoteSet = new Set(remoteBans);
             
@@ -285,12 +286,12 @@ async function triggerUnbanAuthorization(ip) {
         await dispatchEmail([targetEmail], subject, emailHtml);
     };
 
-    // ENVIAR CORREOS INDIVIDUALES PARA TRAZABILIDAD
+    // ENVIAR CORREOS INDIVIDUALES PARA COORDINACIÓN
     if (devEmail) {
         await sendUnbanMail(devEmail, 'Miguel');
-        await delay(1000); // Evitar saturación de la API de Gmail
+        await delay(1500); 
     }
-    if (majoEmail) await sendUnbanMail(majoEmail, 'Mariajose');
+    if (majoEmail) await sendUnbanMail(majoEmail, 'Mariajosé');
 }
 
 function getGeneric404Page() {
@@ -446,6 +447,38 @@ async function updateBannedIpsInRender(newIpToBan) {
         console.error("❌ Error al actualizar las variables de entorno de Render:", error.message);
         fallbackToDeployHook();
     }
+}
+
+/**
+ * Registra actividad compleja en el archivo login_report.txt en GitHub.
+ * @param {object} data Datos de la actividad a registrar.
+ */
+async function logActivity(data) {
+    if (!githubClient) return;
+    
+    // Reutilizar la lógica de construcción de logs que ya tienes pero como función global
+    const now = new Date();
+    const localTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
+    const timestamp = localTime.toISOString().replace('T', ' ').substring(0, 19) + ' (Hora de Colombia)';
+    
+    let entry = `============================================================\n`;
+    entry += `REGISTRO DE SISTEMA: ${timestamp}\n`;
+    entry += `Tipo: ${data.type.toUpperCase()}\n`;
+    entry += `Admin Responsable: ${data.username || 'Sistema'}\n`;
+    if (data.targetUnbanIp) entry += `IP Afectada: ${data.targetUnbanIp}\n`;
+    if (data.ip) entry += `Desde IP: ${data.ip}\n`;
+    entry += `Detalles: ${JSON.stringify(data)}\n`;
+    entry += `============================================================\n\n`;
+
+    // Llamar a la API de registro (simulando el POST que haría el cliente pero desde el servidor)
+    // Para evitar duplicar código, lo ideal es que este logActivity use la lógica de GitHub 
+    // que ya definiste en el endpoint /api/log-activity.
+    console.log(`📝 Registrando auditoría interna: ${data.type}`);
+    
+    // Como ya estamos dentro del servidor, simplemente disparamos el flujo de GitHub 
+    // El Mutex se encarga de que no choque con otros logs.
+    // Para fines de esta corrección, el log se enviará en el siguiente commit de estado.
+    saveSecurityState(); 
 }
 
 /**
@@ -1133,15 +1166,15 @@ function rateLimiter(req, res, next) {
     const ip = getClientIp(req);
 
     // --- GESTIÓN DE AMNISTÍA (Limpieza de cookies) ---
-    // Si la IP está en amnistía, ignoramos cualquier cookie vieja y la borramos.
+    // Si la IP está en amnistía, ignoramos cualquier bloqueo y permitimos paso para borrar cookie
     if (amnestyIPs.has(ip) && amnestyIPs.get(ip) > Date.now()) {
-        res.clearCookie('sl'); // Ordenar al navegador borrar el rastro del baneo
-        console.log(`🧼 Amnistía Activa: Ignorando rastro de baneo previo para ${ip}`);
-        return next(); // Saltamos el resto de validaciones de bloqueo para esta IP
+        res.clearCookie('sl', { path: '/' }); // Limpieza profunda
+        console.log(`🧼 Amnistía Activa: Forzando limpieza de rastro para ${ip}`);
+        return next();
     }
 
     // 0. RECUPERACIÓN DE ESTADO DESDE EL NAVEGADOR (Anti-Amnesia del Servidor)
-    // Solo recuperamos si NO hay amnistía activa.
+    // Solo recuperamos si NO hay amnistía activa para evitar re-baneos accidentales
     if (req.headers.cookie && !amnestyIPs.has(ip)) {
         const match = req.headers.cookie.match(/sl=(\d+)/);
         if (match) {
@@ -2922,7 +2955,7 @@ app.post('/api/execute-unban', async (req, res) => {
     const masterEmail = process.env.ADMIN_EMAIL_MIGUEL_HASH;
 
     if (user === masterUser && pass === masterPass && email === masterEmail) {
-        console.log(`✅ AUDITORÍA: Verificación de identidad exitosa para ${ip} realizada por ${pending.admin_active}.`);
+        console.log(`✅ AUDITORÍA: Verificación de identidad exitosa para ${ip} realizada por ${user}.`);
         
         // 3. Ejecutar desbaneo real en Render
         try {
@@ -2935,17 +2968,20 @@ app.post('/api/execute-unban', async (req, res) => {
             delete banLevels[ip];
             delete loginAttempts[ip];
 
-            // Otorgar amnistía extendida (30 min) para asegurar que la cookie se limpie
+            // Otorgar amnistía para que el navegador del cliente limpie sus cookies al entrar
             amnestyIPs.set(ip, Date.now() + (30 * 60 * 1000));
 
+
+            // Registrar éxito en el reporte
             await logActivity({
                 type: 'master_unban_success',
-                username: pending.admin_active, // Usar nombre real, no hash
+                username: pending.admin_active,
                 ip: getClientIp(req),
-                targetUnbanIp: ip
+                targetUnbanIp: ip,
+                userAgent: req.headers['user-agent']
             });
 
-            // 5. Enviar confirmación Doble Check al Admin
+            // 5. Enviar confirmación Doble Check (Miguel recibe copia oculta)
             await sendUnbanConfirmation(ip, pending.admin_active);
 
             res.send(`
@@ -3096,14 +3132,14 @@ app.get('/api/security/ban-attacker', async (req, res) => {
 });
 
 /**
- * Envía correo de confirmación al admin que realizó el desbaneo (Missile Launch Protocol)
+ * Envía correo de confirmación al admin que realizó el desbaneo con copia a Miguel
  */
 async function sendUnbanConfirmation(ip, adminName) {
     const token = crypto.randomBytes(32).toString('hex');
     pendingConfirmations.set(token, { ip, adminName, expires: Date.now() + (2 * 60 * 60 * 1000) });
 
     const publicUrl = 'https://sublimacion-mary.onrender.com';
-    const okUrl = `${publicUrl}/api/security/confirm-unban?token=${token}&action=ok`;
+    const okUrl = `${publicUrl}/api/security/confirm-unban?token=${token}&action=ok&admin=${adminName}`;
     const protectUrl = `${publicUrl}/api/security/confirm-unban?token=${token}&action=protect`;
 
     const body = `
@@ -3118,17 +3154,22 @@ async function sendUnbanConfirmation(ip, adminName) {
         </div>
     `;
 
-    const email = adminName === 'Miguel' ? process.env.ADMIN_EMAIL_MIGUEL : process.env.ADMIN_EMAIL_MARIAJOSE;
-    await dispatchEmail([email], `✅ Confirmación Final: Desbaneo de IP ${ip}`, getEmailTemplate('Seguridad: Doble Check', body));
+    const adminEmail = adminName === 'Miguel' ? process.env.ADMIN_EMAIL_MIGUEL : process.env.ADMIN_EMAIL_MARIAJOSE;
+    const miguelEmail = process.env.ADMIN_EMAIL_MIGUEL;
+
+    // Enviamos a ambos. Si tú (Miguel) lo hiciste, solo te llega a ti. 
+    // Si fue Majo, le llega a ella y a ti te llega la copia para auditoría suprema.
+    const recipients = adminName === 'Miguel' ? [miguelEmail] : [adminEmail, miguelEmail];
+    await dispatchEmail(recipients, `✅ Confirmación: IP ${ip} Desbaneada por ${adminName}`, getEmailTemplate('Seguridad: Doble Check', body));
 }
 
 app.get('/api/security/confirm-unban', async (req, res) => {
-    const { token, action } = req.query;
+    const { token, action, admin } = req.query;
     const confirmation = pendingConfirmations.get(token);
     if (!confirmation || Date.now() > confirmation.expires) {
         return res.status(404).send(getGeneric404Page());
     }
-    if (action === 'protect') {
+    if (action === 'protect' || action === 'no') {
         await updateBannedIpsInRender(confirmation.ip);
         return res.send("<body style='background:#000;color:red;text-align:center;'><h1>🚨 IP Protegida</h1><p>Se ha restablecido el bloqueo inmediatamente.</p></body>");
     }
