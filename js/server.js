@@ -208,8 +208,7 @@ async function syncBannedIpsFromGitHub() {
         }
 
         if (Array.isArray(remoteBans)) {
-            // FIX: Limpieza real de variables de entorno usando la función maestra
-            await cleanBannedIpInRender(ip);
+            const envIps = (process.env.PERMANENTLY_BANNED_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
             const envSet = new Set(envIps);
             const remoteSet = new Set(remoteBans);
             
@@ -2955,7 +2954,7 @@ app.post('/api/execute-unban', async (req, res) => {
     const masterEmail = process.env.ADMIN_EMAIL_MIGUEL_HASH;
 
     if (user === masterUser && pass === masterPass && email === masterEmail) {
-        console.log(`✅ AUDITORÍA: Verificación de identidad exitosa para ${ip} realizada por ${user}.`);
+        console.log(`✅ AUDITORÍA: Verificación de identidad exitosa para ${ip} realizada por ${pending.admin_active}.`);
         
         // 3. Ejecutar desbaneo real en Render
         try {
@@ -2965,7 +2964,7 @@ app.post('/api/execute-unban', async (req, res) => {
             // 4. Limpieza Profunda de Memoria
             permanentBans.delete(ip);
             pendingUnbans.delete(ip);
-            delete banLevels[ip];
+            banLevels[ip] = { level: 0, lastOffense: 0 }; // Resetear nivel en lugar de borrar para trazabilidad
             delete loginAttempts[ip];
 
             // Otorgar amnistía para que el navegador del cliente limpie sus cookies al entrar
@@ -3063,7 +3062,7 @@ app.get('/api/security/ban-attacker', async (req, res) => {
     const { attackerIp, adminName, unbanIp } = action;
     const unbanStatus = pendingUnbans.get(unbanIp);
 
-    // --- DETECTOR DE COORDINACIÓN (MEJORA SOLICITADA) ---
+    // --- DETECTOR DE COORDINACIÓN (BLOQUEO DE BANEO CRUZADO) ---
     // Si un admin intenta banear, pero el OTRO admin ya activó el link de desbaneo...
     if (unbanStatus && unbanStatus.activated && unbanStatus.admin_active !== adminName) {
         const coordinationBody = `
