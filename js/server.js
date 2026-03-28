@@ -1131,15 +1131,18 @@ app.use((req, res, next) => {
  */
 function rateLimiter(req, res, next) {
     const ip = getClientIp(req);
+
     // --- GESTIÓN DE AMNISTÍA (Limpieza de cookies) ---
+    // Si la IP está en amnistía, ignoramos cualquier cookie vieja y la borramos.
     if (amnestyIPs.has(ip) && amnestyIPs.get(ip) > Date.now()) {
         res.clearCookie('sl'); // Ordenar al navegador borrar el rastro del baneo
-        console.log(`🧼 Amnistía aplicada: Limpiando rastro de baneo para ${ip}`);
+        console.log(`🧼 Amnistía Activa: Ignorando rastro de baneo previo para ${ip}`);
+        return next(); // Saltamos el resto de validaciones de bloqueo para esta IP
     }
 
     // 0. RECUPERACIÓN DE ESTADO DESDE EL NAVEGADOR (Anti-Amnesia del Servidor)
-    // Si el servidor se reinició y olvidó el nivel, la cookie 'sl' (Security Level) se lo recordará.
-    if (req.headers.cookie) {
+    // Solo recuperamos si NO hay amnistía activa.
+    if (req.headers.cookie && !amnestyIPs.has(ip)) {
         const match = req.headers.cookie.match(/sl=(\d+)/);
         if (match) {
             const clientLevel = parseInt(match[1]);
@@ -2919,7 +2922,7 @@ app.post('/api/execute-unban', async (req, res) => {
     const masterEmail = process.env.ADMIN_EMAIL_MIGUEL_HASH;
 
     if (user === masterUser && pass === masterPass && email === masterEmail) {
-        console.log(`✅ AUDITORÍA: Verificación de identidad exitosa para ${ip} realizada por ${user}.`);
+        console.log(`✅ AUDITORÍA: Verificación de identidad exitosa para ${ip} realizada por ${pending.admin_active}.`);
         
         // 3. Ejecutar desbaneo real en Render
         try {
@@ -2932,16 +2935,18 @@ app.post('/api/execute-unban', async (req, res) => {
             delete banLevels[ip];
             delete loginAttempts[ip];
 
-            // Otorgar amnistía para que el navegador del cliente limpie sus cookies al entrar
-            amnestyIPs.set(ip, Date.now() + (10 * 60 * 1000));
+            // Otorgar amnistía extendida (30 min) para asegurar que la cookie se limpie
+            amnestyIPs.set(ip, Date.now() + (30 * 60 * 1000));
 
-            // Registrar éxito en el reporte
-            const logPayload = { type: 'master_unban_success', username: user, userAgent: req.headers['user-agent'] };
-            // Simular el registro de actividad para que quede en el reporte .txt
-            // (Esto es opcional pero recomendado para trazabilidad)
-            // 5. Enviar confirmación Doble Check (Missile Launch Protocol)
+            await logActivity({
+                type: 'master_unban_success',
+                username: pending.admin_active, // Usar nombre real, no hash
+                ip: getClientIp(req),
+                targetUnbanIp: ip
+            });
+
+            // 5. Enviar confirmación Doble Check al Admin
             await sendUnbanConfirmation(ip, pending.admin_active);
-
 
             res.send(`
                 <body style="background: #121212; color: #2ecc71; font-family: sans-serif; text-align: center; padding-top: 100px;">
