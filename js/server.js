@@ -266,29 +266,34 @@ async function triggerUnbanAuthorization(ip) {
 
     const sendUnbanMail = async (targetEmail, adminName) => {
         const verifyUrl = `${publicUrl}/api/unban-verify?ip=${ip}&token=${token}&admin=${adminName}`;
-        const subject = `⚠️ AUTORIZACIÓN REQUERIDA (${adminName}): Desbaneo de IP ${ip}`;
+        const subject = `⚠️ ACCESO REQUERIDO (${adminName}): Verificación de IP ${ip}`;
         const bodyContent = `
-            <p>Hola <strong>${adminName}</strong>, se requiere tu autorización para liberar la IP: <strong>${ip}</strong>.</p>
+            <p>Hola <strong>${adminName}</strong>, se requiere una validación de seguridad para la IP: <strong>${ip}</strong>.</p>
+
             <div class="info-card" style="border-left-color: #f1c40f;">
-                <p>Este proceso es el <strong>Protocolo de Doble Llave</strong>. Si tú o el otro administrador realizaron el cambio en GitHub, procede con la validación.</p>
+                <p>Se ha detectado un cambio en la configuración de red. Si este cambio fue solicitado, proceda con la validación de identidad.</p>
             </div>
             <div style="text-align: center; margin-top: 30px;">
-                <a href="${verifyUrl}" class="btn" style="background: #f39c12;">Validar Acceso Maestro</a>
+                <a href="${verifyUrl}" class="btn" style="background: #f39c12;">Verificar Identidad</a>
             </div>
-            <p style="font-size: 12px; color: #888; margin-top: 20px;">Nota: Al abrir el enlace, tendrás 30 minutos para completar el proceso.</p>
+            <p style="font-size: 12px; color: #888; margin-top: 20px;">Nota: Este enlace tiene una validez temporal limitada.</p>
         `;
-        const emailHtml = getEmailTemplate('Seguridad: Validación de Desbaneo', bodyContent, null, { type: 'security', level: 2 });
+        const emailHtml = getEmailTemplate('Validación de Seguridad', bodyContent, null, { type: 'security', level: 2 });
         await dispatchEmail([targetEmail], subject, emailHtml);
     };
     
     const recipients = [devEmail];
-    // Enviar correos por separado para trazabilidad
     if (devEmail) await sendUnbanMail(devEmail, 'Miguel');
+    if (majoEmail) await sendUnbanMail(majoEmail, 'Mariajose');
+}
 
-    if (majoEmail && majoEmail.includes('@')) {
-        const resolvedMajo = majoEmail.startsWith('ENV:') ? process.env[majoEmail.split(':')[1]] : majoEmail;
-        if (resolvedMajo) await sendUnbanMail(resolvedMajo, 'Mariajose');
-    }
+function getGeneric404Page() {
+    return `
+    <!DOCTYPE html>
+    <html lang="es"><head><meta charset="UTF-8"><title>404 Not Found</title>
+    <style>body { background: #000; color: #444; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .container { text-align: center; } h1 { font-size: 6rem; margin: 0; } p { font-size: 1.2rem; }</style></head>
+    <body><div class="container"><h1>404</h1><p>La página solicitada no está disponible o el enlace ha caducado.</p></div></body></html>`;
 }
 
 async function syncBannedIpsToGitHub() {
@@ -1484,14 +1489,10 @@ app.post('/api/complete-setup', async (req, res) => {
 
 // Endpoint para obtener el correo del administrador (para notificaciones)
 app.get('/api/get-admin-email', (req, res) => {
-    // Busca a los administradores por su nombre, que es un dato más estable y público.
-    const majo = usersConfig.find(u => u.name === 'Mariajose' && u.email);
-    const dev = usersConfig.find(u => u.name === 'Miguel' && u.email);
-    
-    // Prioriza el correo de Mariajose, luego el de Miguel, y finalmente un correo de respaldo.
-    let email = (majo && majo.email) ? resolveEnvValue(majo.email) : 
-                (dev && dev.email) ? resolveEnvValue(dev.email) : 
-                (process.env.DEFAULT_ADMIN_EMAIL || 'maoaza13579@gmail.com');
+    // SEGURIDAD: Ya no buscamos en el JSON ni usamos respaldos hardcoded.
+    // Devolvemos el email de Mariajose como principal para el negocio, 
+    // o el de Miguel como respaldo, tomados directamente de variables de entorno seguras.
+    let email = process.env.ADMIN_EMAIL_MARIAJOSE || process.env.ADMIN_EMAIL_MIGUEL;
     res.json({ email });
 });
 
@@ -2790,7 +2791,7 @@ app.get('/api/unban-verify', (req, res) => {
     const pending = pendingUnbans.get(ip);
 
     if (!ip || !token || !pending || pending.token !== token || (pending.activated && Date.now() > pending.expires)) {
-        return res.status(403).send("<h1>Token inválido o expirado</h1>");
+        return res.status(404).send(getGeneric404Page());
     }
 
     // --- ACTIVACIÓN LAZY DEL TOKEN ---
@@ -2805,28 +2806,54 @@ app.get('/api/unban-verify', (req, res) => {
     <html lang="es">
     <head>
         <meta charset="UTF-8">
-        <title>Autorizar Desbaneo - Seguridad Mary</title>
+        <title>Validación de Seguridad</title>
         <style>
-            body { background: #121212; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            body { background: #000; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
             .card { background: #1e1e1e; padding: 40px; border-radius: 20px; border: 2px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2); text-align: center; width: 100%; max-width: 400px; }
-            input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #333; background: #2d2d2d; color: white; box-sizing: border-box; }
-            button { width: 100%; padding: 15px; border-radius: 50px; border: none; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; margin-top: 20px; }
+            .field { position: relative; margin-bottom: 20px; text-align: left; }
+            label { display: block; color: #f1c40f; font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
+            input { width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1px solid #333; background: #121212; color: white; box-sizing: border-box; font-family: monospace; }
+            .toggle { position: absolute; right: 10px; top: 28px; cursor: pointer; opacity: 0.5; transition: 0.3s; }
+            .toggle:hover { opacity: 1; }
+            button[type="submit"] { width: 100%; padding: 15px; border-radius: 50px; border: none; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; margin-top: 10px; }
             .ip-display { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 5px; color: #f1c40f; }
         </style>
     </head>
     <body>
         <div class="card">
-            <h2>🔐 Autorización de Administrador</h2>
-            <p>Confirmando desbaneo para:<br><span class="ip-display">${ip}</span></p>
-            <form action="/api/execute-unban" method="POST">
+            <h2>🔐 Verificación de Identidad</h2>
+            <p>Validando acceso para:<br><span class="ip-display">${ip}</span></p>
+            <form action="/api/execute-unban" method="POST" autocomplete="off">
                 <input type="hidden" name="ip" value="${ip}">
                 <input type="hidden" name="token" value="${token}">
-                <input type="text" name="user" placeholder="Usuario Desarrollador" required>
-                <input type="password" name="pass" placeholder="Contraseña Maestra" required>
-                <input type="email" name="email" placeholder="Correo de Respaldo" required>
-                <button type="submit">VALIDAR Y DESBANEAR</button>
+                
+                <div class="field">
+                    <label>IDENTIFICADOR ALTA</label>
+                    <input type="password" name="user" id="user" required>
+                    <span class="toggle" onclick="toggle('user')">👁️</span>
+                </div>
+                
+                <div class="field">
+                    <label>LLAVE MAESTRA</label>
+                    <input type="password" name="pass" id="pass" required>
+                    <span class="toggle" onclick="toggle('pass')">👁️</span>
+                </div>
+                
+                <div class="field">
+                    <label>CÓDIGO DE RESPALDO</label>
+                    <input type="password" name="email" id="email" required>
+                    <span class="toggle" onclick="toggle('email')">👁️</span>
+                </div>
+                
+                <button type="submit">VERIFICAR CREDENCIALES</button>
             </form>
         </div>
+        <script>
+            function toggle(id) {
+                const el = document.getElementById(id);
+                el.type = el.type === 'password' ? 'text' : 'password';
+            }
+        </script>
     </body>
     </html>`;
     res.send(html);
@@ -2839,7 +2866,7 @@ app.post('/api/execute-unban', async (req, res) => {
     // 1. Validar token
     const pending = pendingUnbans.get(ip);
     if (!pending || pending.token !== token || !pending.activated || Date.now() > pending.expires) {
-        return res.status(403).send("Sesión de autorización expirada.");
+        return res.status(404).send(getGeneric404Page());
     }
 
     // 2. Validar credenciales de MIGUEL (Llave Maestra)
@@ -2848,7 +2875,7 @@ app.post('/api/execute-unban', async (req, res) => {
     const masterEmail = process.env.ADMIN_EMAIL_MIGUEL_HASH;
 
     if (user === masterUser && pass === masterPass && email === masterEmail) {
-        console.log(`✅ AUDITORÍA: La IP ${ip} ha sido desbaneada usando la Llave Maestra por ${user}.`);
+        console.log(`✅ AUDITORÍA: Verificación de identidad exitosa para ${ip} realizada por ${user}.`);
         
         // 3. Ejecutar desbaneo real en Render
         try {
@@ -2866,11 +2893,6 @@ app.post('/api/execute-unban', async (req, res) => {
             // Otorgar amnistía para que el navegador del cliente limpie sus cookies al entrar
             amnestyIPs.set(ip, Date.now() + (10 * 60 * 1000));
 
-            // --- PROTOCOLO DE CONFIRMACIÓN POST-DESBANEO ---
-            await sendUnbanConfirmation(ip, user);
-
-            // --- REGISTRO DE AUDITORÍA EN EL ARCHIVO .TXT ---
-            // Este log ya se hace en el bloque superior, pero lo repetimos aquí para claridad si se mueve el código.
             // Registrar éxito en el reporte
             const logPayload = { type: 'master_unban_success', username: user, userAgent: req.headers['user-agent'] };
             // Simular el registro de actividad para que quede en el reporte .txt
@@ -2887,14 +2909,14 @@ app.post('/api/execute-unban', async (req, res) => {
             res.status(500).send("Error técnico al actualizar Render: " + e.message);
         }
     } else {
-                // --- PROTOCOLO DE FALLO CRÍTICO (ADMIN/MASTER) ---
+        // --- PROTOCOLO DE FALLO CRÍTICO (ADMIN/MASTER) ---
         const attackerIp = getClientIp(req);
-        console.error(`❌ FALLO MAESTRO: IP ${attackerIp} falló al desbanear a ${ip}.`);
+        console.error(`❌ FALLO DE IDENTIDAD: IP ${attackerIp} falló la validación para ${ip}.`);
 
-        // 1. Matar token anterior (Invalidar link usado)
+        // 1. Invalidar sesión actual
         pendingUnbans.delete(ip);
 
-        // 2. Generar NUEVO token para el reintento (Si fue un admin que se equivocó)
+        // 2. Generar NUEVA sesión para el reintento
         const nextRetryToken = crypto.randomBytes(32).toString('hex');
         pendingUnbans.set(ip, { token: nextRetryToken, activated: false, expires: null });
 
@@ -2919,8 +2941,8 @@ app.post('/api/execute-unban', async (req, res) => {
 
         // 5. Enviar Alerta Mejorada (Correos Separados)
         const publicUrl = 'https://sublimacion-mary.onrender.com';
-        const devEmail = (process.env.ADMIN_EMAIL_MIGUEL_HASH && !process.env.ADMIN_EMAIL_MIGUEL_HASH.includes('$')) ? process.env.ADMIN_EMAIL_MIGUEL_HASH : 'maoaza13579@gmail.com';
-        const majoEmail = resolveEnvValue(usersConfig.find(u => u.name === 'Mariajose')?.email);
+        const devEmail = process.env.ADMIN_EMAIL_MIGUEL;
+        const majoEmail = process.env.ADMIN_EMAIL_MARIAJOSE;
 
         const sendAlert = async (targetEmail, adminName, banToken) => {
             const retryUrl = `${publicUrl}/api/unban-verify?ip=${ip}&token=${nextRetryToken}&admin=${adminName}`;
@@ -2930,26 +2952,15 @@ app.post('/api/execute-unban', async (req, res) => {
                 <div class="info-card" style="border-left-color: #e74c3c;">
                     <p>IP Atacante: <code>${attackerIp}</code><br>Usuario intentado: <code>${user}</code></p>
                 </div>
-                <p><strong>¿Fuiste tú?</strong> Usa este link: <a href="${retryUrl}">[Reintentar Desbaneo]</a></p>
-                <p><strong>¿No fuiste tú?</strong> Contacta al otro administrador. Si confirman que es un ataque, banea aquí: <br>
-                <a href="${banUrl}" class="btn" style="background:#000;">💀 BANEAR ATACANTE</a></p>
+                <p><strong>¿Fue un error de dedo?</strong> Usa este link para reintentar: <a href="${retryUrl}">[Verificar de nuevo]</a></p>
+                <p><strong>¿No fuiste tú?</strong> Contacta al otro administrador. Si es un ataque, confirma el bloqueo aquí: <br>
+                <a href="${banUrl}" class="btn" style="background:#000;">💀 BLOQUEAR AMENAZA</a></p>
             `;
-            await dispatchEmail([targetEmail], `🚨 Seguridad: Fallo de Llave Maestra (${ip})`, getEmailTemplate('Alerta Crítica', body, null, {type:'security', level:3}));
+            await dispatchEmail([targetEmail], `🚨 Alerta: Error de Validación (${ip})`, getEmailTemplate('Alerta Crítica', body, null, {type:'security', level:3}));
         };
 
         if (devEmail) await sendAlert(devEmail, 'Miguel', tokenMiguel);
         if (majoEmail) await sendAlert(majoEmail, 'Mariajose', tokenMariajose);
-
-        // 6. Enviar respuesta visual de error
-        res.status(401).send(`
-            <body style="background: #000; color: #e74c3c; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
-                <div style="text-align: center; border: 2px solid #e74c3c; padding: 40px; border-radius: 20px;">
-                    <h1>⛔ ACCESO DENEGADO</h1>
-                    <p>Las credenciales maestras son incorrectas.</p>
-                    <p>El token ha sido invalidado. Se ha enviado un nuevo link de seguridad a los administradores.</p>
-                </div>
-            </body>
-        `);
     }
 });
 
@@ -2960,7 +2971,7 @@ app.get('/api/security/ban-attacker', async (req, res) => {
     const publicUrl = 'https://sublimacion-mary.onrender.com';
 
     if (!action || Date.now() > action.expires) {
-        return res.status(403).send("<h1>Acción de seguridad expirada o inválida</h1>");
+        return res.status(404).send(getGeneric404Page());
     }
 
     const { attackerIp, adminName, unbanIp } = action;
@@ -2974,8 +2985,8 @@ app.get('/api/security/ban-attacker', async (req, res) => {
                 <p>Esto indica una <strong>falta de coordinación</strong>. Por favor, comuníquense para determinar si la IP <code>${attackerIp}</code> es realmente una amenaza o fue un error de dedo.</p>
             </div>
         `;
-        const otherAdminEmail = unbanStatus.admin_active === 'Miguel' ? 'maoaza13579@gmail.com' : process.env.ADMIN_EMAIL_MARIAJOSE;
-        await dispatchEmail([resolveEnvValue(otherAdminEmail)], "⚠️ Llamado de Atención: Falta de Coordinación", getEmailTemplate('Seguridad: Coordinación Requerida', warningBody, null, {type: 'security', level: 1}));
+        const otherAdminEmail = unbanStatus.admin_active === 'Miguel' ? process.env.ADMIN_EMAIL_MIGUEL : process.env.ADMIN_EMAIL_MARIAJOSE;
+        await dispatchEmail([otherAdminEmail], "⚠️ Aviso: Coordinación Requerida", getEmailTemplate('Coordinación Requerida', warningBody, null, {type: 'security', level: 1}));
 
         return res.send(`
             <body style="background: #000; color: #f1c40f; font-family: sans-serif; text-align: center; padding-top: 100px;">
@@ -3003,11 +3014,11 @@ app.get('/api/security/ban-attacker', async (req, res) => {
             await updateBannedIpsInRender(attackerIp);
             pendingSecurityActions.delete(token);
             pendingSecurityVotes.delete(attackerIp);
-            return res.send("<h1>💀 IP Bloqueada Permanentemente</h1>");
+            return res.send("<body style='background:#000;color:red;text-align:center;'><h1>💀 IP Fulminada</h1><p>La amenaza ha sido neutralizada.</p></body>");
         } catch (e) { return res.status(500).send(e.message); }
     }
 
-    res.send(`<h1>Voto registrado. Esperando confirmación de ${otherAdminName} o tiempo de gracia.</h1>`);
+    res.send("<body style='background:#000;color:yellow;text-align:center;'><h1>🛡️ Voto Registrado</h1><p>Esperando el consenso del otro administrador...</p></body>");
 });
 
 /**
@@ -3033,7 +3044,7 @@ async function sendUnbanConfirmation(ip, adminName) {
         </div>
     `;
 
-    const email = adminName === 'Miguel' ? 'maoaza13579@gmail.com' : resolveEnvValue(process.env.ADMIN_EMAIL_MARIAJOSE);
+    const email = adminName === 'Miguel' ? process.env.ADMIN_EMAIL_MIGUEL : process.env.ADMIN_EMAIL_MARIAJOSE;
     await dispatchEmail([email], `✅ Confirmación Final: Desbaneo de IP ${ip}`, getEmailTemplate('Seguridad: Doble Check', body));
 }
 
@@ -3041,11 +3052,11 @@ app.get('/api/security/confirm-unban', async (req, res) => {
     const { token, action } = req.query;
     const confirmation = pendingConfirmations.get(token);
     if (!confirmation || Date.now() > confirmation.expires) {
-        return res.status(403).send("Confirmación inválida o expirada.");
+        return res.status(404).send(getGeneric404Page());
     }
     if (action === 'protect') {
         await updateBannedIpsInRender(confirmation.ip);
-        return res.send("<h1>🚨 IP Protegida y bloqueada de nuevo.</h1>");
+        return res.send("<body style='background:#000;color:red;text-align:center;'><h1>🚨 IP Protegida</h1><p>Se ha restablecido el bloqueo inmediatamente.</p></body>");
     }
     res.send("<h1>✅ Gracias por confirmar la seguridad.</h1>");
 });
