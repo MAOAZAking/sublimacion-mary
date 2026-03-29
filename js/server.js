@@ -37,6 +37,34 @@ class Mutex {
 }
 const gitMutex = new Mutex(); // Instancia global del semáforo
 
+// --- VALIDACIÓN DE INTEGRIDAD DEL SISTEMA ---
+function validateEnvironment() {
+    const requiredVars = [
+        'GITHUB_TOKEN', 'GITHUB_OWNER', 'GITHUB_REPO',
+        'ADMIN_USER_MIGUEL_HASH', 'ADMIN_PASS_MIGUEL_HASH',
+        'RENDER_API_KEY', 'RENDER_SERVICE_ID'
+    ];
+    const missing = requiredVars.filter(v => !process.env[v]);
+    if (missing.length > 0) {
+        console.error("❌ ERROR CRÍTICO: Faltan variables de entorno esenciales:", missing.join(', '));
+        // No detenemos el servidor para permitir depuración en Render, pero marcamos el error.
+    } else {
+        console.log("💎 Integridad del entorno verificada.");
+    }
+}
+
+/**
+ * Genera el siguiente número de serie profesional.
+ */
+function generateNextSN(pedidos, prefix) {
+    const relevantOrders = pedidos.filter(p => p.s_n && p.s_n.startsWith(prefix + '_'));
+    const maxSeq = relevantOrders.reduce((max, p) => {
+        const seq = parseInt(p.s_n.split('_')[1], 10);
+        return (!isNaN(seq) && seq > max) ? seq : max;
+    }, 0);
+    return `${prefix}_${String(maxSeq + 1).padStart(4, '0')}`;
+}
+
 // --- Métricas de Seguridad y Límite de Intentos ---
 const loginAttempts = {};
 const blockedIPs = {};
@@ -1354,6 +1382,12 @@ app.get('/api/heartbeat', (req, res) => {
     res.sendStatus(200);
 });
 
+// Endpoint de salud del sistema mejorado
+app.get('/api/system-health', (req, res) => {
+    const uptime = process.uptime();
+    res.json({ status: 'online', uptime: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`, memory: process.memoryUsage().rss });
+});
+
 // Endpoint para verificar si el usuario es administrador
 app.post('/api/check-user', (req, res) => {
     const { username } = req.body;
@@ -2130,24 +2164,13 @@ app.post('/api/pedidos', upload.fields([
         }
 
         // Generar nuevo S/N (Serial Number) Profesional
-        let prefix = 'PROD';
         const prodLower = producto.toLowerCase();
-        if (prodLower.includes('mug')) prefix = 'MUGS';
-        else if (prodLower.includes('camiseta')) prefix = 'CAMI';
-        else if (prodLower.includes('saco')) prefix = 'SACO';
-        else if (prodLower.includes('gorra')) prefix = 'GORR';
+        const prefix = prodLower.includes('mug') ? 'MUGS' : 
+                       prodLower.includes('camiseta') ? 'CAMI' : 
+                       prodLower.includes('saco') ? 'SACO' : 
+                       prodLower.includes('gorra') ? 'GORR' : 'PROD';
 
-        let maxSeq = 0;
-        pedidos.forEach(p => {
-            if (p.s_n && typeof p.s_n === 'string' && p.s_n.startsWith(prefix + '_')) {
-                const parts = p.s_n.split('_');
-                if (parts.length === 2) {
-                    const seq = parseInt(parts[1], 10);
-                    if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
-                }
-            }
-        });
-        const nextId = `${prefix}_${String(maxSeq + 1).padStart(4, '0')}`;
+        const nextId = generateNextSN(pedidos, prefix);
 
         const nuevoPedido = { 
             s_n: nextId,
@@ -3449,13 +3472,22 @@ app.get('/api/security/confirm-unban', async (req, res) => {
     }
 });
 
+// --- MANEJADOR GLOBAL DE ERRORES ---
+app.use((err, req, res, next) => {
+    console.error(`🚨 ERROR NO CONTROLADO: ${err.message}`);
+    console.error(err.stack);
+    if (!res.headersSent) {
+        res.status(500).json({ success: false, error: "Hubo un error interno en el servidor. El equipo técnico ha sido notificado." });
+    }
+});
+
 // Catch-all para 404 - DEBE SER LA ÚLTIMA RUTA DEFINIDA
 app.use((req, res) => {
     res.status(404).send(getGeneric404Page());
 });
 
-
 // Cargar baneos permanentes al iniciar el servidor
+validateEnvironment();
 loadPermanentBans();
 loadSecurityState(); // Cargar estado de intentos y niveles de baneo
 syncSecurityStateFromGitHub(); // Intentar recuperar historial de la nube
