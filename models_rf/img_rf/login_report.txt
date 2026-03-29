@@ -1,0 +1,26 @@
+============================================================
+Registro de Entrada: 2026-03-29 11:56:29 (Hora de Colombia)
+Tipo: RE-AUTENTICACIÓN EXITOSA
+------------------------------------------------------------
+Estado: Exitoso
+Usuario: El usuario del administrador Mariajosé
+
+--- Datos de Geolocalización ---
+Dirección IP: 191.106.192.197
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Colombia Telecomunicaciones S.a. ESP BIC (Colombia Telecomunicaciones S.a. ESP BIC)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (Error de red: queryAaaa ENOTFOUND geolite.info.x-maxmind.com)
+Nota: El error 'ENOTFOUND' usualmente indica un problema de DNS en el servidor (Render), no un problema de la API de MaxMind.
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Android 10
+Navegador: Mobile Chrome 146.0.0.0
+Tipo de Dispositivo: mobile
+------------------------------------------------------------
+Imagen Capturada: Ninguna (Cámara falló o fue denegada).
+============================================================
+
