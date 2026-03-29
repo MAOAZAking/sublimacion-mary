@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Página no encontrada | Sublimación Mary</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script src="js/global.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #121212; display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; margin: 0; color: white; text-align: center; overflow: hidden; }
+        .container { background: #1e1e1e; padding: 3rem 2rem; border-radius: 24px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); width: 100%; max-width: 380px; text-align: center; transition: transform 0.3s ease; border: 1px solid #333; position: relative; z-index: 1; }
+        .container:hover { transform: translateY(-8px); }
+        .logo { width: 110px; margin-bottom: 15px; filter: drop-shadow(0 0 15px rgba(213, 0, 249, 0.4)); animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .error-code-container { display: flex; align-items: center; justify-content: center; margin: 15px 0; }
+        .error-img { height: 120px; width: auto; filter: drop-shadow(0 0 15px rgba(213, 0, 249, 0.3)); margin: 0 -18px; position: relative; }
+        .error-img-zero { height: 155px; position: relative; z-index: 2; filter: drop-shadow(0 0 20px rgba(213, 0, 249, 0.5)); }
+        .mirrored { transform: scaleX(-1); margin-left: -10px; } /* Ajustado para dar más espacio entre el 0 y este 4 */
+        h2 { color: #fff; margin: 10px 0 15px; font-weight: 600; font-size: 1.6rem; letter-spacing: -0.5px; }
+        p { color: #aaa; margin-bottom: 35px; font-size: 1rem; line-height: 1.6; padding: 0 10px; }
+        .btn { display: block; padding: 16px; background: linear-gradient(135deg, rgb(213, 0, 249), rgb(192, 0, 224)); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 1.1rem; transition: all 0.3s; box-shadow: 0 10px 25px rgba(142, 68, 173, 0.4); }
+        .btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 35px rgba(192, 0, 224, 0.5); color: white; }
+        .btn:active { transform: translateY(0) scale(1); }
+        
+        #background-logo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background-image: url('https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png');
+            background-position: center; background-repeat: no-repeat;
+            opacity: 0.08;
+        }
+        .footer-copy { position: absolute; bottom: 15px; font-size: 0.8rem; color: #555; width: 100%; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png" alt="Logo" class="logo">
+        <div class="error-code-container">
+            <img src="/img/404/4_derecho.png" class="error-img" alt="4">
+            <img src="/img/404/0.png" class="error-img error-img-zero" alt="0">
+            <img src="/img/404/4_derecho.png" class="error-img mirrored" alt="4" > 
+        </div>
+        <h2>¡Ups! Te has perdido</h2>
+        <p>Parece que el diseño que buscas no está en nuestra estantería o el enlace ha caducado.</p>
+        <a href="/index.html" class="btn">Volver al Inicio</a>
+    </div>
+
+    <div id="background-logo"></div>
+
+    <div class="footer-copy">
+        &copy; <span id="year"></span> Sublimación Mary. Todo personalizado.
+    </div>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        const bg = document.getElementById('background-logo');
+        function updateBg() {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+            if (isMobile) {
+                if (window.innerHeight > window.innerWidth) {
+                    bg.style.backgroundSize = "60vw auto";
+                } else {
+                    bg.style.backgroundSize = "auto 60vh";
+                }
+            } else {
+                bg.style.backgroundSize = "auto 85vh";
+            }
+        }
+        updateBg();
+
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
+            setInterval(updateBg, 1000);
+        } else {
+            window.addEventListener('resize', updateBg);
+        }
+    </script>
+</body>
+</html>

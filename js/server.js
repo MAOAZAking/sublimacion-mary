@@ -1334,6 +1334,10 @@ app.use(express.static(path.join(__dirname, '../')));
 
 // Endpoint para el "heartbeat" del cliente, para forzar recarga si está baneado
 app.get('/api/heartbeat', (req, res) => {
+    // Log para confirmar que GitHub nos mantiene despiertos
+    if (req.query.pinger === 'github') {
+        console.log("💓 Keep-Alive: Recibida señal de vida desde GitHub Actions.");
+    }
     // El middleware global `rateLimiter` se encarga de todo.
     // Si no está baneado, devuelve 200 OK.
     // Si está baneado temporalmente, devuelve 429.

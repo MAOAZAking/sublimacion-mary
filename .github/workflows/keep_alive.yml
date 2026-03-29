@@ -1,0 +1,18 @@
+name: Server Keep-Alive
+
+on:
+  schedule:
+    # Ejecutar cada 5 minutos para ganarle al sueño de 15 min de Render
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Permite que lo pruebes manualmente desde la pestaña Actions de GitHub
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep Sublimación Mary Awake
+        run: |
+          # Enviamos un parámetro 'pinger' y un timestamp para evitar cache
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://sublimacion-mary.onrender.com/api/heartbeat?pinger=github&t=$(date +%s)")
+          echo "Ping enviado exitosamente. Código de respuesta: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then echo "⚠️ El servidor no respondió con 200 OK"; fi
