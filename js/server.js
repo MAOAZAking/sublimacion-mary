@@ -1162,14 +1162,23 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50gb' }));
 app.use(express.urlencoded({ limit: '50gb', extended: true }));
 
-// Middleware para CORS (Permitir conexiones desde GitHub Pages u otros dominios)
+// --- CAPA DE SEGURIDAD: CABECERAS HTTP ---
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*'); // En producción, idealmente pon aquí tu dominio de GitHub Pages
+    // CORS Restringido (Cambiar '*' por tu dominio real en producción para máxima seguridad)
+    res.header('Access-Control-Allow-Origin', 'https://maoazaking.github.io'); 
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
+
+    // Prevención de Clickjacking (Nadie puede meter tu web en un iframe)
+    res.header('X-Frame-Options', 'DENY');
+    // Prevención de MIME-Sniffing (No ejecutar archivos que dicen ser algo que no son)
+    res.header('X-Content-Type-Options', 'nosniff');
+    // Filtro XSS para navegadores antiguos
+    res.header('X-XSS-Protection', '1; mode=block');
+    // Forzar HTTPS (HSTS) - Solo si tienes SSL activo (Render lo tiene)
+    res.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
     next();
 });
 
@@ -1872,8 +1881,25 @@ app.post('/api/pedidos', upload.fields([
     if (producto && producto.toLowerCase().includes('saco')) tipoProducto = 'saco';
     if (producto && producto.toLowerCase().includes('gorra')) tipoProducto = 'gorra';
 
-    // 2. Validaciones por tipo de producto
+    // --- VALIDACIÓN DE ARCHIVOS MEJORADA ---
+    const validateImageIntegrity = (file) => {
+        try {
+            const dimensions = sizeOf(file.path);
+            const allowedTypes = ['jpg', 'jpeg', 'png'];
+            if (!allowedTypes.includes(dimensions.type)) {
+                throw new Error("Tipo de archivo no permitido por el analizador de integridad.");
+            }
+            return true;
+        } catch (e) {
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+            throw new Error("Archivo corrupto o malicioso detectado.");
+        }
+    };
+
     if (['camiseta', 'saco'].includes(tipoProducto)) {
+        if (files.lamina_frontal) validateImageIntegrity(files.lamina_frontal[0]);
+        if (files.lamina_espaldar) validateImageIntegrity(files.lamina_espaldar[0]);
+
         // Validación para Textiles de doble cara (Camisetas, Sacos)
         if (!files.lamina_frontal && !files.lamina_espaldar) {
             // Limpiar plantilla si existe pero faltan láminas
@@ -1910,6 +1936,8 @@ app.post('/api/pedidos', upload.fields([
         }
 
     } else if (tipoProducto === 'gorra') {
+        if (files.lamina_frontal) validateImageIntegrity(files.lamina_frontal[0]);
+
         // Validación para Gorras (Solo frontal)
         if (!files.lamina_frontal) {
             if (files.plantilla) try { fs.unlinkSync(files.plantilla[0].path); } catch(e){}
@@ -1937,6 +1965,8 @@ app.post('/api/pedidos', upload.fields([
             return res.status(400).json({ success: false, error: err.message });
         }
     } else {
+        if (files.imagen) validateImageIntegrity(files.imagen[0]);
+
         // Validación para Mugs (o por defecto)
         if (!files.imagen || !files.plantilla) {
             return res.status(400).json({ success: false, error: 'Faltan archivos (Imagen y Plantilla).' });
@@ -3145,7 +3175,14 @@ app.post('/api/execute-unban', async (req, res) => {
         
         // 3. Ejecutar desbaneo real en Render
         try {
-            // FIX: Limpieza real de variables de entorno
+            // --- REFUERZO DE INTEGRIDAD ---
+            // Verificar que la IP que solicita el desbaneo no sea la misma que será desbaneada
+            // (Evita que un atacante que robó el token se desbanee a sí mismo)
+            if (getClientIp(req) === ip) {
+                console.error(`🚨 INTENTO DE AUTO-DESBANEO DETECTADO: IP ${ip}`);
+                return res.status(403).send("Error de seguridad: No puedes autorizar tu propio desbaneo.");
+            }
+
             await cleanBannedIpInRender(ip);
             
             // 4. Limpieza Profunda de Memoria
