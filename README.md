@@ -55,8 +55,8 @@ El sistema incluye un firewall de aplicaciones a nivel de Express para proteger 
 # Nota: El número de parche y numero de correción y mejora estan actualizados
 
 ## Correccion N° del parche de seguridad N°
-Security Patch #11 Fix #0:
+Security Patch #12 Fix #0:
 ## Mejora N° del parche de seguridad N°
 Security Patch #10 Enhancement #0:
 ## Parche de automatización N°
-Automation #8 Patch #2:
+Automation #9 Patch #0:

@@ -294,12 +294,30 @@ async function triggerUnbanAuthorization(ip) {
 }
 
 function getGeneric404Page() {
+    // Intentamos leer el archivo 404.html si existe, sino devolvemos un fallback estilizado
+    const filePath = path.join(__dirname, '../404.html');
+    if (fs.existsSync(filePath)) {
+        return fs.readFileSync(filePath, 'utf8');
+    }
     return `
     <!DOCTYPE html>
-    <html lang="es"><head><meta charset="UTF-8"><title>404 Not Found</title>
-    <style>body { background: #000; color: #444; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .container { text-align: center; } h1 { font-size: 6rem; margin: 0; } p { font-size: 1.2rem; }</style></head>
-    <body><div class="container"><h1>404</h1><p>La página solicitada no está disponible o el enlace ha caducado.</p></div></body></html>`;
+    <html lang="es">
+    <head><meta charset="UTF-8"><title>404 - Sublimación Mary</title>
+    <style>
+        body { background: #121212; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+        h1 { font-size: 5rem; color: rgb(213, 0, 249); margin: 0; }
+        p { color: #888; font-size: 1.2rem; }
+        a { color: #f1c40f; text-decoration: none; border: 1px solid #f1c40f; padding: 10px 20px; border-radius: 50px; margin-top: 20px; display: inline-block; }
+    </style>
+    </head>
+    <body>
+        <div>
+            <h1>404</h1>
+            <p>Contenido no disponible o enlace caducado.</p>
+            <a href="/">Ir al Inicio</a>
+        </div>
+    </body>
+    </html>`;
 }
 
 async function syncBannedIpsToGitHub() {
@@ -832,6 +850,9 @@ function recordFailedAttempt(req, res, context = "General") {
     const ip = getClientIp(req);
     const now = Date.now();
 
+    // NUNCA registrar intentos fallidos para la IP local
+    if (ip === '127.0.0.1' || ip === '::1') return false;
+
     // Cargar estado de baneo de la IP. Ahora es un objeto.
     const ipBanStatus = banLevels[ip] || { level: 0, lastOffense: 0 };
 
@@ -1163,41 +1184,45 @@ app.use((req, res, next) => {
  */
 function rateLimiter(req, res, next) {
     const ip = getClientIp(req);
+    const hasSecurityCookie = req.headers.cookie && req.headers.cookie.includes('sl=');
 
-    // --- GESTIÓN DE AMNISTÍA (Limpieza de cookies) ---
-    // Si la IP está en amnistía, ignoramos cualquier bloqueo y permitimos paso para borrar cookie
-    if (amnestyIPs.has(ip) && amnestyIPs.get(ip) > Date.now()) {
-        res.clearCookie('sl', { path: '/' }); // Limpieza profunda
-        console.log(`🧼 Amnistía Activa: Forzando limpieza de rastro para ${ip}`);
-        return next();
-    }
+    // --- WHITELIST DE IP LOCAL (PREVENCIÓN DE BLOQUEO DE SISTEMA) ---
+    if (ip === '127.0.0.1' || ip === '::1') return next();
 
-    // 0. RECUPERACIÓN DE ESTADO DESDE EL NAVEGADOR (Anti-Amnesia del Servidor)
-    // Solo recuperamos si NO hay amnistía activa para evitar re-baneos accidentales
-    if (req.headers.cookie && !amnestyIPs.has(ip)) {
-        const match = req.headers.cookie.match(/sl=(\d+)/);
-        if (match) {
-            const clientLevel = parseInt(match[1]);
-            const serverLevel = banLevels[ip] ? banLevels[ip].level : 0;
-            
-            if (clientLevel > serverLevel) {
-                console.log(`🔄 Sync: Restaurando nivel ${clientLevel} para IP ${ip} usando información del navegador.`);
-                // Restaurar nivel y refrescar timestamp para evitar que la lógica de "decay" lo borre inmediatamente
-                banLevels[ip] = { level: clientLevel, lastOffense: Date.now() }; 
-
-                // Si el nivel restaurado indica baneo permanente (>= 3), asegurar que esté en la lista activa de bloqueos
-                if (clientLevel >= 3 && !permanentBans.has(ip)) {
-                    permanentBans.add(ip);
-                }
-            }
-        }
-    }
-
-    // 1. Verificar baneo permanente
+    // 1. VERIFICACIÓN DE BANEO PERMANENTE (MAESTRO)
     if (permanentBans.has(ip)) {
         console.error(`🚫 CONEXIÓN RECHAZADA: IP con baneo permanente intentó acceder: ${ip}`);
         res.socket.destroy();
         return;
+    }
+
+    // 2. VERIFICACIÓN DE ESTADO EN SECURITY-STATE (Historial de banLevels)
+    const ipBanStatus = banLevels[ip];
+
+    if (ipBanStatus) {
+        // Si la IP tiene historial, corroboramos el valor de la cookie con el nivel actual
+        if (hasSecurityCookie) {
+            const match = req.headers.cookie.match(/sl=(\d+)/);
+            if (match) {
+                const clientLevel = parseInt(match[1]);
+                if (clientLevel > ipBanStatus.level) {
+                    console.log(`🔄 Sync: Restaurando nivel ${clientLevel} para ${ip} desde el navegador.`);
+                    ipBanStatus.level = clientLevel;
+                    ipBanStatus.lastOffense = Date.now();
+                    if (clientLevel >= 3 && !permanentBans.has(ip)) updateBannedIpsInRender(ip);
+                }
+            }
+        }
+    } else if (hasSecurityCookie && !amnestyIPs.has(ip)) {
+        // IP LIMPIA (No en baneos ni en security-state) pero conserva cookie: ELIMINARLA
+        console.log(`🧼 Limpieza selectiva: IP ${ip} está limpia pero conserva rastro. Solicitando borrado.`);
+        res.clearCookie('sl', { path: '/' });
+    }
+
+    // --- GESTIÓN DE AMNISTÍA (IPs en proceso de perdón) ---
+    if (amnestyIPs.has(ip) && amnestyIPs.get(ip) > Date.now()) {
+        if (hasSecurityCookie) res.clearCookie('sl', { path: '/' });
+        return next();
     }
 
     // 2. Verificar y levantar baneo temporal si ya expiró
@@ -3293,7 +3318,7 @@ app.get('/api/security/ban-attacker', async (req, res) => {
  */
 async function sendUnbanConfirmation(ip, adminName) {
     const token = crypto.randomBytes(32).toString('hex');
-    pendingConfirmations.set(token, { ip, adminName, expires: Date.now() + (2 * 60 * 60 * 1000) });
+    pendingConfirmations.set(token, { ip, adminName, expires: Date.now() + (2 * 60 * 60 * 1000), currentAction: null });
 
     const publicUrl = 'https://sublimacion-mary.onrender.com';
     const okUrl = `${publicUrl}/api/security/confirm-unban?token=${token}&action=ok&admin=${adminName}`;
@@ -3321,17 +3346,73 @@ async function sendUnbanConfirmation(ip, adminName) {
 }
 
 app.get('/api/security/confirm-unban', async (req, res) => {
-    const { token, action, admin } = req.query;
+    const { token, action, confirmChange } = req.query;
     const confirmation = pendingConfirmations.get(token);
+
     if (!confirmation || Date.now() > confirmation.expires) {
         return res.status(404).send(getGeneric404Page());
     }
-    if (action === 'protect' || action === 'no') {
-        await updateBannedIpsInRender(confirmation.ip);
-        return res.send("<body style='background:#000;color:red;text-align:center;'><h1>🚨 IP Protegida</h1><p>Se ha restablecido el bloqueo inmediatamente.</p></body>");
+
+    const isProtect = (action === 'protect' || action === 'no');
+    const newActionLabel = isProtect ? 'PROTEGER / BANEAR' : 'TODO BIEN (OK)';
+    const prevActionLabel = confirmation.currentAction === 'protect' ? 'NO FUI YO, ¡PROTEGER!' : 'TODO BIEN (OK)';
+
+    // 1. Detectar si es un cambio de opinión
+    if (confirmation.currentAction !== null && confirmation.currentAction !== (isProtect ? 'protect' : 'ok') && confirmChange !== 'true') {
+        return res.send(`
+            <body style="background: #121212; color: white; font-family: sans-serif; text-align: center; padding-top: 100px;">
+                <div style="max-width: 500px; margin: auto; border: 2px solid #f1c40f; padding: 30px; border-radius: 20px; background: #1e1e1e;">
+                    <h2 style="color: #f1c40f;">⚠️ Cambio de Acción Detectado</h2>
+                    <p>Usted indicó anteriormente que: <strong>${prevActionLabel}</strong>.</p>
+                    <p>¿Está seguro de que desea cambiar su acción a: <strong>${newActionLabel}</strong>?</p>
+                    <div style="margin-top: 30px;">
+                        <a href="/api/security/confirm-unban?token=${token}&action=${action}&confirmChange=true" 
+                           style="background: #f1c40f; color: black; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block; margin-bottom: 20px;">
+                           SÍ, ESTOY SEGURO
+                        </a><br>
+                        <a href="/" style="color: #888; text-decoration: none; font-size: 0.9rem;">No, mantener mi decisión previa</a>
+                    </div>
+                </div>
+            </body>
+        `);
     }
-    res.send("<h1>✅ Gracias por confirmar la seguridad.</h1>");
+
+    // 2. Ejecutar la acción
+    if (isProtect) {
+        if (confirmation.currentAction !== 'protect') {
+            await updateBannedIpsInRender(confirmation.ip);
+            confirmation.currentAction = 'protect';
+            console.log(`🛡️ Seguridad: Admin ${confirmation.adminName} ha marcado la IP ${confirmation.ip} como AMENAZA.`);
+        }
+        return res.send(`
+            <body style='background:#000; color:#ff4444; text-align:center; padding-top: 100px; font-family: sans-serif;'>
+                <h1 style="font-size: 3rem;">🚨 IP PROTEGIDA</h1>
+                <p style="font-size: 1.2rem;">Se ha restablecido el bloqueo permanente para <strong>${confirmation.ip}</strong> inmediatamente.</p>
+                <p style="color: #666;">Decisión registrada por: ${confirmation.adminName}</p>
+            </body>
+        `);
+    } else {
+        // Si cambia de 'Protect' a 'OK', técnicamente habría que desbanear de nuevo.
+        if (confirmation.currentAction === 'protect') {
+            await cleanBannedIpInRender(confirmation.ip);
+            console.log(`🔄 Seguridad: Admin ${confirmation.adminName} cambió su decisión. Desbaneando ${confirmation.ip} de nuevo.`);
+        }
+        confirmation.currentAction = 'ok';
+        return res.send(`
+            <body style='background:#121212; color:#2ecc71; text-align:center; padding-top: 100px; font-family: sans-serif;'>
+                <h1 style="font-size: 3rem;">✅ Confirmado</h1>
+                <p style="font-size: 1.2rem;">Gracias, <strong>${confirmation.adminName}</strong>. El desbaneo de la IP ${confirmation.ip} se mantiene como legítimo.</p>
+                <script>setTimeout(() => window.location.href = '/', 5000);</script>
+            </body>
+        `);
+    }
 });
+
+// Catch-all para 404 - DEBE SER LA ÚLTIMA RUTA DEFINIDA
+app.use((req, res) => {
+    res.status(404).send(getGeneric404Page());
+});
+
 
 // Cargar baneos permanentes al iniciar el servidor
 loadPermanentBans();
