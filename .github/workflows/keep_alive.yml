@@ -2,28 +2,29 @@ name: Server Keep-Alive
 
 on:
   schedule:
-    # Se activa cada 14 minutos (Intervalo estratégico)
-    - cron: '*/14 * * * *'
+    # Programamos minutos específicos para "presionar" a GitHub a ser puntual
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 * * * *'
   workflow_dispatch: # Permite que lo pruebes manualmente desde la pestaña Actions de GitHub
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    # Si el servidor no responde en 2 minutos, cancelamos para no gastar tiempo de GitHub
+    timeout-minutes: 2 
     steps:
-      - name: Keep Sublimación Mary Awake (Loop Mode)
+      - name: Wake up Render
         run: |
-          # Realizaremos 2 pings con un intervalo de 7 minutos dentro de la misma ejecución.
-          # Esto garantiza que el servidor reciba una señal de vida cada 7 minutos constantes,
-          # incluso si el siguiente trigger de GitHub se retrasa.
-          for i in {1..2}
-          do
-            echo "💓 Enviando pulso de vida $i a las $(date)"
-            # --connect-timeout para esperar a que Render despierte si estaba dormido
-            STATUS=$(curl -s -L --connect-timeout 60 -o /dev/null -w "%{http_code}" "https://sublimacion-mary.onrender.com/api/heartbeat?pinger=github&t=$(date +%s)")
-            echo "Respuesta del servidor: $STATUS"
-            
-            if [ $i -lt 2 ]; then
-              echo "Esperando 7 minutos para el siguiente pulso..."
-              sleep 420
-            fi
-          done
+          # Enviamos el pulso con un User-Agent que parezca un navegador real
+          # Agregamos reintentos automáticos si la conexión falla
+          STATUS=$(curl -s -L \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WakeUpBot/1.0" \
+            --connect-timeout 30 \
+            --retry 3 \
+            -o /dev/null -w "%{http_code}" \
+            "https://sublimacion-mary.onrender.com/api/heartbeat?pinger=github&t=$(date +%s)")
+          
+          echo "💓 Pulso enviado. Código de respuesta: $STATUS"
+          
+          if [ "$STATUS" -ne 200 ]; then 
+            echo "⚠️ El servidor no respondió con 200 (Posiblemente reiniciándose)."
+          fi
