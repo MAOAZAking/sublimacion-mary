@@ -1,4 +1,29 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Lógica del Logo de Fondo
+        const bg = document.createElement('div');
+        bg.id = 'background-logo';
+        document.body.prepend(bg);
+
+        function updateBg() {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
+            if (isMobile) {
+                if (window.innerHeight > window.innerWidth) {
+                    bg.style.backgroundSize = "90vw auto"; // Vertical: 90% del ancho
+                } else {
+                    bg.style.backgroundSize = "auto 90vh"; // Horizontal: 90% del alto
+                }
+            } else {
+                bg.style.backgroundSize = "auto 90vh"; // Escritorio: 90% del alto
+            }
+        }
+        updateBg();
+
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
+            setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
+        } else {
+            window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
+        }
+
     // 1. Copyright Year Logic
     const copyrightSpan = document.getElementById('copyright-year');
     if (copyrightSpan) {

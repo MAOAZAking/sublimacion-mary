@@ -5,3 +5,31 @@
     font-size: 0.85rem;
     margin-top: 30px;
 }
+
+/* Logo de Fondo Centralizado */
+#background-logo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url('https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png');
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.1;
+    background-size: auto 90vh; /* Tamaño para PC */
+}
+
+@media (max-width: 768px) {
+    #background-logo {
+        background-size: 90vw auto; /* 90% del ancho en móviles (Vertical) */
+    }
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+    #background-logo {
+        background-size: auto 90vh; /* 90% del alto en móviles (Horizontal) */
+    }
+}

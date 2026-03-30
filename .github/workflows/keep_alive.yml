@@ -2,26 +2,22 @@ name: Server Keep-Alive
 
 on:
   schedule:
-    # Se activa cada 10 minutos para asegurar pings cada ~5 minutos
-    - cron: '*/10 * * * *'
+    # Programación explícita cada 5 minutos para mayor prioridad en GitHub
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 * * * *'
   workflow_dispatch: # Permite que lo pruebes manualmente desde la pestaña Actions de GitHub
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    # Si el servidor no responde en 2 minutos, cancelamos para no gastar tiempo de GitHub
-    timeout-minutes: 3 # Aumentar timeout para permitir que Render despierte
+    timeout-minutes: 12 
     steps:
       - name: Send Keep-Alive Pings
         run: |
-          # Realizamos dos pings con un intervalo de 5 minutos.
-          # Esto asegura que el servidor reciba una señal de vida cada ~5 minutos,
-          # incluso si el inicio del workflow de GitHub se retrasa.
-          for i in {1..2}
+          # Bucle de 10 minutos enviando pings cada 2.5 minutos.
+          # Esto cubre los huecos cuando GitHub tarda en iniciar la siguiente tarea programada.
+          for i in {1..4}
           do
-            echo "💓 Enviando pulso de vida $i a las $(date)"
-            # --connect-timeout para esperar a que Render despierte si estaba dormido
-            # --retry para reintentar si la conexión falla temporalmente
+            echo "💓 Pulso de vida $i enviado a las $(date)"
             STATUS=$(curl -s -L \
               -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WakeUpBot/1.0" \
               --connect-timeout 60 \
@@ -30,10 +26,8 @@ jobs:
               "https://sublimacion-mary.onrender.com/api/heartbeat?pinger=github&t=$(date +%s)")
             echo "Respuesta del servidor: $STATUS"
             
-            if [ "$STATUS" -ne 200 ]; then echo "⚠️ El servidor no respondió con 200 OK (Posiblemente reiniciándose)."; fi
-            if [ $i -lt 2 ]; then
-              echo "Esperando 5 minutos para el siguiente pulso..."
-              sleep 300 # Esperar 5 minutos (300 segundos)
+            if [ $i -lt 4 ]; then
+              echo "Esperando 150 segundos para el próximo pulso interno..."
+              sleep 150
             fi
           done
-          fi
