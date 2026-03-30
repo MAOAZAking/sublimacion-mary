@@ -335,14 +335,21 @@ function getGeneric404Page() {
         body { background: #121212; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
         h1 { font-size: 5rem; color: rgb(213, 0, 249); margin: 0; }
         p { color: #888; font-size: 1.2rem; }
-        a { color: #f1c40f; text-decoration: none; border: 1px solid #f1c40f; padding: 10px 20px; border-radius: 50px; margin-top: 20px; display: inline-block; }
+        a { color: #f1c40f; text-decoration: none; border: 1px solid #f1c40f; padding: 10px 20px; border-radius: 50px; margin-top: 20px; display: inline-block; } /* Estilo del botón */
     </style>
     </head>
     <body>
         <div>
             <h1>404</h1>
             <p>Contenido no disponible o enlace caducado.</p>
-            <a href="/">Ir al Inicio</a>
+            <a href="#" class="btn" onclick="
+                event.preventDefault();
+                location.href = location.hostname.includes('github.io')
+                    ? '/' + location.pathname.split('/')[1] + '/'
+                    : '/';
+            ">
+                Ir al Inicio
+            </a>
         </div>
     </body>
     </html>`;

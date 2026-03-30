@@ -227,7 +227,7 @@
     // Función para volver al dashboard con token
     function volverAlDashboard() {
         sessionStorage.setItem('safeNavigationToken', 'true');
-        window.location.href = 'admin_dashboard.html';
+        window.redirectToAdminDashboard(); // Usar la función global de redirección
     }
 
     // Función inteligente para cargar modelos

@@ -314,7 +314,7 @@
             // Es un número de teléfono válido, proceder como cliente
             sessionStorage.setItem('clienteLogueado', input);
             window.location.href = `mis_pedidos.html?telefono=${input}`;
-        } else {
+        } else { // No es admin y no es un número de teléfono -> Actividad sospechosa
             // No es admin y no es un número de teléfono -> Actividad sospechosa
             const loader = document.getElementById('global-loader');
             if (loader) {
@@ -330,7 +330,7 @@
 
             // Si el intento resultó en un baneo, el servidor nos lo dirá.
             if (logData && logData.forceRefresh) {
-                mostrarMensajeTop("Se ha detectado un error de red. La página se actualizará.", 3000);
+                mostrarMensajeTop("Se ha detectado un error de red. La página se actualizará.", 3000); // Esto llamará a window.location.reload()
                 setTimeout(() => window.location.reload(), 3100);
                 return; // Detenemos la ejecución para que la página se recargue
             }
@@ -503,7 +503,7 @@
                 errorMsg.textContent = "Credenciales incorrectas.";
                 errorMsg.style.display = 'block';
                 shakeForm();
-                // Si el fallo de contraseña provocó un baneo, recargar.
+                // Si el fallo de contraseña provocó un baneo, recargar. (Esto llamará a window.location.reload())
                 if (data.forceRefresh) {
                     mostrarMensajeTop("Se ha detectado un error de red. La página se actualizará.", 3000);
                     setTimeout(() => window.location.reload(), 3100);
@@ -683,13 +683,13 @@
                 // Un código 429 (Too Many Requests) indica un baneo temporal.
                 if (response.status === 429) {
                     console.warn("Baneo temporal detectado. Forzando recarga.");
-                    window.location.reload();
+                    window.location.reload(); // Esto recargará la página y el rateLimiter del server.js actuará.
                 }
             })
             .catch(error => {
                 // Un fallo en la red (fetch fallido) indica que el servidor cerró la conexión (baneo permanente).
                 console.error("Heartbeat falló. Posible baneo permanente. Forzando recarga.", error);
-                window.location.reload();
+                window.location.reload(); // Esto recargará la página y el rateLimiter del server.js actuará.
             });
     }
     setInterval(checkBanStatus, 5000); // Verificar cada 5 segundos

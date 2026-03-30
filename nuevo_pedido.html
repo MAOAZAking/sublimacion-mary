@@ -254,11 +254,9 @@
     // Bandera para navegación interna
     let isInternalNavigation = false;
 
-    // Función para navegar internamente con token
-    function navigateTo(url) {
+    // Función para navegar internamente con tokenn
         sessionStorage.setItem('safeNavigationToken', 'true');
-        window.location.href = url;
-    }
+        window.location.href = window.getBaseUrl() + url;
 
     // Función inteligente para cargar modelos
     async function cargarModelosSmart() {

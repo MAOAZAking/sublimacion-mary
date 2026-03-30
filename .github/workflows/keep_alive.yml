@@ -2,29 +2,38 @@ name: Server Keep-Alive
 
 on:
   schedule:
-    # Programamos minutos específicos para "presionar" a GitHub a ser puntual
-    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 * * * *'
+    # Se activa cada 10 minutos para asegurar pings cada ~5 minutos
+    - cron: '*/10 * * * *'
   workflow_dispatch: # Permite que lo pruebes manualmente desde la pestaña Actions de GitHub
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     # Si el servidor no responde en 2 minutos, cancelamos para no gastar tiempo de GitHub
-    timeout-minutes: 2 
+    timeout-minutes: 3 # Aumentar timeout para permitir que Render despierte
     steps:
-      - name: Wake up Render
+      - name: Send Keep-Alive Pings
         run: |
-          # Enviamos el pulso con un User-Agent que parezca un navegador real
-          # Agregamos reintentos automáticos si la conexión falla
-          STATUS=$(curl -s -L \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WakeUpBot/1.0" \
-            --connect-timeout 30 \
-            --retry 3 \
-            -o /dev/null -w "%{http_code}" \
-            "https://sublimacion-mary.onrender.com/api/heartbeat?pinger=github&t=$(date +%s)")
-          
-          echo "💓 Pulso enviado. Código de respuesta: $STATUS"
-          
-          if [ "$STATUS" -ne 200 ]; then 
-            echo "⚠️ El servidor no respondió con 200 (Posiblemente reiniciándose)."
+          # Realizamos dos pings con un intervalo de 5 minutos.
+          # Esto asegura que el servidor reciba una señal de vida cada ~5 minutos,
+          # incluso si el inicio del workflow de GitHub se retrasa.
+          for i in {1..2}
+          do
+            echo "💓 Enviando pulso de vida $i a las $(date)"
+            # --connect-timeout para esperar a que Render despierte si estaba dormido
+            # --retry para reintentar si la conexión falla temporalmente
+            STATUS=$(curl -s -L \
+              -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WakeUpBot/1.0" \
+              --connect-timeout 60 \
+              --retry 5 \
+              -o /dev/null -w "%{http_code}" \
+              "https://sublimacion-mary.onrender.com/api/heartbeat?pinger=github&t=$(date +%s)")
+            echo "Respuesta del servidor: $STATUS"
+            
+            if [ "$STATUS" -ne 200 ]; then echo "⚠️ El servidor no respondió con 200 OK (Posiblemente reiniciándose)."; fi
+            if [ $i -lt 2 ]; then
+              echo "Esperando 5 minutos para el siguiente pulso..."
+              sleep 300 # Esperar 5 minutos (300 segundos)
+            fi
+          done
           fi

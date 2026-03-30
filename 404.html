@@ -17,7 +17,7 @@
         .error-code-container { display: flex; align-items: center; justify-content: center; margin: 15px 0; }
         .error-img { height: 120px; width: auto; filter: drop-shadow(0 0 15px rgba(213, 0, 249, 0.3)); margin: 0 -18px; position: relative; }
         .error-img-zero { height: 155px; position: relative; z-index: 2; filter: drop-shadow(0 0 20px rgba(213, 0, 249, 0.5)); }
-        .mirrored { transform: scaleX(-1); margin-left: -10px; } /* Ajustado para dar más espacio entre el 0 y este 4 */
+        .mirrored { transform: scaleX(-1); margin-left: -15px; } /* Ajustado para dar más espacio entre el 0 y este 4 */
         h2 { color: #fff; margin: 10px 0 15px; font-weight: 600; font-size: 1.6rem; letter-spacing: -0.5px; }
         p { color: #aaa; margin-bottom: 35px; font-size: 1rem; line-height: 1.6; padding: 0 10px; }
         .btn { display: block; padding: 16px; background: linear-gradient(135deg, rgb(213, 0, 249), rgb(192, 0, 224)); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 1.1rem; transition: all 0.3s; box-shadow: 0 10px 25px rgba(142, 68, 173, 0.4); }
@@ -44,8 +44,9 @@
         </div>
         <h2>¡Ups! Te has perdido</h2>
         <p>Parece que el diseño que buscas no está en nuestra estantería o el enlace ha caducado.</p>
-        <!-- <a href="./" class="btn">Volver al Inicio</a> -->
-        <a href="index.html" class="btn">Volver al Inicio</a>
+        <a href="#" class="btn" onclick="event.preventDefault(); redirectToHome();">
+            Volver al Inicio
+        </a>
     </div>
 
     <div id="background-logo"></div>

@@ -1848,8 +1848,8 @@
 
     // Función para navegar internamente sin cerrar sesión
     function navigateTo(url) {
-        isInternalNavigation = true;
-        window.location.href = url;
+        isInternalNavigation = true; // Marcar como navegación interna segura
+        window.location.href = window.getBaseUrl() + url; // Usar la función global para la URL base
     }
 
 
@@ -1857,12 +1857,9 @@
         if (message) {
             alert(message);
         }
-        sessionStorage.removeItem('adminLogueado');
-        sessionStorage.removeItem('adminUsername');
-        sessionStorage.removeItem('faceData');
-        sessionStorage.removeItem('adminFacialVerified'); // Eliminar token al salir
-        sessionStorage.removeItem('adminLastActivity');
-        window.location.href = 'index.html';
+        // Limpiar todas las variables de sesión relevantes
+        ['adminLogueado', 'adminUsername', 'faceData', 'adminFacialVerified', 'adminLastActivity'].forEach(key => sessionStorage.removeItem(key));
+        window.redirectToIndex(); // Redirigir al index usando la función global
     }
 
     // --- Verificación de Baneo en Tiempo Real ---
@@ -1873,13 +1870,13 @@
                 // Un código 429 (Too Many Requests) indica un baneo temporal.
                 if (response.status === 429) {
                     console.warn("Baneo temporal detectado desde el panel. Cerrando sesión por seguridad.");
-                    cerrarSesion("Tu dirección IP ha sido bloqueada temporalmente. Se ha cerrado la sesión.");
+                    cerrarSesion("Tu dirección IP ha sido bloqueada temporalmente. Se ha cerrado la sesión."); // Esto llamará a redirectToIndex()
                 }
             })
             .catch(error => {
                 // Un fallo en la red (fetch fallido) indica que el servidor cerró la conexión (baneo permanente).
                 console.error("Heartbeat falló desde el panel. Posible baneo permanente. Cerrando sesión.", error);
-                cerrarSesion("Tu dirección IP ha sido bloqueada permanentemente. Se ha cerrado la sesión.");
+                cerrarSesion("Tu dirección IP ha sido bloqueada permanentemente. Se ha cerrado la sesión."); // Esto llamará a redirectToIndex()
             });
     }
     setInterval(checkBanStatus, 7000); // Verificar cada 7 segundos para ser un poco menos agresivo en el dashboard

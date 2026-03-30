@@ -444,7 +444,7 @@
         // Detectar parámetros de URL (Enlace mágico del correo)
         const urlParams = new URLSearchParams(window.location.search);
         const urlTelefono = urlParams.get('telefono');
-        const urlPedido = urlParams.get('pedido'); // S/N del pedido
+        const urlPedido = urlParams.get('pedido'); // S/N del pedido (serial number)
 
         if (urlTelefono) {
             sessionStorage.setItem('clienteLogueado', urlTelefono);
@@ -1573,7 +1573,7 @@
 
     function cerrarSesionCliente() {
         sessionStorage.removeItem('clienteLogueado');
-        window.location.href = 'index.html';
+        window.redirectToIndex(); // Usar la función global de redirección
     }
 
     // Exponer funciones al scope global para los `onclick` del HTML
