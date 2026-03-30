@@ -19,12 +19,12 @@
     background-position: center;
     background-repeat: no-repeat;
     opacity: 0.1;
-    background-size: auto 90vh; /* Tamaño para PC */
+    background-size: auto 90vh; /* Ajuste para PC para que no tape los bordes */
 }
 
 @media (max-width: 768px) {
     #background-logo {
-        background-size: 90vw auto; /* 90% del ancho en móviles (Vertical) */
+        background-size: 90vw auto !important; /* 90% del ancho en móviles (Vertical) solicitado */
     }
 }
 

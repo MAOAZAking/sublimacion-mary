@@ -37,7 +37,12 @@
         </div>
         <h2>¡Ups! Te has perdido</h2>
         <p>Parece que el diseño que buscas no está en nuestra estantería o el enlace ha caducado.</p>
-        <a href="#" class="btn" onclick="event.preventDefault(); redirectToHome();">
+        <a href="#" class="btn" onclick="
+            event.preventDefault();
+            location.href = location.hostname.includes('github.io')
+                ? '/' + location.pathname.split('/')[1] + '/'
+                : '/';
+        ">
             Volver al Inicio
         </a>
     </div>
