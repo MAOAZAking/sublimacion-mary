@@ -344,7 +344,8 @@
 <div id="gallery" class="gallery"></div>
 <div id="mensajeError"></div>
 
-<a href="#" onclick="cerrarSesionCliente()" class="back-btn">Salir</a>
+<a href="#" onclick="event.preventDefault(); cerrarSesionCliente()" class="back-btn">Salir</a>
+
 
 <!-- Modal para ver imagen grande -->
 <div id="imageModal" class="modal">
@@ -377,6 +378,13 @@
             </div>
         </div>
     </div>
+
+</div>
+
+<div id="background-logo"></div>
+
+<div class="footer-copy">
+    &copy; <span id="copyright-year"></span> Sublimación Mary. Todo personalizado.
 </div>
 
 <script type="module">
@@ -408,31 +416,6 @@
         if (loader) {
             loader.style.opacity = '0';
             setTimeout(() => { loader.style.display = 'none'; }, 500);
-        }
-
-        // Lógica del Logo de Fondo
-        const bg = document.createElement('div');
-        bg.id = 'background-logo';
-        document.body.prepend(bg);
-
-        function updateBg() {
-            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
-            if (isMobile) {
-                if (window.innerHeight > window.innerWidth) {
-                    bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
-                } else {
-                    bg.style.backgroundSize = "auto 60vh"; // Horizontal: 60% del alto
-                }
-            } else {
-                bg.style.backgroundSize = "auto 85vh"; // Escritorio: 85% del alto
-            }
-        }
-        updateBg();
-
-        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
-            setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
-        } else {
-            window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
         }
 
         // Precargar modelos

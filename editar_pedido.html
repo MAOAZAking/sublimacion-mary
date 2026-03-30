@@ -32,15 +32,6 @@
         .back-link { display: block; text-align: center; margin-top: 15px; color: #aaa; text-decoration: none; font-size: 0.9rem; }
         .file-info { font-size: 0.8rem; color: #888; margin-top: 5px; }
 
-        /* Estilos para opciones de color */
-        .footer-copy {
-            position: static; /* Anular posicionamiento absoluto */
-            text-align: center;
-            width: 100%;
-            padding: 20px 0;
-            margin-top: 20px; /* Espacio sobre el footer */
-            color: #666;
-        }
         .color-options { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
         .color-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 2px solid #333; border-radius: 20px; cursor: pointer; transition: all 0.3s; background: #2d2d2d; }
         .color-option:hover { border-color: #888; }
@@ -254,31 +245,6 @@
         if (loader) {
             loader.style.opacity = '0';
             setTimeout(() => { loader.style.display = 'none'; }, 500);
-        }
-
-        // Lógica del Logo de Fondo
-        const bg = document.createElement('div');
-        bg.id = 'background-logo';
-        document.body.prepend(bg);
-
-        function updateBg() {
-            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768;
-            if (isMobile) {
-                if (window.innerHeight > window.innerWidth) {
-                    bg.style.backgroundSize = "60vw auto"; // Vertical: 60% del ancho
-                } else {
-                    bg.style.backgroundSize = "auto 60vh"; // Horizontal: 60% del alto
-                }
-            } else {
-                bg.style.backgroundSize = "auto 85vh"; // Escritorio: 85% del alto
-            }
-        }
-        updateBg();
-
-        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) || window.innerWidth < 768) {
-            setInterval(updateBg, 1000); // Móvil: Actualizar cada segundo
-        } else {
-            window.addEventListener('resize', updateBg); // Escritorio: Solo al redimensionar
         }
 
         // Precargar modelos
@@ -647,7 +613,7 @@
     // Función para navegar internamente (usada por el botón de volver)
     function navigateTo(url) {
         sessionStorage.setItem('safeNavigationToken', 'true');
-        window.location.href = url;
+        window.location.href = window.getBaseUrl() + url;
     }
 </script>
 </body>

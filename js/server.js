@@ -336,13 +336,14 @@ function getGeneric404Page() {
         h1 { font-size: 5rem; color: rgb(213, 0, 249); margin: 0; }
         p { color: #888; font-size: 1.2rem; }
         a { color: #f1c40f; text-decoration: none; border: 1px solid #f1c40f; padding: 10px 20px; border-radius: 50px; margin-top: 20px; display: inline-block; } /* Estilo del botón */
+        .footer-copy { position: absolute; bottom: 20px; width: 100%; color: #444; font-size: 0.8rem; }
     </style>
     </head>
     <body>
         <div>
             <h1>404</h1>
             <p>Contenido no disponible o enlace caducado.</p>
-            <a href="#" class="btn" onclick="
+            <a href="/" class="btn" onclick="
                 event.preventDefault();
                 location.href = location.hostname.includes('github.io')
                     ? '/' + location.pathname.split('/')[1] + '/'
@@ -351,6 +352,7 @@ function getGeneric404Page() {
                 Ir al Inicio
             </a>
         </div>
+        <div class="footer-copy">&copy; ${new Date().getFullYear()} Sublimación Mary.</div>
     </body>
     </html>`;
 }
@@ -1379,10 +1381,11 @@ app.use(express.static(path.join(__dirname, '../')));
 // Endpoint para el "heartbeat" del cliente, para forzar recarga si está baneado
 app.get('/api/heartbeat', (req, res) => {
     const userAgent = req.get('User-Agent') || '';
-    // Log para confirmar que GitHub nos mantiene despiertos
+    // Log para confirmar que GitHub o UptimeRobot nos mantienen despiertos
     if (req.query.pinger === 'github') {
         console.log("💓 Keep-Alive: Recibida señal de vida desde GitHub Actions.");
     } else if (userAgent.includes('UptimeRobot')) {
+        // UptimeRobot usa un User-Agent que incluye "UptimeRobot"
         console.log("🤖 Keep-Alive: Señal de UptimeRobot recibida. Servidor activo.");
     }
     // El middleware global `rateLimiter` se encarga de todo.
@@ -3504,6 +3507,16 @@ syncSecurityStateFromGitHub(); // Intentar recuperar historial de la nube
 
 const server = app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    // Ejecutar tareas de inicialización que pueden ser lentas DESPUÉS de que el servidor esté escuchando
+    (async () => {
+        console.log("🚀 Iniciando tareas de inicialización asíncronas...");
+        validateEnvironment(); // Validar entorno
+        loadPermanentBans(); // Cargar baneos permanentes (sincrónico)
+        loadSecurityState(); // Cargar estado de seguridad (sincrónico)
+        // Sincronizar con GitHub (asíncrono y puede tardar)
+        await syncSecurityStateFromGitHub(); 
+        console.log("✅ Tareas de inicialización asíncronas completadas.");
+    })();
 });
 
 // Desactivar timeout para permitir subidas grandes y lentas sin que se corte la conexión

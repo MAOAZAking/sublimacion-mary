@@ -19,31 +19,6 @@
         } // This is a critical security check, so it should use direct window.location.href for immediate effect.
     </script>
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #1a1a1a;
-            margin: 0;
-            color: white;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            overflow: hidden;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        /* Background Logo (Mismas especificaciones que admin_dashboard) */
-        #background-logo {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; pointer-events: none;
-            background-image: url('https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png');
-            background-position: center; background-repeat: no-repeat;
-            opacity: 0.1;
-        }
-
         /* Definición para animar el ángulo del gradiente cónico */
         @property --angle {
             syntax: '<angle>';
