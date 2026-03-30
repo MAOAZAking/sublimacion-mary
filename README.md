@@ -59,4 +59,4 @@ Security Patch #12 Fix #1:
 ## Mejora N° del parche de seguridad N°
 Security Patch #12 Enhancement #1:
 ## Parche de automatización N°
-Automation #10 Patch #1:
+Automation #10 Patch #2:
