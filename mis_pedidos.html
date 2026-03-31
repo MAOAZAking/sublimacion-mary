@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mis Pedidos - Sublimación Mary</title>
     <link rel="icon" href="https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/global.css">
     <script src="js/global.js"></script>
     <meta name="theme-color" content="#121212">
@@ -146,11 +149,15 @@
             padding: 10px 0; box-sizing: border-box;
         }
         .disclaimer-3d {
-            position: absolute; bottom: 10px; width: 100%; text-align: center; 
-            color: black; font-size: 0.75rem; font-weight: 800; z-index: 1006; 
-            pointer-events: none; padding: 0 20px; box-sizing: border-box;
-            -webkit-text-stroke: 0.5px white;
-            text-shadow: 0 0 10px #9b59b6, 0 0 20px #9b59b6;
+            font-family: 'Archivo Black', sans-serif;
+            position: absolute; bottom: 10px; left: 50%;
+            color: black; font-size: 0.9rem; font-weight: 800; z-index: 1006; 
+            pointer-events: none; text-align: center;
+            -webkit-text-stroke: 0.45px white;
+            text-shadow: 0 0 5px rgb(213, 0, 249), 0 0 10px rgb(213, 0, 249);
+            transform: translateX(-50%) scaleX(1.2) scaleY(1.3);
+            transform-origin: bottom center;
+            white-space: nowrap;
         }
         .status-badge {
             position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
@@ -232,6 +239,17 @@
                 transform: translateX(-50%);
                 width: 90%;
                 max-width: none;
+            }
+        }
+
+        /* Escalar el disclaimer en celulares para evitar que tape el botón de previsualización */
+        @media (max-width: 768px) {
+            .disclaimer-3d {
+                white-space: normal; /* Permitir saltos de línea */
+                width: 115%; /* Ancho virtual para forzar 2 filas equilibradas */
+                line-height: 1.1; /* Ajustar espacio entre líneas por el estiramiento vertical */
+                transform: translateX(-50%) scale(0.68) scaleX(1.2) scaleY(1.3);
+                /* 140% de ancho * 0.68 de escala ≈ 95% del ancho de pantalla real */
             }
         }
 
@@ -354,7 +372,7 @@
     <div id="statusIndicator" class="status-badge" style="display: none;"></div>
     <div id="rotationMsg" style="display:none; position:absolute; top:60px; width:100%; text-align:center; color:#fff; font-size:1.2rem; font-weight:600; z-index:10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); pointer-events:none;">↻ Gira la camiseta, porque tu pedido tiene el estampado en la parte espaldar</div>
     <div id="container3D" onclick="event.stopPropagation()"></div>
-    <div class="disclaimer-3d">* Los colores y dimensiones del modelo 3D son de referencia y pueden variar ligeramente en el producto físico.</div>
+    <div class="disclaimer-3d">* Los colores y dimensiones del modelo 3D son de referencia y pueden variar ligeramente en el producto.</div>
 
     <!-- Overlay de Feedback -->
     <div id="feedbackOverlay" class="feedback-overlay" style="display: none;">
@@ -1277,11 +1295,13 @@
                 toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
                 toggleBtn.style.border = '2px solid rgb(213, 0, 249)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
+                toggleBtn.style.bottom = isMobileBtn ? '45px' : 'auto';
             } else {
                 toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
                 toggleBtn.style.background = 'rgba(0, 0, 255, 0.3)';
                 toggleBtn.style.border = '2px solid rgb(0, 0, 255)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(0, 0, 255, 0.5)';
+                toggleBtn.style.bottom = isMobileBtn ? '45px' : 'auto';
             }
         };
         updateButton();
