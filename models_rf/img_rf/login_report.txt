@@ -900,3 +900,29 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/facial_failure_1775600032959.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-04-07 18:28:07 (Hora de Colombia)
+Tipo: ACCESO FACIAL EXITOSO
+------------------------------------------------------------
+Estado: Exitoso
+Usuario: El usuario del administrador Mariajosé
+
+--- Datos de Geolocalización ---
+Dirección IP: 190.99.146.66
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Empresas Municipales De Cali E.i.c.e. E.S.P. (Empresas Municipales De Cali E.i.c.e. E.S.P)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (Error de red: queryAaaa ENOTFOUND geolite.info.x-maxmind.com)
+Nota: El error 'ENOTFOUND' usualmente indica un problema de DNS en el servidor (Render), no un problema de la API de MaxMind.
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Windows 10
+Navegador: Chrome 146.0.0.0
+Tipo de Dispositivo: Escritorio
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/facial_success_1775604487735.jpeg
+============================================================
+
