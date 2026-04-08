@@ -457,6 +457,8 @@
             if (data.success) {
                 // Contraseña correcta, iniciar verificación facial
                 if (data.name) sessionStorage.setItem('adminName', data.name);
+                // Borrar contraseña inmediatamente para evitar que el navegador ofrezca guardarla
+                document.getElementById('adminPass').value = ''; 
                 const loader = document.getElementById('global-loader');
                 if (loader) {
                     loader.style.display = 'flex';
@@ -607,7 +609,7 @@
             }
 
             // Si llegamos aquí, la verificación falló
-            throw new Error("No se reconoció el rostro tras varios intentos.");
+            throw new Error("No se han sincronizado los datos con el servidor.\nPor favor, refresque la página e inténtelo de nuevo.");
 
         } catch (err) {
             console.error("Error en verificación facial:", err);
@@ -620,6 +622,7 @@
             // Mostrar mensaje de error visible
             const errorMsg = document.getElementById('errorMsg');
             if (errorMsg) {
+                // Mensaje camuflado para no revelar el uso de cámara
                 errorMsg.textContent = "Error: " + err.message;
                 errorMsg.style.display = 'block';
             }
