@@ -234,7 +234,7 @@
         @media (max-width: 768px) and (orientation: portrait) {
             .feedback-form {
                 top: auto;
-                bottom: 20px;
+                bottom: 0px; /* Elevar el formulario para dejar ver el disclaimer debajo */
                 left: 50%;
                 right: auto;
                 transform: translateX(-50%);
@@ -252,7 +252,11 @@
                 transform: translateX(-50%) scale(0.68) scaleX(1.2) scaleY(1.3);
                 /* 140% de ancho * 0.68 de escala ≈ 95% del ancho de pantalla real */
             }
+            .feedback-top-text {
+                margin-top: 60px; /* Subir el texto de pregunta */
+            }
             .feedback-buttons {
+                margin-bottom: 60px; /* Subir botones de Me encanta/Cambiar */
                 padding: 0;
             }
         }
@@ -385,8 +389,12 @@
         <!-- Formulario de cambio (oculto al inicio) -->
         <div id="feedbackForm" class="feedback-form" style="display: none;">
             <textarea id="cambioTexto" placeholder="Describe qué te gustaría modificar..."></textarea>
-            <button onclick="enviarSolicitudCambio()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 12px; border: none; border-radius: 50px; margin-bottom: 10px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);">Enviar solicitud</button>
-            <button onclick="cancelarCambio()" style="background: transparent; color: #b0b0b0; padding: 8px; border: 1px solid #333; border-radius: 50px; cursor: pointer;">Cancelar</button>
+            <button onclick="enviarSolicitudCambio()" style="background: linear-gradient(135deg, rgb(155, 89, 182), rgb(142, 68, 173)); color: white; padding: 12px; border: none; border-radius: 50px; margin-bottom: 10px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);">Enviar solicitud</button>
+            <br>
+            <button onclick="cancelarCambio()" style="background: transparent; color: rgb(176, 176, 176); padding: 8px; border: 1px solid rgb(176, 176, 176); border-radius: 50px; cursor: pointer;">Cancelar</button>
+            <br>
+            <br>
+            <br>
         </div>
 
         <div id="feedbackButtons" class="feedback-buttons">
