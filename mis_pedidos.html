@@ -164,15 +164,16 @@
             background: rgba(142, 68, 173, 0.9); color: white; padding: 8px 20px;
             border-radius: 50px; font-weight: 600; font-size: 0.8rem; z-index: 1005;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
-            white-space: nowrap; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 8px;
+            white-space: normal; text-align: center; max-width: calc(100% - 160px);
+            backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; gap: 8px;
             pointer-events: auto;
         }
         .feedback-top-text {
-            margin-top: 45px; color: white; font-size: 1.3rem; text-align: center;
+            margin-top: 80px; color: white; font-size: 1.3rem; text-align: center;
             pointer-events: auto; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8); font-weight: bold;
         }
         .feedback-buttons {
-            margin-bottom: 30px; display: flex; gap: 40px;
+            margin-bottom: 30px; display: flex; width: 100%; justify-content: space-around; box-sizing: border-box;
             pointer-events: auto;
         }
         .feedback-btn-wrapper {
@@ -250,6 +251,9 @@
                 line-height: 1.1; /* Ajustar espacio entre líneas por el estiramiento vertical */
                 transform: translateX(-50%) scale(0.68) scaleX(1.2) scaleY(1.3);
                 /* 140% de ancho * 0.68 de escala ≈ 95% del ancho de pantalla real */
+            }
+            .feedback-buttons {
+                padding: 0;
             }
         }
 
@@ -387,7 +391,7 @@
 
         <div id="feedbackButtons" class="feedback-buttons">
             <div class="feedback-btn-wrapper">
-                <span class="feedback-label">Cambiar</span>
+                <span class="feedback-label">Solicitar correcciones</span>
                 <button class="feedback-btn btn-red" onclick="mostrarFormularioCambio()">X</button>
             </div>
             <div class="feedback-btn-wrapper">
