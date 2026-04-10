@@ -259,6 +259,13 @@
                 margin-bottom: 60px; /* Subir botones de Me encanta/Cambiar */
                 padding: 0;
             }
+            .status-badge {
+                left: 10px;
+                transform: none;
+                max-width: calc(100% - 80px); /* Aumentado un 150% aprox. respecto al original para que quepa todo el texto */
+                text-align: left;
+                justify-content: flex-start;
+            }
         }
 
         /* Estilos para estado vacío (Sin pedidos) */
@@ -1286,37 +1293,37 @@
 
         Object.assign(toggleBtn.style, {
             position: 'absolute',
-            left: isMobileBtn ? '50%' : '20px',
-            top: isMobileBtn ? 'auto' : '50%',
-            bottom: isMobileBtn ? '10px' : 'auto',
-            transform: isMobileBtn ? 'translateX(-50%)' : 'translateY(-50%)',
+            left: isMobileBtn ? '10px' : '20px',
+            top: '50%',
+            bottom: 'auto',
+            transform: 'translateY(-50%)',
             zIndex: '1005',
-            padding: '10px 15px',
-            borderRadius: '50px',
+            padding: isMobileBtn ? '8px 10px' : '10px 15px',
+            borderRadius: isMobileBtn ? '15px' : '50px',
             color: 'white',
             cursor: 'pointer',
             fontWeight: '600',
             backdropFilter: 'blur(5px)',
             display: 'flex',
+            flexDirection: isMobileBtn ? 'column' : 'row',
             alignItems: 'center',
-            gap: '8px',
+            gap: isMobileBtn ? '2px' : '8px',
             transition: 'all 0.3s',
-            fontSize: '0.9rem'
+            fontSize: isMobileBtn ? '0.75rem' : '0.9rem',
+            lineHeight: '1.1'
         });
 
         const updateButton = () => {
             if (currentGender === 'masculino') {
-                toggleBtn.innerHTML = `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
+                toggleBtn.innerHTML = isMobileBtn ? `Prev.<br>D♀m.` : `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
                 toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
                 toggleBtn.style.border = '2px solid rgb(213, 0, 249)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
-                toggleBtn.style.bottom = isMobileBtn ? '45px' : 'auto';
             } else {
-                toggleBtn.innerHTML = `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
+                toggleBtn.innerHTML = isMobileBtn ? `Prev.<br>H♂m.` : `Previsualización Hombre <span style="font-size:1.2em">♂</span>`;
                 toggleBtn.style.background = 'rgba(0, 0, 255, 0.3)';
                 toggleBtn.style.border = '2px solid rgb(0, 0, 255)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(0, 0, 255, 0.5)';
-                toggleBtn.style.bottom = isMobileBtn ? '45px' : 'auto';
             }
         };
         updateButton();
