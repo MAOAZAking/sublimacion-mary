@@ -1000,3 +1000,27 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/reauth_success_1775663225004.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-04-15 15:14:37 (Hora de Colombia)
+Tipo: ACCESO FACIAL EXITOSO
+------------------------------------------------------------
+Estado: Exitoso
+Usuario: El usuario del administrador Mariajosé
+
+--- Datos de Geolocalización ---
+Dirección IP: 127.0.0.1
+
+[Fuente: ip-api.com (Gratuito)]
+Estado: Falló la consulta (reserved range)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (IP local no consultable.)
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Windows 10
+Navegador: Chrome 147.0.0.0
+Tipo de Dispositivo: Escritorio
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/facial_success_1776284077214.jpeg
+============================================================
+
