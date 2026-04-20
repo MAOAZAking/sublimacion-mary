@@ -319,7 +319,14 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        Descargar Pack
+        <script>
+            // Si es dispositivo es diferente a un dispositviomobil debe decir: "Descargar Pack" pero sino no debe decir nada
+            if (!isMobile) {
+                document.getElementById('btnDescargar').innerHTML = "Descargar Pack";
+            } else {
+                document.getElementById('btnDescargar').innerHTML = "";
+            }
+        </script>
     </button>
 </div>
 
@@ -1757,32 +1764,34 @@
         loadModel(currentGender);
 
         const toggleBtn = document.createElement('button');
+        toggleBtn.id = 'genderToggleBtn';
         const isMobileBtn = window.innerWidth < 768;
 
         Object.assign(toggleBtn.style, {
             position: 'absolute',
-            left: isMobileBtn ? '50%' : '20px',
-            top: isMobileBtn ? '15px' : '50%',
+            left: isMobileBtn ? '10px' : '20px',
+            top: '50%',
             bottom: 'auto',
-            transform: isMobileBtn ? 'translateX(-50%)' : 'translateY(-50%)',
+            transform: 'translateY(-50%)',
             zIndex: '1005',
-            padding: '10px 15px',
-            borderRadius: '50px',
+            padding: isMobileBtn ? '8px 10px' : '10px 15px',
+            borderRadius: isMobileBtn ? '15px' : '50px',
             color: 'white',
             cursor: 'pointer',
             fontWeight: '600',
             backdropFilter: 'blur(5px)',
             display: 'flex',
+            flexDirection: isMobileBtn ? 'column' : 'row',
             alignItems: 'center',
-            gap: '8px',
+            gap: isMobileBtn ? '2px' : '8px',
             transition: 'all 0.3s',
-            fontSize: '0.9rem'
+            fontSize: isMobileBtn ? '0.75rem' : '0.9rem',
+            lineHeight: '1.1'
         });
 
         const updateButton = () => {
             if (currentGender === 'masculino') {
-                toggleBtn.innerHTML = isMobileBtn ? `Prev.<br>Dam.<span style="font-size:1.2em">♀</span>` : `Previsualización Dama <span style="font-size:1.2em">♀</span>`;
-                toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
+                toggleBtn.innerHTML = isMobileBtn ? `Prev.<br>Dam.<span style="font-size:1.2em">♀</span>` : `Previsualización Dama <span style="font-size:1.2em">♀</span>`;                toggleBtn.style.background = 'rgba(213, 0, 249, 0.3)';
                 toggleBtn.style.border = '2px solid rgb(213, 0, 249)';
                 toggleBtn.style.boxShadow = '0 0 15px rgba(213, 0, 249, 0.5)';
             } else {

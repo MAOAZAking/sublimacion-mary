@@ -28,3 +28,5 @@ document.addEventListener('DOMContentLoaded', function() {
     const yearElements = document.querySelectorAll('#copyright-year, #year');
     yearElements.forEach(el => el.textContent = new Date().getFullYear());
 });
+
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
