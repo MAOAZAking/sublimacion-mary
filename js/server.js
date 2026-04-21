@@ -2722,9 +2722,18 @@ app.post('/api/full-reboot', async (req, res) => {
     const unlock = await gitMutex.lock();
 
     try {
-        // A. Limpiar Variables de Seguridad en Render (IPs Baneadas)
+        // A. Limpiar Variables de Seguridad en Render y en MEMORIA
         await updateRenderEnvVar('PERMANENTLY_BANNED_IPS', '');
-        console.log("✅ Render: IPs baneadas eliminadas.");
+        // Reset de Memoria Volátil (Seguridad instantánea)
+        for (let key in loginAttempts) delete loginAttempts[key];
+        for (let key in blockedIPs) delete blockedIPs[key];
+        for (let key in banLevels) delete banLevels[key];
+        permanentBans.clear();
+        amnestyIPs.clear();
+        
+        saveSecurityState(); // Persistir el estado vacío en el archivo local
+
+        console.log("✅ Seguridad: IPs baneadas y niveles de ofensa reseteados en Render y Memoria.");
 
         // B. Operaciones en GitHub
         const branch = 'main';
@@ -2797,7 +2806,8 @@ app.post('/api/full-reboot', async (req, res) => {
             }
         }
         
-        // Guardar nuevo pedidos.json (Solo con los salvados)
+        // Actualizar Memoria Local y preparar commit
+        localPedidos = JSON.parse(JSON.stringify(pedidosKept));
         treeItems.push({
             path: 'json/pedidos.json',
             mode: '100644',
@@ -2842,7 +2852,7 @@ app.post('/api/full-reboot', async (req, res) => {
         });
 
         console.log("✅ REBOOT COMPLETADO EXITOSAMENTE.");
-        res.json({ success: true, message: "Sistema reiniciado para producción. El perfil de reinicio ha sido eliminado." });
+        res.json({ success: true, message: "🚀 SISTEMA INICIALIZADO: Se han limpiado los diseños de prueba, los logs y se han desbloqueado todas las IPs." });
 
     } catch (e) {
         console.error("❌ Error en Full Reboot:", e);
