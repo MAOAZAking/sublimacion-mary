@@ -2715,7 +2715,7 @@ app.post('/api/full-reboot', async (req, res) => {
     }
 
     // --- LISTA DE PEDIDOS A SALVAR (MODIFICAR AQUÍ SI ES NECESARIO) ---
-    // Pon aquí los S/N de los pedidos que NO quieres borrar. Ej: ["MUGS_0005", "CAMI_0002"]
+    // Pon aquí los S/N de los pedidos que NO se borraran en el lanzamiento de la pagina. Ej: ["MUGS_0005", "CAMI_0002"]
     const ORDERS_TO_KEEP = ["MUGS_0001","CAMI_0001","GORR_0001","SACO_0001"]; 
     
     console.log("🚨 INICIANDO PROTOCOLO FULL REBOOT...");

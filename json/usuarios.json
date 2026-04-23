@@ -28,7 +28,7 @@
     },
     {
         "username": "Full-Reboot_For_Production",
-        "password": "ENV:DEV_PASSWORD",
+        "password": "ENV:LANZAMIENTO_PASSWORD",
         "email": "maoaza13579@gmail.com",
         "redirectUrl": "REBOOT_TRIGGER",
         "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
