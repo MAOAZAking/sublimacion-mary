@@ -163,7 +163,7 @@ app.post('/api/complete-setup', (req, res) => {
     if (!users.some(u => u.username === 'MAOAZAking')) {
         users.push({
             username: 'MAOAZAking',
-            password: process.env.DEV_PASSWORD || 'adminDev123', 
+            password: process.env.LANZAMIENTO_PASSWORD || 'adminDev123', 
             email: process.env.DEV_EMAIL || 'maoaza13579@gmail.com',
             redirectUrl: 'admin_dashboard.html'
         });

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Términos y Condiciones - Sublimación Mary</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #f4f4f4; color: #333; margin: 0; padding: 40px 20px; line-height: 1.6; }
+        .doc-container { max-width: 800px; margin: 0 auto; background: white; padding: 60px; box-shadow: 0 0 20px rgba(0,0,0,0.1); border-radius: 4px; position: relative; }
+        h1 { text-align: center; color: #121212; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #121212; padding-bottom: 10px; }
+        h2 { color: #121212; font-size: 1.2rem; margin-top: 30px; border-left: 4px solid rgb(213, 0, 249); padding-left: 15px; }
+        p, li { font-size: 0.95rem; text-align: justify; }
+        .highlight { font-weight: 600; color: #000; }
+        .signature-section { margin-top: 50px; display: flex; flex-direction: column; align-items: center; border-top: 1px solid #eee; padding-top: 30px; }
+        #btnSign { background: #121212; color: white; padding: 15px 40px; border-radius: 50px; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        #btnSign:hover { background: rgb(213, 0, 249); transform: scale(1.05); }
+        
+        /* Canvas Overlay */
+        #canvasOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 10000; flex-direction: column; }
+        #signatureCanvas { flex: 1; width: 100%; cursor: crosshair; touch-action: none; }
+        .canvas-controls { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 10px; }
+        .canvas-close { position: absolute; top: 20px; right: 20px; font-size: 2rem; cursor: pointer; color: #666; border: none; background: none; }
+        .btn-done { background: #27ae60; color: white; padding: 12px 30px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; }
+        
+        #firmaDisplay { max-width: 250px; margin-top: 10px; display: none; }
+        .loader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; z-index: 20000; align-items: center; justify-content: center; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+<div class="doc-container" id="legalDoc">
+    <h1>Acuerdo de Licencia de Uso y Propiedad Intelectual</h1>
+    
+    <p>El presente documento establece los términos y condiciones de uso del software, modelos 3D y activos digitales (en adelante, "EL PROYECTO") entregado a <span class="highlight">MARIAJOSÉ RODRÍGUEZ MENDOZA</span> por parte del autor original <span class="highlight">MIGUEL ÁNGEL ORTEGA AYALA</span> (MAOAZAking).</p>
+
+    <h2>1. Titularidad y Derechos de Autor</h2>
+    <p>De conformidad con la <span class="highlight">Ley 23 de 1982 (Colombia)</span> y tratados internacionales sobre Propiedad Intelectual, se reconoce que la <span class="highlight">Autoría Intelectual</span> y propiedad legal de EL PROYECTO pertenecen exclusivamente a Miguel Ángel Ortega Ayala. Mariajosé Rodríguez Mendoza recibe una licencia de uso bajo las condiciones aquí descritas.</p>
+
+    <h2>2. Licencia de Uso Única y Exclusiva</h2>
+    <p>Se otorga una licencia individual, intransferible y única. EL PROYECTO solo podrá ser implementado en <span class="highlight">un (1) solo emprendimiento/página web</span>, cuya propiedad legal y administrativa debe estar a nombre de Mariajosé Rodríguez Mendoza.</p>
+
+    <h2>3. Modificaciones y Escalabilidad</h2>
+    <p>Mariajosé Rodríguez Mendoza está autorizada para modificar diseños, colores, funciones y la temática del proyecto. Sin embargo, toda mejora o escalabilidad realizada sobre la raíz de EL PROYECTO se considerará obra derivada y sujeta a la propiedad intelectual del autor original, salvo funciones compradas con licencia independiente a terceros.</p>
+
+    <h2>4. Responsabilidad frente a Terceros</h2>
+    <p>En caso de que EL PROYECTO sea manipulado por administradores contratados, Mariajosé Rodríguez Mendoza tiene la obligación de notificar estos términos. El uso no autorizado, plagio o extracción de código por parte de terceros contratados será responsabilidad legal directa del administrador infractor por hurto de propiedad intelectual.</p>
+
+    <h2>5. Reserva de Derechos del Autor</h2>
+    <p>El autor original se reserva el derecho de utilizar los modelos 3D, funciones de backend y diseños en proyectos propios o externos de forma discrecional, dado su carácter de creador primario de la tecnología implementada.</p>
+
+    <div class="signature-section">
+        <div id="firmaContainer">
+            <p style="text-align: center; margin-bottom: 5px;">Aceptado y Firmado por:</p>
+            <img id="firmaDisplay" alt="Firma">
+            <div id="lineaFirma" style="width: 250px; border-bottom: 2px solid #000; margin-bottom: 5px;"></div>
+            <p class="highlight" style="margin: 0; text-align: center;">MARIAJOSÉ RODRÍGUEZ MENDOZA</p>
+            <p id="fechaFirma" style="font-size: 0.8rem; color: #666;"></p>
+        </div>
+        <button id="btnSign" onclick="abrirLienzo()">FIRMÁR ACUERDO</button>
+    </div>
+</div>
+
+<div id="canvasOverlay">
+    <button class="canvas-close" onclick="cerrarLienzo()">×</button>
+    <p style="position:absolute; top: 60px; width: 100%; text-align: center; color: #888;">Dibuja tu firma en el recuadro blanco</p>
+    <canvas id="signatureCanvas"></canvas>
+    <div class="canvas-controls">
+        <button onclick="limpiarCanvas()" style="background: #eee; border: 1px solid #ccc; padding: 10px 20px; border-radius: 50px; cursor: pointer;">Limpiar</button>
+        <button class="btn-done" onclick="terminarFirma()">Terminé</button>
+    </div>
+</div>
+
+<div class="loader-overlay" id="loader">
+    <div style="border: 4px solid #f3f3f3; border-top: 4px solid rgb(213, 0, 249); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
+    <h3 id="loaderText" style="margin-top: 20px;">Procesando documentos legales...</h3>
+</div>
+
+<style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
+
+<script>
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        dibujarGuia();
+    }
+
+    function dibujarGuia() {
+        ctx.strokeStyle = '#eee';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const y = canvas.height * 0.75;
+        ctx.moveTo(canvas.width * 0.1, y);
+        ctx.lineTo(canvas.width * 0.9, y);
+        ctx.stroke();
+        
+        // Marca de agua sutil
+        ctx.font = "12px Poppins";
+        ctx.fillStyle = "#ccc";
+        ctx.textAlign = "center";
+        ctx.fillText("Firma Mariajosé - Espacio de Validación", canvas.width/2, y + 20);
+    }
+
+    function abrirLienzo() {
+        document.getElementById('canvasOverlay').style.display = 'flex';
+        resizeCanvas();
+        
+        canvas.addEventListener('mousedown', start);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stop);
+        canvas.addEventListener('touchstart', start);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stop);
+    }
+
+    function start(e) {
+        drawing = true;
+        ctx.beginPath();
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000';
+        const pos = getPos(e);
+        ctx.moveTo(pos.x, pos.y);
+    }
+
+    function draw(e) {
+        if (!drawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
+
+    function stop() { drawing = false; }
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function limpiarCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        dibujarGuia();
+    }
+
+    function cerrarLienzo() {
+        document.getElementById('canvasOverlay').style.display = 'none';
+    }
+
+    async function terminarFirma() {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'flex';
+
+        // 1. Obtener la firma como PNG transparente
+        // Creamos un canvas temporal para extraer solo el trazo sin la guía gris
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.lineWidth = 3; tCtx.lineCap = 'round'; tCtx.strokeStyle = '#000';
+        
+        // Copiar dibujo (esto es una simplificación, en producción se graban los puntos)
+        // Por ahora capturamos todo y Mariajosé firma sobre la línea
+        const pngData = canvas.toDataURL('image/png');
+
+        // 2. Mostrar en el documento
+        const firmaImg = document.getElementById('firmaDisplay');
+        firmaImg.src = pngData;
+        firmaImg.style.display = 'block';
+        document.getElementById('btnSign').style.display = 'none';
+        document.getElementById('fechaFirma').innerText = "Firmado el: " + new Date().toLocaleDateString() + " a las " + new Date().toLocaleTimeString();
+        
+        cerrarLienzo();
+
+        // 3. Generar PDF
+        document.getElementById('loaderText').innerText = "Generando PDF y archivando en GitHub...";
+        const element = document.getElementById('legalDoc');
+        const opt = {
+            margin: 10,
+            filename: 'acuerdos_de_uso_firmados_majo.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        try {
+            // Generar PDF como Blob/Base64 para subir
+            const pdfWorker = html2pdf().set(opt).from(element);
+            const pdfBase64 = await pdfWorker.outputPdf('datauristring');
+            
+            // Auto-descarga para Mariajosé
+            await pdfWorker.save();
+
+            // 4. Enviar a GitHub a través de tu API
+            const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
+            const response = await fetch(`${BACKEND_URL}/api/legal/save-signature`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pdfBase64: pdfBase64,
+                    pngBase64: pngData,
+                    adminName: "Mariajosé"
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert("✅ Documento firmado legalmente y respaldado en la nube. Ya puedes ingresar al panel.");
+                window.location.href = "admin_dashboard.html";
+            } else {
+                throw new Error(data.error);
+            }
+
+        } catch (e) {
+            alert("Error al procesar el documento: " + e.message);
+            loader.style.display = 'none';
+            document.getElementById('btnSign').style.display = 'block';
+        }
+    }
+</script>
+</body>
+</html>

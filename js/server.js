@@ -2701,6 +2701,76 @@ app.post('/api/update-status', async (req, res) => {
     }
 });
 
+// --- ENDPOINT PARA GUARDAR DOCUMENTOS LEGALES FIRMADOS ---
+app.post('/api/legal/save-signature', async (req, res) => {
+    const { pdfBase64, pngBase64, adminName } = req.body;
+
+    if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
+        return res.status(500).json({ success: false, error: "GitHub no configurado." });
+    }
+
+    const unlock = await gitMutex.lock();
+    try {
+        const branch = 'main';
+        const treeItems = [];
+
+        // 1. Guardar Firma PNG
+        if (pngBase64) {
+            const pngBuffer = Buffer.from(pngBase64.split(',')[1], 'base64');
+            const { data: pngBlob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: pngBuffer.toString('base64'), encoding: 'base64'
+            });
+            treeItems.push({
+                path: 'img/firma_mariajose.png',
+                mode: '100644', type: 'blob', sha: pngBlob.sha
+            });
+        }
+
+        // 2. Guardar PDF Firmado
+        if (pdfBase64) {
+            const pdfBuffer = Buffer.from(pdfBase64.split(',')[1], 'base64');
+            const { data: pdfBlob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: pdfBuffer.toString('base64'), encoding: 'base64'
+            });
+            treeItems.push({
+                path: 'acuerdos_de_uso_firmados_majo.pdf',
+                mode: '100644', type: 'blob', sha: pdfBlob.sha
+            });
+        }
+
+        // 3. Crear Commit
+        const { data: refData } = await githubClient.git.getRef({ owner: GITHUB_OWNER, repo: GITHUB_REPO, ref: `heads/${branch}` });
+        const latestCommitSha = refData.object.sha;
+        const { data: commitData } = await githubClient.git.getCommit({ owner: GITHUB_OWNER, repo: GITHUB_REPO, commit_sha: latestCommitSha });
+        
+        const { data: newTree } = await githubClient.git.createTree({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, base_tree: commitData.tree.sha, tree: treeItems
+        });
+
+        const { data: newCommit } = await githubClient.git.createCommit({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO,
+            message: `Legal: Documentos firmados por ${adminName} [skip render]`,
+            tree: newTree.sha, parents: [latestCommitSha]
+        });
+
+        await githubClient.git.updateRef({
+            owner: GITHUB_OWNER, repo: GITHUB_REPO, ref: `heads/${branch}`, sha: newCommit.sha
+        });
+
+        // Notificar al autor
+        const body = `<p>Mariajosé ha firmado los términos y condiciones de uso del proyecto.</p>
+                      <p>La firma y el PDF han sido archivados en el repositorio.</p>`;
+        await sendEmailNotification("⚖️ T&C Firmados - Sublimación Mary", getEmailTemplate("Acuerdo Legal Aceptado", body));
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error("Error guardando documentos legales:", e);
+        res.status(500).json({ success: false, error: e.message });
+    } finally {
+        unlock();
+    }
+});
+
 // --- ENDPOINT MAESTRO: FULL REBOOT FOR PRODUCTION ---
 app.post('/api/full-reboot', async (req, res) => {
     const { username } = req.body;
