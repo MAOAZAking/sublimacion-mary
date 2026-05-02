@@ -2703,7 +2703,7 @@ app.post('/api/update-status', async (req, res) => {
 
 // --- ENDPOINT PARA GUARDAR DOCUMENTOS LEGALES FIRMADOS ---
 app.post('/api/legal/save-signature', async (req, res) => {
-    const { pdfBase64, pngBase64, adminName } = req.body;
+    const { pdfNegro, pdfBlanco, pngBlanco, pngNegro, adminName } = req.body;
 
     if (!githubClient || !GITHUB_OWNER || !GITHUB_REPO) {
         return res.status(500).json({ success: false, error: "GitHub no configurado." });
@@ -2714,27 +2714,47 @@ app.post('/api/legal/save-signature', async (req, res) => {
         const branch = 'main';
         const treeItems = [];
 
-        // 1. Guardar Firma PNG
-        if (pngBase64) {
-            const pngBuffer = Buffer.from(pngBase64.split(',')[1], 'base64');
-            const { data: pngBlob } = await githubClient.git.createBlob({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: pngBuffer.toString('base64'), encoding: 'base64'
+        // 1. Guardar Firmas PNG (Sin fondo)
+        if (pngBlanco) {
+            const buffer = Buffer.from(pngBlanco.split(',')[1], 'base64');
+            const { data: blob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: buffer.toString('base64'), encoding: 'base64'
             });
             treeItems.push({
-                path: 'img/firma_mariajose.png',
-                mode: '100644', type: 'blob', sha: pngBlob.sha
+                path: 'img/firma_mariajose_blanca.png',
+                mode: '100644', type: 'blob', sha: blob.sha
+            });
+        }
+        if (pngNegro) {
+            const buffer = Buffer.from(pngNegro.split(',')[1], 'base64');
+            const { data: blob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: buffer.toString('base64'), encoding: 'base64'
+            });
+            treeItems.push({
+                path: 'img/firma_mariajose_negra.png',
+                mode: '100644', type: 'blob', sha: blob.sha
             });
         }
 
-        // 2. Guardar PDF Firmado
-        if (pdfBase64) {
-            const pdfBuffer = Buffer.from(pdfBase64.split(',')[1], 'base64');
-            const { data: pdfBlob } = await githubClient.git.createBlob({
-                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: pdfBuffer.toString('base64'), encoding: 'base64'
+        // 2. Guardar PDFs Firmados
+        if (pdfNegro) {
+            const buffer = Buffer.from(pdfNegro.split(',')[1], 'base64');
+            const { data: blob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: buffer.toString('base64'), encoding: 'base64'
             });
             treeItems.push({
-                path: 'acuerdos_de_uso_firmados_majo.pdf',
-                mode: '100644', type: 'blob', sha: pdfBlob.sha
+                path: 'acuerdos_uso_majo_fondo_negro.pdf',
+                mode: '100644', type: 'blob', sha: blob.sha
+            });
+        }
+        if (pdfBlanco) {
+            const buffer = Buffer.from(pdfBlanco.split(',')[1], 'base64');
+            const { data: blob } = await githubClient.git.createBlob({
+                owner: GITHUB_OWNER, repo: GITHUB_REPO, content: buffer.toString('base64'), encoding: 'base64'
+            });
+            treeItems.push({
+                path: 'acuerdos_uso_majo_fondo_blanco.pdf',
+                mode: '100644', type: 'blob', sha: blob.sha
             });
         }
 
