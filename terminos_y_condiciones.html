@@ -4,28 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Términos y Condiciones - Sublimación Mary</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/MAOAZAking/sublimacion-mary/main/img/logo_sin_fondo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+    <script src="js/global.js"></script>
+    <meta name="theme-color" content="#121212">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        body { font-family: 'Poppins', sans-serif; background: #000; color: #fff; margin: 0; padding: 20px; line-height: 1.6; }
-        .doc-container { max-width: 800px; margin: 0 auto; background: #121212; padding: 40px; box-shadow: 0 0 30px rgba(213, 0, 249, 0.2); border-radius: 12px; position: relative; border: 1px solid #333; }
-        h1 { text-align: center; color: #fff; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid rgb(213, 0, 249); padding-bottom: 10px; font-size: 1.6rem; }
-        h2 { color: #121212; font-size: 1.2rem; margin-top: 30px; border-left: 4px solid rgb(213, 0, 249); padding-left: 15px; }
-        .doc-container h2 { color: rgb(213, 0, 249); }
-        p, li { font-size: 0.95rem; text-align: justify; color: #ccc; }
-        .highlight { font-weight: 600; color: #fff; }
-        .signature-section { margin-top: 50px; display: flex; flex-direction: column; align-items: center; border-top: 1px solid #333; padding-top: 30px; }
-        #btnSign { background: rgb(213, 0, 249); color: white; padding: 15px 40px; border-radius: 50px; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; box-shadow: 0 0 15px rgba(213, 0, 249, 0.4); }
-        #btnSign:hover { background: #fff; color: #000; transform: scale(1.05); }
+    <style>      
+        body { font-family: 'Poppins', sans-serif; background: #121212; color: #fff; line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+        .doc-container { max-width: 800px; margin: 20px auto; background: #121212; padding: 40px; box-shadow: 0 0 30px rgba(213, 0, 249, 0.2); border-radius: 12px; position: relative; border: 1px solid #333; flex-grow: 1; box-sizing: border-box; }
+        h1 { text-align: center; color: #fff; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid rgb(213, 0, 249); padding-bottom: 10px; font-size: 1.6rem; margin-bottom: 30px; }
+        h2 { font-size: 1.2rem; margin-top: 30px; border-left: 4px solid rgb(213, 0, 249); padding-left: 15px; color: rgb(213, 0, 249); }
+        p, li { font-size: 0.95rem; text-align: justify; color: #ccc; margin-bottom: 10px; }
+        .highlight { font-weight: 600; color: #fff; } /* Asegura que el highlight sea blanco en el modo oscuro */
+        .signature-section { margin-top: 50px; display: flex; flex-direction: column; align-items: center; border-top: 1px solid #333; padding-top: 30px; text-align: center; }
+        #btnSign { background: rgb(213, 0, 249); color: white; padding: 15px 40px; border-radius: 50px; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; box-shadow: 0 0 15px rgba(213, 0, 249, 0.4); text-transform: uppercase; letter-spacing: 1px; }
+        #btnSign:hover { background: #fff; color: #000; transform: scale(1.05); box-shadow: 0 0 25px rgba(213, 0, 249, 0.6); }
         
         /* Canvas Overlay */
         #canvasOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; flex-direction: column; }
         #signatureCanvas { flex: 1; width: 100%; cursor: crosshair; touch-action: none; background: #000; }
         .canvas-controls { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 10px; }
         .canvas-close { position: absolute; top: 20px; right: 20px; font-size: 2.5rem; cursor: pointer; color: #fff; border: none; background: none; z-index: 10001; }
-        .btn-done { background: #27ae60; color: white; padding: 12px 30px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(39, 174, 96, 0.4); }
+        .btn-done { background: #27ae60; color: white; padding: 12px 30px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(39, 174, 96, 0.4); text-transform: uppercase; letter-spacing: 0.5px; }
         
-        #firmaDisplay { max-width: 250px; margin-top: 10px; display: none; }
+        #firmaDisplay { max-width: 250px; max-height: 100px; object-fit: contain; margin-top: 10px; display: none; position: relative; z-index: 1; }
         .loader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; z-index: 20000; align-items: center; justify-content: center; flex-direction: column; }
     </style>
 </head>
@@ -54,8 +62,12 @@
     <div class="signature-section">
         <div id="firmaContainer">
             <p style="text-align: center; margin-bottom: 5px;">Aceptado y Firmado por:</p>
-            <div style="min-height: 80px; display: flex; align-items: center; justify-content: center;">
-                <img id="firmaDisplay" alt="Firma">
+            <div id="signatureWrapper" style="min-height: 80px; display: flex; align-items: center; justify-content: center; position: relative; user-select: none; -webkit-user-select: none;">
+                <img id="firmaDisplay" alt="Firma" draggable="false" oncontextmenu="return false;" style="pointer-events: none; z-index: 1; -webkit-user-drag: none; filter: drop-shadow(0 0 1px rgba(255,255,255,0.1));">
+                <!-- Capa de seguridad: Si intentan arrastrar o copiar, obtendrán este texto en lugar de la imagen -->
+                <div id="protectionLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: flex; align-items: center; justify-content: center; color: transparent; cursor: default; user-select: text; -webkit-user-select: text;">
+                    Firma Digital Protegida
+                </div>
             </div>
             <div id="lineaFirma" style="width: 250px; border-bottom: 2px solid rgb(213, 0, 249); margin: 0 auto 5px;"></div>
             <p class="highlight" style="margin: 0; text-align: center;">MARIAJOSÉ RODRÍGUEZ MENDOZA</p>
@@ -66,7 +78,10 @@
 </div>
 
 <div id="canvasOverlay">
-    <button class="canvas-close" onclick="cerrarLienzo()">×</button>
+    <button class="canvas-close" onclick="cerrarLienzo()">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+
     <p id="hintText" style="position:absolute; top: 80px; width: 100%; text-align: center; color: rgb(255, 255, 255); font-size: 0.9rem; pointer-events:none;">Dibuja tu firma sobre la línea</p>
     <canvas id="signatureCanvas"></canvas>
     <div class="canvas-controls">
@@ -79,9 +94,6 @@
     <div style="border: 4px solid #f3f3f3; border-top: 4px solid rgb(213, 0, 249); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
     <h3 id="loaderText" style="margin-top: 20px;">Procesando documentos legales...</h3>
 </div>
-
-<!-- Contenedor oculto para la versión en blanco (PDF) -->
-<div id="whiteDocClone" style="position: absolute; left: -9999px; top: -9999px; width: 800px; background: white; color: #000; padding: 60px;"></div>
 
 <style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
 
@@ -98,11 +110,18 @@
             document.getElementById('fechaFirma').innerText = savedDate || "";
             
             // Si ya firmó, permitirle ir al dashboard si lo desea
-            const btn = document.createElement('button');
-            btn.innerHTML = "IR AL PANEL";
-            btn.style.cssText = "margin-top: 20px; background: transparent; color: #888; border: 1px solid #444; padding: 10px 30px; border-radius: 50px; cursor: pointer;";
-            btn.onclick = () => window.location.href = "admin_dashboard.html";
-            document.querySelector('.signature-section').appendChild(btn);
+            const btnPanel = document.createElement('button');
+            btnPanel.innerHTML = "IR AL PANEL";
+            btnPanel.style.cssText = "margin-top: 20px; background: transparent; color: #888; border: 1px solid #444; padding: 10px 30px; border-radius: 50px; cursor: pointer;";
+            btnPanel.onclick = () => window.location.href = "admin_dashboard.html";
+            document.querySelector('.signature-section').appendChild(btnPanel);
+
+            // BOTÓN PARA LIMPIAR (Solo para tus pruebas de desarrollo)
+            const btnReset = document.createElement('button');
+            btnReset.innerHTML = "LIMPIAR FIRMA (PRUEBAS)";
+            btnReset.style.cssText = "margin-top: 15px; background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #442222; padding: 5px 15px; border-radius: 50px; cursor: pointer; font-size: 0.7rem; font-weight: bold;";
+            btnReset.onclick = () => { if(confirm("¿Quieres eliminar la firma local para volver a probar?")) { localStorage.removeItem('firmaMajo'); localStorage.removeItem('fechaFirmaMajo'); location.reload(); }};
+            document.querySelector('.signature-section').appendChild(btnReset);
         }
     };
 
@@ -118,19 +137,19 @@
     }
 
     function dibujarGuia() {
-        ctx.strokeStyle = '#ffff';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
-        ctx.beginPath();
-        const y = canvas.height * 0.75;
+        ctx.beginPath(); // Iniciar un nuevo trazo para la guía
+        const y = canvas.height * 0.75; // La línea de guía a 3/4 de la altura
         ctx.moveTo(canvas.width * 0.1, y);
         ctx.lineTo(canvas.width * 0.9, y);
         ctx.stroke();
         
         // Marca de agua sutil
         ctx.font = "12px Poppins";
-        ctx.fillStyle = "#ffff";
+        ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
-        ctx.fillText("Línea de guía para firma - No se incluirá en el documento", canvas.width/2, y + 25);
+        ctx.fillText("Firma aquí", canvas.width/2, y + 25);
     }
 
     function abrirLienzo() {
@@ -188,30 +207,117 @@
     }
 
     function getCleanSignature(color = "#fff") {
+        if (strokes.length === 0) return null;
+
+        // Encontrar los límites del dibujo para recortar (Crop)
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        strokes.forEach(s => {
+            minX = Math.min(minX, s.x);
+            minY = Math.min(minY, s.y);
+            maxX = Math.max(maxX, s.x);
+            maxY = Math.max(maxY, s.y);
+        });
+
+        // Añadir un pequeño margen de 10px
+        const padding = 10;
+        const width = (maxX - minX) + (padding * 2);
+        const height = (maxY - minY) + (padding * 2);
+
         const temp = document.createElement('canvas');
-        temp.width = canvas.width;
-        temp.height = canvas.height;
+        temp.width = width;
+        temp.height = height;
         const tCtx = temp.getContext('2d');
         tCtx.lineWidth = 3;
         tCtx.lineCap = 'round';
         tCtx.strokeStyle = color;
 
+        // Dibujar los trazos desplazados al origen del nuevo canvas recortado
         strokes.forEach(s => {
             if (s.type === 'start') {
                 tCtx.beginPath();
-                tCtx.moveTo(s.x, s.y);
+                tCtx.moveTo(s.x - minX + padding, s.y - minY + padding);
             } else {
-                tCtx.lineTo(s.x, s.y);
+                tCtx.lineTo(s.x - minX + padding, s.y - minY + padding);
                 tCtx.stroke();
             }
         });
         return temp.toDataURL('image/png');
     }
 
+    // Helper function to generate HTML content for PDF with specific styles
+    function getPdfStyledHtml(signatureBase64, colorMode, fechaStr) {
+        const originalDoc = document.getElementById('legalDoc');
+        const clonedDoc = originalDoc.cloneNode(true); // Deep clone
+
+        // Apply base styles for PDF (remove shadows, borders, etc. that are for web display)
+        clonedDoc.style.boxShadow = 'none';
+        clonedDoc.style.border = 'none';
+        clonedDoc.style.borderRadius = '0';
+        clonedDoc.style.margin = '0';
+        clonedDoc.style.width = '800px'; // Fixed width for consistent PDF rendering
+        clonedDoc.style.padding = '40px'; // Match original padding
+        clonedDoc.style.boxSizing = 'border-box';
+        clonedDoc.style.fontFamily = 'Poppins, sans-serif';
+        clonedDoc.style.lineHeight = '1.6';
+        clonedDoc.style.textAlign = 'justify';
+
+        // Remove the signatureWrapper and replace with a simple img for PDF
+        const signatureWrapper = clonedDoc.querySelector('#signatureWrapper');
+        if (signatureWrapper) {
+            const img = document.createElement('img');
+            img.src = signatureBase64;
+            img.alt = "Firma";
+            img.style.maxWidth = '250px';
+            img.style.maxHeight = '100px';
+            img.style.objectFit = 'contain';
+            img.style.display = 'block';
+            img.style.margin = '0 auto'; // Center the image
+            signatureWrapper.parentNode.replaceChild(img, signatureWrapper);
+        }
+        // Update fechaFirma
+        const fechaFirmaEl = clonedDoc.querySelector('#fechaFirma');
+        if (fechaFirmaEl) fechaFirmaEl.innerText = fechaStr;
+
+
+        // Apply color mode specific styles
+        let containerBgColor, h1Color, h1BorderColor, h2Color, h2BorderColor, pLiColor, highlightColor, lineaFirmaColor, fechaFirmaColor;
+        if (colorMode === 'black') {
+            clonedDoc.style.backgroundColor = '#121212';
+            clonedDoc.style.color = '#fff';
+            clonedDoc.querySelector('h1').style.color = '#fff';
+            clonedDoc.querySelector('h1').style.borderBottomColor = 'rgb(213, 0, 249)';
+            clonedDoc.querySelectorAll('h2').forEach(h => { h.style.color = 'rgb(213, 0, 249)'; h.style.borderLeftColor = 'rgb(213, 0, 249)'; });
+            clonedDoc.querySelectorAll('p, li').forEach(p => p.style.color = '#ccc');
+            clonedDoc.querySelectorAll('.highlight').forEach(s => s.style.color = '#fff');
+            clonedDoc.querySelector('#lineaFirma').style.borderBottomColor = 'rgb(213, 0, 249)';
+            clonedDoc.querySelector('#fechaFirma').style.color = '#888';
+        } else { // white mode
+            clonedDoc.style.backgroundColor = '#ffffff';
+            clonedDoc.style.color = '#000';
+            clonedDoc.querySelector('h1').style.color = '#000';
+            clonedDoc.querySelector('h1').style.borderBottomColor = 'rgb(213, 0, 249)';
+            clonedDoc.querySelectorAll('h2').forEach(h => { h.style.color = 'rgb(213, 0, 249)'; h.style.borderLeftColor = 'rgb(213, 0, 249)'; });
+            clonedDoc.querySelectorAll('p, li').forEach(p => p.style.color = '#000');
+            clonedDoc.querySelectorAll('.highlight').forEach(s => s.style.color = '#000');
+            clonedDoc.querySelector('#lineaFirma').style.borderBottomColor = 'rgb(213, 0, 249)';
+            clonedDoc.querySelector('#fechaFirma').style.color = '#888';
+        }
+
+        // Remove interactive elements not needed in PDF
+        const btnSign = clonedDoc.querySelector('#btnSign');
+        if (btnSign) btnSign.remove();
+        const btnPanel = clonedDoc.querySelector('.signature-section button:nth-of-type(1)'); // "IR AL PANEL"
+        if (btnPanel && btnPanel.innerText.includes('IR AL PANEL')) btnPanel.remove();
+        const btnReset = clonedDoc.querySelector('.signature-section button:nth-of-type(1)'); // "LIMPIAR FIRMA"
+        if (btnReset && btnReset.innerText.includes('LIMPIAR FIRMA')) btnReset.remove();
+
+        return clonedDoc.outerHTML;
+    }
+
     async function terminarFirma() {
         if (strokes.length === 0) { alert("Por favor, firma antes de continuar."); return; }
         
-        const loader = document.getElementById('loader');
+        const loader = document.getElementById('loader'); 
         loader.style.display = 'flex';
         document.getElementById('loaderText').innerText = "Generando archivo...";
 
@@ -219,11 +325,12 @@
         const pngBlanco = getCleanSignature("#ffffff"); // Para el PDF negro
         const pngNegro = getCleanSignature("#000000");  // Para el PDF blanco
 
-        // 2. Mostrar en el documento
+        // 2. Mostrar en el documento (UI Web)
         const firmaImg = document.getElementById('firmaDisplay');
         firmaImg.src = pngBlanco;
         firmaImg.style.display = 'block';
         document.getElementById('btnSign').style.display = 'none';
+        
         const fechaStr = "Firmado el: " + new Date().toLocaleDateString() + " a las " + new Date().toLocaleTimeString();
         document.getElementById('fechaFirma').innerText = fechaStr;
 
@@ -233,48 +340,46 @@
         
         cerrarLienzo();
 
-        // 3. Generar PDF Negro (Download & GitHub)
-        const negroOpt = {
-            margin: [0, 0, 0, 0], // Sin márgenes para evitar espacios
-            filename: 'acuerdos_uso_majo_fondo_negro.pdf',
-            html2canvas: { scale: 2, backgroundColor: "#121212", useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        
-        // Generar PDF Blanco (Solo para GitHub)
-        const whiteClone = document.getElementById('whiteDocClone');
-        whiteClone.innerHTML = document.getElementById('legalDoc').innerHTML;
-        // Inyectar firma negra y estilos
-        whiteClone.querySelector('#firmaDisplay').src = pngNegro;
-        whiteClone.querySelector('h1').style.color = "#000";
-        whiteClone.querySelector('h1').style.borderBottomColor = "#000";
-        whiteClone.querySelectorAll('h2').forEach(h => { h.style.color = "#000"; h.style.borderLeftColor = "#000"; });
-        whiteClone.querySelectorAll('p, li').forEach(p => p.style.color = "#333");
-        whiteClone.querySelectorAll('.highlight').forEach(s => s.style.color = "#000");
-        whiteClone.querySelector('#lineaFirma').style.borderBottomColor = "#000";
-        whiteClone.querySelector('#fechaFirma').style.color = "#666";
-
-        const blancoOpt = {
-            margin: [0, 0, 0, 0],
-            filename: 'acuerdos_uso_majo_fondo_blanco.pdf',
-            html2canvas: { scale: 2, backgroundColor: "#ffffff", useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
         try {
-            // Capturar PDF Negro
-            const pdfNegroBase64 = await html2pdf().set(negroOpt).from(document.getElementById('legalDoc')).outputPdf('datauristring');
+            // Contenidos HTML para los PDFs
+            const htmlContentBlack = getPdfStyledHtml(pngBlanco, 'black', fechaStr);
+            const htmlContentWhite = getPdfStyledHtml(pngNegro, 'white', fechaStr);
+
+            // Configuración base para la generación de PDF
+            const baseOptions = {
+                image: { type: 'jpeg', quality: 1.0 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            // --- 1. Generar y Descargar PDF Negro ---
+            const optNegro = {
+                ...baseOptions,
+                filename: 'acuerdos_uso_majo_fondo_negro.pdf',
+                html2canvas: { 
+                    scale: 2, useCORS: true, scrollY: 0, scrollX: 0, 
+                    backgroundColor: '#121212' 
+                }
+            };
+            const pdfNegroBase64 = await html2pdf().set(optNegro).from(htmlContentBlack).outputPdf('datauristring');
             
-            // Descargar versión negra para Majo
             const link = document.createElement('a');
             link.href = pdfNegroBase64;
             link.download = 'acuerdos_uso_majo_fondo_negro.pdf';
             link.click();
 
-            // Capturar PDF Blanco
-            const pdfBlancoBase64 = await html2pdf().set(blancoOpt).from(whiteClone).outputPdf('datauristring');
+            // --- 2. Generar PDF Blanco (Solo para GitHub) ---
+            const optBlanco = {
+                ...baseOptions,
+                filename: 'acuerdos_uso_majo_fondo_blanco.pdf',
+                html2canvas: { 
+                    scale: 2, useCORS: true, scrollY: 0, scrollX: 0, 
+                    backgroundColor: '#ffffff' 
+                }
+            };
+            const pdfBlancoBase64 = await html2pdf().set(optBlanco).from(htmlContentWhite).outputPdf('datauristring');
 
-            // 4. Enviar todo al servidor
+            // --- 3. Enviar todo al servidor ---
             const BACKEND_URL = window.location.hostname.includes('github.io') ? 'https://sublimacion-mary.onrender.com' : '';
             const response = await fetch(`${BACKEND_URL}/api/legal/save-signature`, {
                 method: 'POST',
