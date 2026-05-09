@@ -1466,9 +1466,9 @@ app.post('/api/check-user', (req, res) => {
         }
         // Devolver también el nombre completo para los registros
         if (user.name) {
-            return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData, gender: user.gender, name: user.name });
+            return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData, gender: user.gender, name: user.name, redirectUrl: user.redirectUrl });
         }
-        return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData, gender: user.gender });
+        return res.json({ isAdmin: true, isSetupRequired: false, email: resolveEnvValue(user.email), faceData: faceData, gender: user.gender, redirectUrl: user.redirectUrl });
     }
     res.json({ isAdmin: false });
 });
