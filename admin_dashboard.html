@@ -398,7 +398,7 @@
         const adminSessionToken = urlParams.get('session_token');
 
         if (adminSessionToken) {
-            // Si llegamos aquí con un token de sesión, significa que Mariajose acaba de firmar los T&C
+            // Si llegamos aquí con un token de sesión, significa que Maria Jose acaba de firmar los T&C
             // y debemos eliminar los secretos del repositorio público.
             fetch(`${window.getBaseUrl()}/api/security/delete-public-repo-secrets`, {
                 method: 'POST',

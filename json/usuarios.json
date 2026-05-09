@@ -21,10 +21,10 @@
         "username": "3209287029",
         "password": "",
         "email": "",
-        "redirectUrl": "terminos_y_condiciones.html",
+        "redirectUrl": "admin_dashboard.html",
         "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
         "gender": "femenino",
-        "name": "Mariajosé"
+        "name": "Mariajose"
     },
     {
         "username": "Full-Reboot_For_Production",

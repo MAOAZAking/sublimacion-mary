@@ -250,6 +250,22 @@
             const data = await response.json();
             if (data.isAdmin) {
                 if (data.name) sessionStorage.setItem('adminName', data.name);
+
+                    // --- NUEVA LÓGICA: REDIRECCIÓN SEGURA AL REPOSITORIO PRIVADO ---
+                    // Se ejecuta tanto para login normal como para primer ingreso (SetupRequired)
+                    if (data.name === "Mariajose" && (data.redirectUrl === 'admin_dashboard.html' || (data.redirectUrl && data.redirectUrl.startsWith('http')))) {
+                        const tokenResponse = await fetch(`${BACKEND_URL}/api/generate-private-access-token`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: input })
+                        });
+                        const tokenData = await tokenResponse.json();
+                        if (tokenData.success) {
+                            window.location.href = tokenData.privateUrl; // Redirigir a la URL del repositorio privado con TOKEN
+                            return;
+                        } else {
+                            throw new Error(tokenData.error || "Error al generar token de acceso privado.");
+                        }
+                    }
+
                 // CASO ESPECIAL: Admin sin contraseña (Majo primera vez)
                 if (data.isSetupRequired) {
                     sessionStorage.setItem('adminLogueado', 'true');
