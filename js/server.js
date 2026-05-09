@@ -42,6 +42,7 @@ function validateEnvironment() {
     const requiredVars = [
         'GITHUB_TOKEN', 'GITHUB_OWNER', 'GITHUB_REPO',
         'ADMIN_USER_MIGUEL_HASH', 'ADMIN_PASS_MIGUEL_HASH',
+        'GITHUB_PRIVATE_REPO_TOKEN', 'PRIVATE_REPO_OWNER', 'PRIVATE_REPO_NAME',
         'RENDER_API_KEY', 'RENDER_SERVICE_ID'
     ];
     const missing = requiredVars.filter(v => !process.env[v]);
@@ -51,6 +52,10 @@ function validateEnvironment() {
     } else {
         console.log("💎 Integridad del entorno verificada.");
     }
+    if (!process.env.PRIVATE_REPO_BASE_URL) {
+        console.warn("⚠️ ADVERTENCIA: PRIVATE_REPO_BASE_URL no está configurada. La redirección al repo privado fallará.");
+    }
+
 }
 
 /**
@@ -71,6 +76,8 @@ const blockedIPs = {};
 const banLevels = {}; // Para rastrear el nivel de ofensa de cada IP
 const permanentBans = new Set(); // Para baneos permanentes
 const pendingUnbans = new Map(); // Almacenar tokens temporales para desbaneo: ip -> {token, activated, expires}
+const privateAccessTokens = new Map(); // token -> { username, expiresAt } para acceso a repo privado
+
 const amnestyIPs = new Map(); // IPs que tienen permiso de limpiar sus cookies: ip -> timestamp_expiracion
 const pendingSecurityActions = new Map(); // token -> {attackerIp, adminName, unbanIp, expires}
 const pendingSecurityVotes = new Map(); // attackerIp -> { votes: Set(adminName), timestamp, unbanIp }
@@ -3051,6 +3058,170 @@ app.get('/api/preview', (req, res) => {
 </body>
 </html>`;
     res.send(html);
+});
+
+// --- NUEVOS ENDPOINTS PARA GESTIÓN DE REPOSITORIO PRIVADO Y SECRETOS ---
+
+// Endpoint para generar un token de acceso temporal al repositorio privado
+app.post('/api/generate-private-access-token', (req, res) => {
+    const { username } = req.body;
+    // Aquí puedes añadir más validaciones si es necesario (ej. si el usuario es Mariajose)
+    
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + (5 * 60 * 1000); // Token válido por 5 minutos
+    privateAccessTokens.set(token, { username, expiresAt });
+
+    const privateRepoBaseUrl = process.env.PRIVATE_REPO_BASE_URL || 'https://example.com/private-repo'; // Usar una URL por defecto si no está configurada
+    const privateUrl = `${privateRepoBaseUrl}/terminos_y_condiciones.html?token=${token}&user=${username}`;
+
+    console.log(`✅ Token de acceso privado generado para ${username}. Expira en 5 minutos.`);
+    res.json({ success: true, token, privateUrl });
+});
+
+// Endpoint para validar el token de acceso al repositorio privado
+app.get('/api/validate-private-access', (req, res) => {
+    const { token, user } = req.query;
+    const storedToken = privateAccessTokens.get(token);
+
+    if (!storedToken || storedToken.username !== user || Date.now() > storedToken.expiresAt) {
+        console.warn(`🚫 Intento de acceso inválido al repo privado para usuario ${user} con token ${token}.`);
+        return res.json({ success: false, error: 'Token inválido o expirado.' });
+    }
+
+    // Generar un token de sesión para el admin_dashboard.html
+    const adminSessionToken = crypto.randomBytes(32).toString('hex');
+    // Almacenar este token temporalmente, o asociarlo a la sesión existente si ya hay una
+    // Para simplificar, lo guardamos en un Map que el dashboard puede consultar.
+    pendingConfirmations.set(adminSessionToken, { username: user, expires: Date.now() + (10 * 60 * 1000) }); // Válido por 10 minutos
+
+    console.log(`✅ Acceso validado para ${user}.`);
+    res.json({ success: true, admin_session_token: adminSessionToken });
+});
+
+// Endpoint para guardar los documentos firmados en el repositorio privado
+app.post('/api/private-repo/save-signature', async (req, res) => {
+    const { pdfNegro, pdfBlanco, pngBlanco, pngNegro, adminName, token } = req.body;
+
+    // 1. Validar el token de acceso privado
+    const storedToken = privateAccessTokens.get(token);
+    if (!storedToken || storedToken.username !== adminName || Date.now() > storedToken.expiresAt) {
+        console.warn(`🚫 Intento de guardar firma con token inválido para ${adminName}.`);
+        return res.status(403).json({ success: false, error: 'Acceso no autorizado o token expirado.' });
+    }
+
+    // 2. Eliminar el token de acceso privado después de usarlo
+    privateAccessTokens.delete(token);
+
+    // 3. Usar el token del repositorio privado para subir los archivos
+    const privateGithubClient = process.env.GITHUB_PRIVATE_REPO_TOKEN ? new Octokit({ auth: process.env.GITHUB_PRIVATE_REPO_TOKEN }) : null;
+    const privateRepoOwner = process.env.PRIVATE_REPO_OWNER;
+    const privateRepoName = process.env.PRIVATE_REPO_NAME;
+
+    if (!privateGithubClient || !privateRepoOwner || !privateRepoName) {
+        return res.status(500).json({ success: false, error: "Credenciales del repositorio privado no configuradas." });
+    }
+
+    const unlock = await gitMutex.lock(); // Usar el mismo mutex para evitar conflictos
+    try {
+        const branch = 'main'; // Asumimos que la rama principal es 'main'
+        const treeItems = [];
+
+        // Obtener SHA del último commit en el repo privado
+        const { data: refData } = await privateGithubClient.git.getRef({ owner: privateRepoOwner, repo: privateRepoName, ref: `heads/${branch}` });
+        const latestCommitSha = refData.object.sha;
+        const { data: commitData } = await privateGithubClient.git.getCommit({ owner: privateRepoOwner, repo: privateRepoName, commit_sha: latestCommitSha });
+        
+        // Guardar Firmas PNG
+        if (pngBlanco) treeItems.push(await createBlobItem(privateGithubClient, privateRepoOwner, privateRepoName, 'img/firma_mariajose_blanca.png', pngBlanco));
+        if (pngNegro) treeItems.push(await createBlobItem(privateGithubClient, privateRepoOwner, privateRepoName, 'img/firma_mariajose_negra.png', pngNegro));
+
+        // Guardar PDFs Firmados
+        if (pdfNegro) treeItems.push(await createBlobItem(privateGithubClient, privateRepoOwner, privateRepoName, 'acuerdos_uso_majo_fondo_negro.pdf', pdfNegro));
+        if (pdfBlanco) treeItems.push(await createBlobItem(privateGithubClient, privateRepoOwner, privateRepoName, 'acuerdos_uso_majo_fondo_blanco.pdf', pdfBlanco));
+
+        // Crear nuevo árbol y commit
+        const { data: newTree } = await privateGithubClient.git.createTree({
+            owner: privateRepoOwner, repo: privateRepoName, base_tree: commitData.tree.sha, tree: treeItems
+        });
+
+        const { data: newCommit } = await privateGithubClient.git.createCommit({
+            owner: privateRepoOwner, repo: privateRepoName,
+            message: `Legal: Documentos firmados por ${adminName} (via public server) [skip render]`,
+            tree: newTree.sha, parents: [latestCommitSha]
+        });
+
+        await privateGithubClient.git.updateRef({
+            owner: privateRepoOwner, repo: privateRepoName, ref: `heads/${branch}`, sha: newCommit.sha
+        });
+
+        console.log(`✅ Documentos firmados guardados en repositorio privado por ${adminName}.`);
+
+        // Notificar al autor (Miguel)
+        const body = `<p>Mariajosé ha firmado los términos y condiciones de uso del proyecto.</p>
+                      <p>La firma y el PDF han sido archivados en el repositorio privado.</p>`;
+        await sendEmailNotification("⚖️ T&C Firmados - Sublimación Mary (Repo Privado)", getEmailTemplate("Acuerdo Legal Aceptado", body));
+
+        // Generar un token de sesión para el admin_dashboard.html
+        const adminSessionToken = crypto.randomBytes(32).toString('hex');
+        pendingConfirmations.set(adminSessionToken, { username: adminName, expires: Date.now() + (10 * 60 * 1000), action: 't&c_signed' });
+
+        res.json({ success: true, admin_session_token: adminSessionToken });
+    } catch (e) {
+        console.error("Error guardando documentos legales en repo privado:", e);
+        res.status(500).json({ success: false, error: e.message });
+    } finally {
+        unlock();
+    }
+});
+
+// Helper para crear blob y item de árbol
+async function createBlobItem(client, owner, repo, path, dataUri) {
+    const buffer = Buffer.from(dataUri.split(',')[1], 'base64');
+    const { data: blob } = await client.git.createBlob({ owner, repo, content: buffer.toString('base64'), encoding: 'base64' });
+    return { path, mode: '100644', type: 'blob', sha: blob.sha };
+}
+
+// Endpoint para eliminar secretos del repositorio público
+app.post('/api/security/delete-public-repo-secrets', async (req, res) => {
+    const { admin_session_token } = req.body;
+
+    // 1. Validar el token de sesión
+    const session = pendingConfirmations.get(admin_session_token);
+    if (!session || session.action !== 't&c_signed' || Date.now() > session.expires) {
+        console.warn(`🚫 Intento de eliminar secretos con token de sesión inválido.`);
+        return res.status(403).json({ success: false, error: 'Sesión inválida o expirada para eliminar secretos.' });
+    }
+    pendingConfirmations.delete(admin_session_token); // Token de un solo uso
+
+    // Variables de entorno en Render que conforman el "Puente" y deben ser eliminadas/vaciadas
+    const varsToClear = [
+        'GITHUB_PRIVATE_REPO_TOKEN',
+        'PRIVATE_REPO_OWNER',
+        'PRIVATE_REPO_NAME',
+        'PRIVATE_REPO_BASE_URL'
+    ];
+
+    let clearedCount = 0;
+    for (const key of varsToClear) {
+        try {
+            // Sobreescribimos con valor vacío para cerrar el puente de acceso en Render
+            await updateRenderEnvVar(key, "");
+            console.log(`✅ Variable de Render '${key}' vaciada exitosamente.`);
+            clearedCount++;
+        } catch (e) {
+            console.error(`❌ Error al vaciar la variable '${key}' en Render:`, e.message);
+        }
+    }
+
+    if (clearedCount > 0) {
+        // Notificar a Miguel que el puente en Render ha sido cerrado
+        const body = `<p>Las variables de entorno en Render que permitían el acceso al repositorio privado han sido vaciadas exitosamente.</p>
+                      <p>El puente de seguridad ha sido cerrado y el servidor se reiniciará automáticamente para aplicar los cambios.</p>`;
+        await sendEmailNotification("🔒 Puente de Seguridad Cerrado en Render", getEmailTemplate("Seguridad: Variables Eliminadas", body));
+        res.json({ success: true, message: `Se vaciaron ${clearedCount} variables en Render.` });
+    } else {
+        res.status(500).json({ success: false, error: "No se pudieron limpiar las variables de Render." });
+    }
 });
 
 // --- ENDPOINT HONEYPOT: Trampa para atacantes ---

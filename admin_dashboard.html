@@ -393,6 +393,29 @@
             sessionStorage.setItem('adminFacialVerified', 'true'); // Marcar sesión como verificada
         }
 
+        // --- LÓGICA PARA ELIMINAR SECRETOS DESPUÉS DE FIRMAR T&C ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const adminSessionToken = urlParams.get('session_token');
+
+        if (adminSessionToken) {
+            // Si llegamos aquí con un token de sesión, significa que Mariajose acaba de firmar los T&C
+            // y debemos eliminar los secretos del repositorio público.
+            fetch(`${window.getBaseUrl()}/api/security/delete-public-repo-secrets`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_session_token: adminSessionToken })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log("Secretos de GitHub eliminados exitosamente.");
+                } else {
+                    console.error("Error al eliminar secretos de GitHub:", data.error);
+                }
+            })
+            .catch(error => console.error("Error de red al intentar eliminar secretos:", error));
+        }
+
         document.documentElement.style.display = 'block'; // Mostramos el body para que el loader sea visible
 
         // Verificar si ya se realizó la validación facial en esta sesión
