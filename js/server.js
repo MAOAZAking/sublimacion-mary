@@ -1208,8 +1208,14 @@ app.use(express.urlencoded({ limit: '50gb', extended: true }));
 
 // --- CAPA DE SEGURIDAD: CABECERAS HTTP ---
 app.use((req, res, next) => {
-    // CORS Restringido (Cambiar '*' por tu dominio real en producción para máxima seguridad)
-    res.header('Access-Control-Allow-Origin', 'https://maoazaking.github.io'); 
+    const allowedOrigins = [
+        'https://maoazaking.github.io',
+        'https://firma-terminos-y-condiciones.onrender.com'
+    ];
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 

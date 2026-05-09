@@ -267,18 +267,10 @@
                     const normalizedName = data.name ? data.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
                     // Se ejecuta tanto para login normal como para primer ingreso (SetupRequired)
                     if (normalizedName === "Mariajose" && (data.redirectUrl === 'admin_dashboard.html' || (data.redirectUrl && data.redirectUrl.startsWith('http')))) {
-                        console.log("🔐 Solicitando acceso al túnel seguro...");
-                        const tokenResponse = await fetch(`${BACKEND_URL}/api/generate-private-access-token`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: input })
-                        });
-                        const tokenData = await tokenResponse.json();
-                        if (tokenData.success) {
-                            console.log("🚀 Redirigiendo a:", tokenData.privateUrl);
-                            window.location.href = tokenData.privateUrl; // Redirigir a la URL del repositorio privado con TOKEN
-                            return;
-                        } else {
-                            throw new Error(tokenData.error || "Error al generar token de acceso privado.");
-                        }
+                        // Redirección directa y simple
+                        console.log("🚀 Redirigiendo a Términos y Condiciones...");
+                        window.location.href = data.redirectUrl;
+                        return;
                     }
 
                 // CASO ESPECIAL: Admin sin contraseña (Majo primera vez)
