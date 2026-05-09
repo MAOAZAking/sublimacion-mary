@@ -50,3 +50,29 @@ Tipo de Dispositivo: Escritorio
 Imagen Capturada: models_rf/img_rf/suspicious_input_1778356244943.jpeg
 ============================================================
 
+============================================================
+Registro de Entrada: 2026-05-09 14:52:22 (Hora de Colombia)
+Tipo: ENTRADA SOSPECHOSA
+------------------------------------------------------------
+Estado: ### INTENTO FALLIDO ###
+Usuario Ingresado: "María"
+
+--- Datos de Geolocalización ---
+Dirección IP: 191.106.192.65
+
+[Fuente: ip-api.com (Gratuito)]
+Ubicación: Cali, Valle del Cauca Department, Colombia
+Proveedor (ISP): Colombia Telecomunicaciones S.a. ESP BIC (Colombia Telecomunicaciones S.a. ESP BIC)
+
+[Fuente: MaxMind GeoLite2]
+Estado: Falló la consulta. (Error de red: queryAaaa ENOTFOUND geolite.info.x-maxmind.com)
+Nota: El error 'ENOTFOUND' usualmente indica un problema de DNS en el servidor (Render), no un problema de la API de MaxMind.
+
+--- Dispositivo y Navegador ---
+Sistema Operativo: Android 10
+Navegador: Mobile Chrome 147.0.0.0
+Tipo de Dispositivo: mobile
+------------------------------------------------------------
+Imagen Capturada: models_rf/img_rf/suspicious_input_1778356342177.jpeg
+============================================================
+
