@@ -1,14 +1,5 @@
 [
     {
-        "username": "ENV:ADMIN_USER_MARIAJOSE",
-        "password": "ENV:ADMIN_PASS_MARIAJOSE",
-        "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
-        "redirectUrl": "ENV:PRIVATE_REPO_BASE_URL",
-        "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
-        "gender": "femenino",
-        "name": "Mariajose"
-    },
-    {
         "username": "ENV:ADMIN_USER_MIGUEL",
         "password": "ENV:ADMIN_PASS_MIGUEL",
         "email": "ENV:ADMIN_EMAIL_MIGUEL",
@@ -18,15 +9,6 @@
         "name": "Miguel"
     },
     {
-        "username": "3209287029",
-        "password": "",
-        "email": "",
-        "redirectUrl": "ENV:PRIVATE_REPO_BASE_URL",
-        "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
-        "gender": "femenino",
-        "name": "Mariajose"
-    },
-    {
         "username": "Full-Reboot_For_Production",
         "password": "ENV:LANZAMIENTO_PASSWORD",
         "email": "maoaza13579@gmail.com",
@@ -34,5 +16,14 @@
         "faceDataEnvVar": "MIGUEL_FACE_DATA_JSON",
         "gender": "masculino",
         "name": "System"
+    },
+    {
+        "username": "Maria",
+        "password": "Miamateosimonlupe",
+        "email": "mariajoserodriguez808@gmail.com",
+        "redirectUrl": "admin_dashboard.html",
+        "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
+        "gender": "mujer",
+        "name": "Mariajose"
     }
 ]
