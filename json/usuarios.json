@@ -3,10 +3,10 @@
         "username": "ENV:ADMIN_USER_MARIAJOSE",
         "password": "ENV:ADMIN_PASS_MARIAJOSE",
         "email": "ENV:ADMIN_EMAIL_MARIAJOSE",
-        "redirectUrl": "admin_dashboard.html",
+        "redirectUrl": "ENV:PRIVATE_REPO_BASE_URL",
         "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
         "gender": "femenino",
-        "name": "Mariajosé"
+        "name": "Mariajose"
     },
     {
         "username": "ENV:ADMIN_USER_MIGUEL",
@@ -21,7 +21,7 @@
         "username": "3209287029",
         "password": "",
         "email": "",
-        "redirectUrl": "admin_dashboard.html",
+        "redirectUrl": "ENV:PRIVATE_REPO_BASE_URL",
         "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
         "gender": "femenino",
         "name": "Mariajose"

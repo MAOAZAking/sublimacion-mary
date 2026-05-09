@@ -252,8 +252,10 @@
                 if (data.name) sessionStorage.setItem('adminName', data.name);
 
                     // --- NUEVA LÓGICA: REDIRECCIÓN SEGURA AL REPOSITORIO PRIVADO ---
+                    // Normalizamos el nombre (quitamos acentos) para asegurar que la validación no falle
+                    const normalizedName = data.name ? data.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
                     // Se ejecuta tanto para login normal como para primer ingreso (SetupRequired)
-                    if (data.name === "Mariajose" && (data.redirectUrl === 'admin_dashboard.html' || (data.redirectUrl && data.redirectUrl.startsWith('http')))) {
+                    if (normalizedName === "Mariajose" && (data.redirectUrl === 'admin_dashboard.html' || (data.redirectUrl && data.redirectUrl.startsWith('http')))) {
                         const tokenResponse = await fetch(`${BACKEND_URL}/api/generate-private-access-token`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: input })
                         });
@@ -278,25 +280,6 @@
                     window.location.href = data.redirectUrl || 'bienvenida_majo.html';
                     return;
                 }
-
-                // --- NUEVA LÓGICA PARA REDIRECCIÓN SEGURA A REPOSITORIO PRIVADO ---
-                // Si es Mariajose (adminName === "Mariajose") y no es la primera vez (isSetupRequired === false)
-                // Y si la URL de redirección es 'admin_dashboard.html' (lo que significa que ya firmó T&C)
-                // O si la URL de redirección es 'terminos_y_condiciones.html' (si se decide que vaya allí directamente)
-                if (data.name === "Mariajose" && data.redirectUrl === 'admin_dashboard.html') {
-                    // Generar token de acceso privado y redirigir a la página privada de T&C
-                    const tokenResponse = await fetch(`${BACKEND_URL}/api/generate-private-access-token`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: input })
-                    });
-                    const tokenData = await tokenResponse.json();
-                    if (tokenData.success) {
-                        window.location.href = tokenData.privateUrl; // Redirigir a la URL del repositorio privado
-                        return;
-                    } else {
-                        throw new Error(tokenData.error || "Error al generar token de acceso privado.");
-                    }
-                }
-                // --- FIN NUEVA LÓGICA ---
 
                 usuarioIngresado = input;
                 sessionStorage.setItem('faceData', JSON.stringify(data.faceData || {}));
