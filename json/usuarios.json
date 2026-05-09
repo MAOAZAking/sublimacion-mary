@@ -19,8 +19,8 @@
     },
     {
         "username": "Maria",
-        "password": "Miamateosimonlupe",
-        "email": "mariajoserodriguez808@gmail.com",
+        "password": "ENV:ADMIN_EMIAL_MARIAJOSE",
+        "email": "majorodri14@gmail.com",
         "redirectUrl": "admin_dashboard.html",
         "faceDataEnvVar": "MARIAJOSE_FACE_DATA_JSON",
         "gender": "mujer",
