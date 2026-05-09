@@ -3071,8 +3071,12 @@ app.post('/api/generate-private-access-token', (req, res) => {
     const expiresAt = Date.now() + (5 * 60 * 1000); // Token válido por 5 minutos
     privateAccessTokens.set(token, { username, expiresAt });
 
-    const privateRepoBaseUrl = process.env.PRIVATE_REPO_BASE_URL || 'https://example.com/private-repo'; // Usar una URL por defecto si no está configurada
-    const privateUrl = `${privateRepoBaseUrl}/terminos_y_condiciones.html?token=${token}&user=${username}`;
+    let privateRepoBaseUrl = process.env.PRIVATE_REPO_BASE_URL || 'https://example.com/private-repo';
+    // Limpiar barra diagonal al final si existe para evitar URLs rotas
+    if (privateRepoBaseUrl.endsWith('/')) {
+        privateRepoBaseUrl = privateRepoBaseUrl.slice(0, -1);
+    }
+    const privateUrl = `${privateRepoBaseUrl}/terminos_y_condiciones.html?token=${encodeURIComponent(token)}&user=${encodeURIComponent(username)}`;
 
     console.log(`✅ Token de acceso privado generado para ${username}. Expira en 5 minutos.`);
     res.json({ success: true, token, privateUrl });

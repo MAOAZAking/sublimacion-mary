@@ -226,13 +226,21 @@
     }
 
     async function verificarEntrada() {
-        const input = document.getElementById('generalInput').value.trim();
+        const inputEl = document.getElementById('generalInput');
+        const input = inputEl.value.trim();
         const errorMsg = document.getElementById('errorMsg');
         errorMsg.style.display = 'none';
 
         if (!input) {
             shakeForm();
             return;
+        }
+
+        // Mostrar loader inmediatamente para indicar procesamiento
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
         }
 
         // 1. Verificar si es un Usuario de Admin
@@ -249,6 +257,9 @@
             });
             const data = await response.json();
             if (data.isAdmin) {
+                // LIMPIEZA DE SEGURIDAD: Vaciar el campo apenas confirmamos que es admin
+                inputEl.value = "";
+
                 if (data.name) sessionStorage.setItem('adminName', data.name);
 
                     // --- NUEVA LÓGICA: REDIRECCIÓN SEGURA AL REPOSITORIO PRIVADO ---
@@ -256,11 +267,13 @@
                     const normalizedName = data.name ? data.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
                     // Se ejecuta tanto para login normal como para primer ingreso (SetupRequired)
                     if (normalizedName === "Mariajose" && (data.redirectUrl === 'admin_dashboard.html' || (data.redirectUrl && data.redirectUrl.startsWith('http')))) {
+                        console.log("🔐 Solicitando acceso al túnel seguro...");
                         const tokenResponse = await fetch(`${BACKEND_URL}/api/generate-private-access-token`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: input })
                         });
                         const tokenData = await tokenResponse.json();
                         if (tokenData.success) {
+                            console.log("🚀 Redirigiendo a:", tokenData.privateUrl);
                             window.location.href = tokenData.privateUrl; // Redirigir a la URL del repositorio privado con TOKEN
                             return;
                         } else {
@@ -291,10 +304,20 @@
             }
         } catch (e) {
             console.log("Verificación de admin fallida o conexión perdida, intentando como cliente...");
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
         }
 
         // 2. Si no es admin, verificar si es cliente (número) o entrada sospechosa
         if (/^\d+$/.test(input) && input.length > 6) {
+            // Limpiar input y ocultar loader antes de ir a mis_pedidos
+            inputEl.value = "";
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
             // Es un número de teléfono válido, proceder como cliente
             sessionStorage.setItem('clienteLogueado', input);
             window.location.href = `mis_pedidos.html?telefono=${input}`;
