@@ -3071,12 +3071,12 @@ app.post('/api/generate-private-access-token', (req, res) => {
     const expiresAt = Date.now() + (5 * 60 * 1000); // Token válido por 5 minutos
     privateAccessTokens.set(token, { username, expiresAt });
 
-    let privateRepoBaseUrl = process.env.PRIVATE_REPO_BASE_URL || 'https://example.com/private-repo';
-    // Limpiar barra diagonal al final si existe para evitar URLs rotas
-    if (privateRepoBaseUrl.endsWith('/')) {
-        privateRepoBaseUrl = privateRepoBaseUrl.slice(0, -1);
-    }
-    const privateUrl = `${privateRepoBaseUrl}/terminos_y_condiciones#token=${encodeURIComponent(token)}&user=${encodeURIComponent(username)}`;
+    const privateRepoBaseUrl = process.env.PRIVATE_REPO_BASE_URL || '';
+    
+    // Usamos el separador '#' (Fragmento) para que Render no limpie las credenciales al redireccionar
+    // Si la URL de Render ya tiene un '#', usamos '&', de lo contrario iniciamos con '#'
+    const separator = privateRepoBaseUrl.includes('#') ? '&' : '#';
+    const privateUrl = `${privateRepoBaseUrl}${separator}token=${encodeURIComponent(token)}&user=${encodeURIComponent(username)}`;
 
     console.log(`✅ Token de acceso privado generado para ${username}. Expira en 5 minutos.`);
     res.json({ success: true, token, privateUrl });
