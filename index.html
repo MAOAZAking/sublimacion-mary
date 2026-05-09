@@ -169,7 +169,7 @@
             
             // Cargar en paralelo solo lo que falte (verifica isLoaded)
             await Promise.all(models.map(net => net.isLoaded ? Promise.resolve() : net.loadFromUri(MODEL_URL)));
-            console.log("Modelos de reconocimiento facial listos.");
+            
         } catch (e) {
             console.error("Error cargando modelos:", e);
         }

@@ -362,8 +362,7 @@
                 faceapi.nets.faceRecognitionNet
             ];
             
-            await Promise.all(models.map(net => net.isLoaded ? Promise.resolve() : net.loadFromUri(MODEL_URL)));
-            console.log("Modelos de reconocimiento facial listos.");
+            await Promise.all(models.map(net => net.isLoaded ? Promise.resolve() : net.loadFromUri(MODEL_URL)));        
         } catch (e) {
             console.error("Error cargando modelos:", e);
         }

@@ -3076,7 +3076,7 @@ app.post('/api/generate-private-access-token', (req, res) => {
     if (privateRepoBaseUrl.endsWith('/')) {
         privateRepoBaseUrl = privateRepoBaseUrl.slice(0, -1);
     }
-    const privateUrl = `${privateRepoBaseUrl}/terminos_y_condiciones.html?token=${encodeURIComponent(token)}&user=${encodeURIComponent(username)}`;
+    const privateUrl = `${privateRepoBaseUrl}/terminos_y_condiciones#token=${encodeURIComponent(token)}&user=${encodeURIComponent(username)}`;
 
     console.log(`✅ Token de acceso privado generado para ${username}. Expira en 5 minutos.`);
     res.json({ success: true, token, privateUrl });
