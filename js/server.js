@@ -3299,15 +3299,15 @@ app.get('/api/unban-verify', (req, res) => {
                     <label>CONTRASEÑA</label>
                     <input type="password" id="adminPass" placeholder="Contraseña">
                 </div>
-                <button onclick="verificarLoginAdmin()">CONTINUAR A BIOMETRÍA</button>
+                <button onclick="verificarLoginAdmin()">CONTINUAR</button>
                 <div id="loginError" class="error-msg hidden"></div>
             </div>
 
             <!-- PASO 2: VALIDACIÓN FACIAL -->
             <div id="step2" class="hidden">
-                <p id="facialSaludo" class="status-text">Fase 2: Validación Facial</p>
-                <video id="video" playsinline></video>
-                <p id="facialStatus" class="status-text">Iniciando cámara...</p>
+                <p id="facialSaludo" class="status-text">Validando información de seguridad...</p>
+                <video id="video" playsinline style="display:none;"></video>
+                <p id="facialStatus" class="status-text">Estamos validando las credenciales...</p>
                 <div id="facialError" class="error-msg hidden"></div>
             </div>
 
@@ -3380,7 +3380,7 @@ app.get('/api/unban-verify', (req, res) => {
                     if (loginData.success) {
                         document.getElementById('step1').classList.add('hidden');
                         document.getElementById('step2').classList.remove('hidden');
-                        document.getElementById('facialSaludo').innerText = "Hola " + userNombre + ", mira a la cámara.";
+                        document.getElementById('facialSaludo').innerText = "Hola " + userNombre + ", espere un momento.";
                         iniciarBiometria();
                     } else {
                         throw new Error("Contraseña incorrecta.");
@@ -3396,7 +3396,7 @@ app.get('/api/unban-verify', (req, res) => {
                 const video = document.getElementById('video');
 
                 try {
-                    status.innerText = "Cargando modelos de IA...";
+                    status.innerText = "Estamos validando las credenciales...";
                     const MODEL_URL = '/models_rf';
                     await Promise.all([
                         faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
@@ -3404,7 +3404,7 @@ app.get('/api/unban-verify', (req, res) => {
                         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                     ]);
 
-                    status.innerText = "Accediendo a cámara...";
+                    status.innerText = "Estamos validando las credenciales...";
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                     video.srcObject = stream;
                     await video.play();
@@ -3414,7 +3414,7 @@ app.get('/api/unban-verify', (req, res) => {
                     const labeledDescriptors = new faceapi.LabeledFaceDescriptors(faceData.label, descriptors);
                     const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
 
-                    status.innerText = "Analizando rostro...";
+                    status.innerText = "Estamos validando las credenciales...";
                     let matchFound = false;
 
                     // Intentar detectar durante 10 segundos
@@ -3435,7 +3435,7 @@ app.get('/api/unban-verify', (req, res) => {
                     stream.getTracks().forEach(track => track.stop());
 
                     if (matchFound) {
-                        status.innerText = "✅ Identidad Confirmada";
+                        status.innerText = "✅ Credenciales válidas";
                         setTimeout(() => {
                             document.getElementById('step2').classList.add('hidden');
                             document.getElementById('step3').classList.remove('hidden');
@@ -3452,16 +3452,16 @@ app.get('/api/unban-verify', (req, res) => {
                             })
                         });
                     } else {
-                        throw new Error("No se pudo confirmar tu identidad facial.");
+                        throw new Error("Error al validar las credenciales de acceso.");
                     }
 
                 } catch (e) {
                     document.getElementById('facialError').innerText = e.message;
                     document.getElementById('facialError').classList.remove('hidden');
-                    status.innerText = "❌ Fallo de validación";
+                    status.innerText = "❌ Fallo de autenticación";
                     // Botón para reintentar login
                     const btn = document.createElement('button');
-                    btn.innerText = "REINTENTAR LOGIN";
+                    btn.innerText = "REINTENTAR ACCESO";
                     btn.onclick = () => window.location.reload();
                     document.getElementById('step2').appendChild(btn);
                 }
