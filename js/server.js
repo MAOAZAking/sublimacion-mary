@@ -3269,15 +3269,17 @@ app.get('/api/unban-verify', (req, res) => {
         <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
         <style>
             body { background: #000; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-            .card { background: #1e1e1e; padding: 30px; border-radius: 20px; border: 2px solid #f1c40f; box-shadow: 0 0 20px rgba(241, 196, 15, 0.2); text-align: center; width: 90%; max-width: 400px; }
+            .card { background: #1e1e1e; padding: 30px; border-radius: 20px; border: 2px solid rgb(213, 0, 249); box-shadow: 0 0 30px rgba(213, 0, 249, 0.3); text-align: center; width: 90%; max-width: 400px; }
             .field { position: relative; margin-bottom: 15px; text-align: left; }
-            label { display: block; color: #f1c40f; font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
+            label { display: block; color: rgb(213, 0, 249); font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
             input { width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: 1px solid #333; background: #121212; color: white; box-sizing: border-box; font-family: monospace; }
+            input:focus { border-color: rgb(213, 0, 249); outline: none; box-shadow: 0 0 0 4px rgba(213, 0, 249, 0.15); }
             .toggle { position: absolute; right: 10px; top: 28px; cursor: pointer; opacity: 0.5; transition: 0.3s; }
-            button { width: 100%; padding: 15px; border-radius: 50px; border: none; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+            button { width: 100%; padding: 15px; border-radius: 50px; border: none; background: linear-gradient(135deg, rgb(213, 0, 249), rgb(192, 0, 224)); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; box-shadow: 0 10px 20px rgba(142, 68, 173, 0.3); }
+            button:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(192, 0, 224, 0.4); }
             button:disabled { background: #444; color: #888; cursor: not-allowed; }
             .hidden { display: none; }
-            .ip-display { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 5px; color: #f1c40f; display: block; margin: 10px 0; }
+            .ip-display { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 5px; color: rgb(213, 0, 249); display: block; margin: 10px 0; }
             #video { width: 100%; border-radius: 15px; border: 2px solid #333; background: #000; }
             .status-text { font-size: 0.85rem; margin: 10px 0; color: #aaa; }
             .error-msg { color: #ff4444; font-size: 0.85rem; margin-top: 10px; }
