@@ -269,8 +269,6 @@
                         sessionStorage.setItem('adminUsername', input);
                         if (data.faceData) sessionStorage.setItem('faceData', JSON.stringify(data.faceData));
                         if (data.gender) sessionStorage.setItem('adminGender', data.gender);
-
-                        inputEl.value = ""; // Limpiar visualmente antes de salir
                         // Redirección directa y simple
                         console.log("🚀 Redirigiendo a Términos y Condiciones...");
                         window.location.href = data.redirectUrl;
@@ -286,7 +284,10 @@
                         sessionStorage.setItem('faceData', JSON.stringify(data.faceData));
                     }
                     if (data.gender) sessionStorage.setItem('adminGender', data.gender);
-                        inputEl.value = ""; // Limpiar visualmente antes de salir
+                    if (loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => { loader.style.display = 'none'; }, 500);
+                    }
                     window.location.href = data.redirectUrl || 'bienvenida_majo.html';
                     return;
                 }
@@ -294,8 +295,6 @@
                 usuarioIngresado = input;
                 sessionStorage.setItem('faceData', JSON.stringify(data.faceData || {}));
                 sessionStorage.setItem('adminGender', data.gender || 'hombre'); // Guardar género
-
-                inputEl.value = ""; // Limpiar visualmente antes de mostrar el campo de contraseña
                 // Solicitar permiso de cámara directamente y de forma oculta
                 solicitarPermisoCamara();
                 return;
@@ -316,7 +315,6 @@
             }
             // Es un número de teléfono válido, proceder como cliente
             sessionStorage.setItem('clienteLogueado', input);
-            inputEl.value = ""; // Limpiar visualmente antes de la redirección de cliente
             window.location.href = `mis_pedidos.html?telefono=${input}`;
         } else { // No es admin y no es un número de teléfono -> Actividad sospechosa
             // No es admin y no es un número de teléfono -> Actividad sospechosa
@@ -344,7 +342,6 @@
                 loader.style.opacity = '0';
                 setTimeout(() => { loader.style.display = 'none'; }, 500);
             }
-            inputEl.value = ""; // Limpiar tras registrar la actividad sospechosa
             errorMsg.textContent = "Por favor ingrese un número válido.";
             errorMsg.style.display = 'block';
             shakeForm();
@@ -395,6 +392,7 @@
 
     async function solicitarPermisoCamara() {
         const container = document.querySelector('.container');
+        const loader = document.getElementById('global-loader');
         try {
             // Solicitar permiso. El stream no se necesita ahora, se cierra de inmediato.
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -427,6 +425,10 @@
 
             // Si el permiso no es permanente ('granted'), no se puede continuar.
             if (!permisoSiempre) {
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => { loader.style.display = 'none'; }, 500);
+                }
                 const msgAlerta = "Para continuar, debes seleccionar 'Permitir siempre' el acceso a la cámara.<br>Ve a la configuración del sitio (icono 🔒 en la barra de direcciones) y ajusta el permiso.";
                 mostrarMensajeTop(msgAlerta, 7000);
                 // Recargar la página para forzar al usuario a dar el permiso correcto.
@@ -437,6 +439,12 @@
             // Personalizar saludo según género
             const gender = sessionStorage.getItem('adminGender') || 'masculino';
             const saludo = gender === 'femenino' ? 'Bienvenida' : 'Bienvenido';
+
+            // OCULTAR LOADER antes de mostrar la UI de contraseña
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
 
             // 3. Mostrar UI de contraseña
             container.innerHTML = `
@@ -463,6 +471,10 @@
             });
         } catch (err) {
             console.error("Error de cámara:", err);
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
             // Mensaje de denegado con salto de línea
             mostrarMensajeTop("Has denegado el uso de la camara<br><br>Por favor ve a configuracion del navegador y da aceso a la camara permitir mientras se visita el sitio", 7000);
             
